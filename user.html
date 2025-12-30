@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>USDT/THB Payment System - Anonymous Payment</title>
     <style>
-        /* CSS 부분은 동일하게 유지 */
         * {
             margin: 0;
             padding: 0;
@@ -135,6 +134,24 @@
         .loading-rate {
             color: #718096;
             font-size: 14px;
+        }
+
+        .refresh-rate {
+            display: inline-block;
+            margin-left: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            color: #4299e1;
+        }
+
+        .refresh-rate:hover {
+            color: #3182ce;
+        }
+
+        .rate-source {
+            font-size: 12px;
+            color: #718096;
+            margin-top: 5px;
         }
 
         .payment-form {
@@ -687,8 +704,10 @@
                 1 USDT = <span class="rate-value" id="exchangeRate">
                     <span class="loading-rate">로딩 중...</span>
                 </span> THB
+                <span class="refresh-rate" id="refreshRate" title="환율 새로고침">🔄</span>
             </div>
             <div id="rateUpdate">마지막 업데이트: 로딩 중...</div>
+            <div class="rate-source" id="rateSource"></div>
         </div>
 
         <div class="payment-form">
@@ -863,7 +882,87 @@
         let currentLang = 'ko';
         let exchangeRateInterval = null;
 
-        // 번역 데이터 (동일)
+        // 번역 데이터 - 완전히 추가
+        const translations = {
+            en: {
+                title: "USDT → THB Anonymous Payment",
+                subtitle: "Pay with USDT to Thai Baht (THB) without login",
+                exchangeTitle: "💱 Real-time Exchange Rate",
+                lastUpdate: "Last update: ",
+                amountLabel: "💰 Enter payment amount (THB):",
+                calcAmountLabel: "Payment Amount:",
+                calcRateLabel: "Exchange Rate:",
+                calcUsdtLabel: "USDT Amount:",
+                calcFeeLabel: "Fee (3%):",
+                calcTotalLabel: "Total Payment:",
+                uploadText: "Upload payment proof (Optional)",
+                payNow: "Pay Now",
+                activeOrders: "My Active Orders",
+                completedOrders: "✅ Completed Orders",
+                noActiveOrders: "No active orders",
+                noCompletedOrders: "No completed orders",
+                modalTitle: "🔳 USDT Transfer Guide",
+                walletSelectionTitle: "Selected Wallet:",
+                step1Description: "Send USDT to the wallet address below",
+                copyButtonText: "Copy Address",
+                modalTotalLabel: "Total Payment:",
+                orderIdLabel: "Order ID:",
+                statusMessage1Text: "Waiting for admin confirmation after USDT transfer...",
+                step2Description: "Verifying USDT deposit...",
+                statusMessage2Text: "Admin is confirming the deposit. Please wait...",
+                step3Description: "Processing THB payment...",
+                statusMessage3Text: "THB payment is being processed...",
+                completeMessage: "Payment Completed!",
+                step4Description: "Payment has been successfully completed.",
+                finishButtonText: "Confirm",
+                timerLabel: "Time left:",
+                autoUpdateText: "Will proceed automatically after admin confirmation...",
+                waitingDeposit: "Waiting Deposit",
+                depositConfirmed: "Deposit Confirmed",
+                processing: "Processing",
+                completed: "Completed",
+                cancelled: "Cancelled"
+            },
+            ko: {
+                title: "USDT → THB 익명 결제",
+                subtitle: "로그인 없이 USDT로 태국 바트(THB) 결제하기",
+                exchangeTitle: "💱 실시간 환율",
+                lastUpdate: "마지막 업데이트: ",
+                amountLabel: "💰 결제 금액 입력 (THB):",
+                calcAmountLabel: "결제 금액:",
+                calcRateLabel: "환율:",
+                calcUsdtLabel: "USDT 금액:",
+                calcFeeLabel: "수수료 (3%):",
+                calcTotalLabel: "총 결제 금액:",
+                uploadText: "결제 증명서 업로드 (선택사항)",
+                payNow: "지금 결제하기",
+                activeOrders: "진행 중인 주문",
+                completedOrders: "✅ 완료된 주문",
+                noActiveOrders: "진행 중인 주문이 없습니다",
+                noCompletedOrders: "완료된 주문이 없습니다",
+                modalTitle: "🔳 USDT 전송 안내",
+                walletSelectionTitle: "선택된 지갑:",
+                step1Description: "아래 지갑 주소로 USDT를 전송해주세요",
+                copyButtonText: "주소 복사",
+                modalTotalLabel: "총 결제 금액:",
+                orderIdLabel: "주문 ID:",
+                statusMessage1Text: "USDT 전송 후 관리자 확인 대기 중...",
+                step2Description: "USDT 입금 확인 중...",
+                statusMessage2Text: "관리자가 입금을 확인 중입니다. 잠시만 기다려주세요...",
+                step3Description: "THB 결제 처리 중...",
+                statusMessage3Text: "THB 결제가 처리 중입니다...",
+                completeMessage: "결제 완료!",
+                step4Description: "결제가 성공적으로 완료되었습니다.",
+                finishButtonText: "확인",
+                timerLabel: "남은 시간:",
+                autoUpdateText: "관리자 확인 후 자동으로 진행됩니다...",
+                waitingDeposit: "입금대기",
+                depositConfirmed: "입금확인",
+                processing: "처리중",
+                completed: "완료",
+                cancelled: "취소"
+            }
+        };
 
         // 페이지 로드 시 초기화
         document.addEventListener('DOMContentLoaded', function() {
@@ -875,8 +974,8 @@
             // 실시간 환율 업데이트 시작
             fetchRealTimeExchangeRate();
             
-            // 30초마다 환율 업데이트
-            exchangeRateInterval = setInterval(fetchRealTimeExchangeRate, 30000);
+            // 60초마다 환율 업데이트
+            exchangeRateInterval = setInterval(fetchRealTimeExchangeRate, 60000);
             
             // 주문 목록 업데이트
             updateOrdersList();
@@ -892,104 +991,81 @@
             startStatusChecking();
         });
 
-        // 실시간 환율 가져오기
-        async function fetchRealTimeExchangeRate() {
-            try {
-                // 여러 API 엔드포인트 시도 (USDT/THB 환율)
-                const apiEndpoints = [
-                    'https://api.binance.com/api/v3/ticker/price?symbol=USDTTHB',
-                    'https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=thb',
-                    'https://api.kucoin.com/api/v1/prices?base=USDT&quote=THB'
-                ];
+        // 언어 슬라이더 초기화 - 수정된 버전
+        function initLanguageSlider() {
+            const languageSwitch = document.getElementById('languageSwitch');
+            
+            if (languageSwitch) {
+                languageSwitch.addEventListener('click', function() {
+                    console.log('언어 전환 버튼 클릭됨');
+                    toggleLanguage();
+                });
                 
-                let rate = 0;
-                let success = false;
-                
-                // 첫 번째 API 시도
-                try {
-                    const response = await fetch(apiEndpoints[0], {
-                        method: 'GET',
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/json'
-                        },
-                        mode: 'cors'
-                    });
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        rate = parseFloat(data.price);
-                        if (rate > 0) {
-                            success = true;
-                        }
-                    }
-                } catch (e) {
-                    console.log('Binance API 실패, 다음 API 시도');
-                }
-                
-                // 두 번째 API 시도
-                if (!success) {
-                    try {
-                        const response = await fetch(apiEndpoints[1], {
-                            method: 'GET',
-                            headers: {
-                                'Accept': 'application/json'
-                            }
-                        });
-                        
-                        if (response.ok) {
-                            const data = await response.json();
-                            rate = parseFloat(data.tether.thb);
-                            if (rate > 0) {
-                                success = true;
-                            }
-                        }
-                    } catch (e) {
-                        console.log('CoinGecko API 실패, 기본값 사용');
-                    }
-                }
-                
-                // API 실패 시 기본값 사용
-                if (!success) {
-                    // 유동적인 시뮬레이션 환율 (35.0 - 36.0 사이)
-                    const baseRate = 35.47;
-                    const variation = (Math.random() - 0.5) * 1.0; // -0.5 ~ +0.5 변동
-                    rate = parseFloat((baseRate + variation).toFixed(2));
-                }
-                
-                // 환율 업데이트
-                exchangeRate = rate;
-                
-                // UI 업데이트
-                document.getElementById('exchangeRate').innerHTML = 
-                    `<span style="color:#e53e3e;font-weight:bold;">${rate.toFixed(2)}</span>`;
-                document.getElementById('calcRate').textContent = rate.toFixed(2);
-                
-                // 시간 표시 업데이트
-                updateRateDisplay();
-                
-                // 계산 업데이트
-                updateCalculation();
-                
-                console.log('환율 업데이트 완료:', rate);
-                
-            } catch (error) {
-                console.error('환율 가져오기 실패:', error);
-                
-                // 에러 시 기본값 사용
-                const fallbackRate = 35.47;
-                exchangeRate = fallbackRate;
-                document.getElementById('exchangeRate').innerHTML = 
-                    `<span style="color:#e53e3e;font-weight:bold;">${fallbackRate.toFixed(2)}</span>`;
-                document.getElementById('calcRate').textContent = fallbackRate.toFixed(2);
-                updateRateDisplay();
-                updateCalculation();
+                // 초기 슬라이더 위치 설정
+                updateLanguageSlider();
+            } else {
+                console.error('언어 전환 요소를 찾을 수 없음');
             }
         }
 
-        // 환율 업데이트 텍스트
-        function updateRateDisplay() {
+        // 언어 슬라이더 업데이트
+        function updateLanguageSlider() {
+            const langSliderBg = document.getElementById('langSliderBg');
+            const koreanOption = document.getElementById('langKorean');
+            const englishOption = document.getElementById('langEnglish');
+            
+            if (!langSliderBg || !koreanOption || !englishOption) {
+                console.error('언어 슬라이더 요소를 찾을 수 없음');
+                return;
+            }
+            
+            if (currentLang === 'ko') {
+                langSliderBg.style.transform = 'translateX(0)';
+                koreanOption.classList.add('active');
+                englishOption.classList.remove('active');
+                koreanOption.style.color = 'white';
+                englishOption.style.color = '#4a5568';
+            } else {
+                langSliderBg.style.transform = 'translateX(100%)';
+                koreanOption.classList.remove('active');
+                englishOption.classList.add('active');
+                koreanOption.style.color = '#4a5568';
+                englishOption.style.color = 'white';
+            }
+        }
+
+        // 언어 전환 함수
+        function toggleLanguage() {
+            currentLang = currentLang === 'en' ? 'ko' : 'en';
+            console.log('언어 변경됨:', currentLang);
+            updateAllText();
+            updateLanguageSlider();
+        }
+
+        // 모든 텍스트 업데이트
+        function updateAllText() {
             const trans = translations[currentLang];
+            
+            // 메인 페이지 텍스트 업데이트
+            document.getElementById('pageTitle').textContent = trans.title;
+            document.getElementById('pageSubtitle').textContent = trans.subtitle;
+            document.getElementById('exchangeTitle').textContent = trans.exchangeTitle;
+            document.getElementById('amountLabel').textContent = trans.amountLabel;
+            document.getElementById('calcAmountLabel').textContent = trans.calcAmountLabel;
+            document.getElementById('calcRateLabel').textContent = trans.calcRateLabel;
+            document.getElementById('calcUsdtLabel').textContent = trans.calcUsdtLabel;
+            document.getElementById('calcFeeLabel').textContent = trans.calcFeeLabel;
+            document.getElementById('calcTotalLabel').textContent = trans.calcTotalLabel;
+            document.getElementById('payButtonText').textContent = trans.payNow;
+            document.getElementById('activeOrdersTitle').textContent = trans.activeOrders;
+            document.getElementById('completedOrdersTitle').textContent = trans.completedOrders;
+            document.getElementById('noActiveOrders').textContent = trans.noActiveOrders;
+            document.getElementById('noCompletedOrders').textContent = trans.noCompletedOrders;
+            
+            // 업로드 버튼 업데이트
+            document.getElementById('uploadButtonText').innerHTML = `📎 ${trans.uploadText}`;
+            
+            // 환율 업데이트 텍스트
             const now = new Date();
             const timeString = now.toLocaleTimeString('ko-KR', { 
                 hour: '2-digit', 
@@ -998,6 +1074,171 @@
                 hour12: true 
             });
             document.getElementById('rateUpdate').textContent = trans.lastUpdate + timeString;
+            
+            // 모달 텍스트 업데이트
+            if (!document.getElementById('qrModal').classList.contains('hidden')) {
+                updateModalText();
+            }
+            
+            // 주문 목록 업데이트
+            updateOrdersList();
+        }
+
+        // 모달 텍스트 업데이트
+        function updateModalText() {
+            const trans = translations[currentLang];
+            
+            document.getElementById('modalTitle').textContent = trans.modalTitle;
+            document.getElementById('walletSelectionTitle').textContent = trans.walletSelectionTitle;
+            document.getElementById('step1Description').textContent = trans.step1Description;
+            document.getElementById('copyButtonText').textContent = trans.copyButtonText;
+            document.getElementById('modalTotalLabel').textContent = trans.modalTotalLabel;
+            document.getElementById('orderIdLabel').textContent = trans.orderIdLabel;
+            document.getElementById('statusMessage1Text').textContent = trans.statusMessage1Text;
+            document.getElementById('step2Description').textContent = trans.step2Description;
+            document.getElementById('statusMessage2Text').textContent = trans.statusMessage2Text;
+            document.getElementById('step3Description').textContent = trans.step3Description;
+            document.getElementById('statusMessage3Text').textContent = trans.statusMessage3Text;
+            document.getElementById('completeMessage').textContent = trans.completeMessage;
+            document.getElementById('step4Description').textContent = trans.step4Description;
+            document.getElementById('finishButtonText').textContent = trans.finishButtonText;
+            document.getElementById('timerLabel').textContent = trans.timerLabel;
+            document.getElementById('autoUpdateText').textContent = trans.autoUpdateText;
+        }
+
+        // 실시간 환율 가져오기 - 실제 API 연결
+        async function fetchRealTimeExchangeRate() {
+            try {
+                console.log('실시간 환율 조회 시작...');
+                
+                // ExchangeRate-API를 통한 USD/THB 환율 가져오기
+                const apiUrl = 'https://api.exchangerate-api.com/v4/latest/USD';
+                
+                let rate = 0;
+                let source = 'ExchangeRate-API';
+                
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        rate = parseFloat(data.rates.THB);
+                        if (rate && rate > 0) {
+                            console.log('ExchangeRate-API 성공:', rate);
+                        } else {
+                            throw new Error('유효하지 않은 환율 데이터');
+                        }
+                    } else {
+                        throw new Error(`API 응답 오류: ${response.status}`);
+                    }
+                } catch (apiError) {
+                    console.log('ExchangeRate-API 실패:', apiError.message);
+                    
+                    // Fallback: Binance API 시도
+                    try {
+                        const binanceResponse = await fetch('https://api.binance.com/api/v3/ticker/price?symbol=USDTTHB', {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'application/json'
+                            }
+                        });
+                        
+                        if (binanceResponse.ok) {
+                            const data = await binanceResponse.json();
+                            rate = parseFloat(data.price);
+                            source = 'Binance';
+                            console.log('Binance API 성공:', rate);
+                        } else {
+                            throw new Error('Binance API 실패');
+                        }
+                    } catch (binanceError) {
+                        console.log('Binance API 실패:', binanceError.message);
+                        
+                        // 모든 API 실패 시 Fallback
+                        // 로컬 저장소에 저장된 마지막 환율 확인
+                        const lastRate = localStorage.getItem('last_exchange_rate');
+                        const lastRateTime = localStorage.getItem('last_exchange_time');
+                        
+                        if (lastRate && lastRateTime) {
+                            const timeDiff = Date.now() - parseInt(lastRateTime);
+                            const hoursDiff = timeDiff / (1000 * 60 * 60);
+                            
+                            // 24시간 이내의 데이터는 사용
+                            if (hoursDiff < 24) {
+                                rate = parseFloat(lastRate);
+                                source = '로컬 캐시';
+                            } else {
+                                // 기본값 + 약간의 변동
+                                const baseRate = 35.47;
+                                const variation = (Math.random() - 0.5) * 0.2; // -0.1 ~ +0.1
+                                rate = parseFloat((baseRate + variation).toFixed(2));
+                                source = 'Fallback 시뮬레이션';
+                            }
+                        } else {
+                            // 기본값
+                            const baseRate = 35.47;
+                            const variation = (Math.random() - 0.5) * 0.2;
+                            rate = parseFloat((baseRate + variation).toFixed(2));
+                            source = 'Fallback 시뮬레이션';
+                        }
+                    }
+                }
+                
+                // USDT는 USD와 1:1로 가정
+                // USDT/THB = USD/THB
+                exchangeRate = rate;
+                
+                // UI 업데이트
+                updateExchangeRateDisplay(rate, source);
+                
+                console.log('환율 업데이트 완료:', rate, '출처:', source);
+                
+            } catch (error) {
+                console.error('환율 가져오기 실패:', error);
+                
+                // 에러 시 Fallback
+                const fallbackRate = 35.47;
+                exchangeRate = fallbackRate;
+                updateExchangeRateDisplay(fallbackRate, '에러 대체값');
+            }
+        }
+
+        // 환율 표시 업데이트
+        function updateExchangeRateDisplay(rate, source) {
+            const trans = translations[currentLang];
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('ko-KR', { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit',
+                hour12: true 
+            });
+            
+            // 환율 표시
+            document.getElementById('exchangeRate').innerHTML = 
+                `<span style="color:#e53e3e;font-weight:bold;">${rate.toFixed(2)}</span>`;
+            
+            // 모달 및 계산용 환율 업데이트
+            document.getElementById('calcRate').textContent = rate.toFixed(2);
+            
+            // 업데이트 시간
+            document.getElementById('rateUpdate').textContent = trans.lastUpdate + timeString;
+            
+            // 출처 표시
+            document.getElementById('rateSource').textContent = `출처: ${source}`;
+            
+            // 로컬에 저장
+            localStorage.setItem('last_exchange_rate', rate.toString());
+            localStorage.setItem('last_exchange_time', Date.now().toString());
+            
+            // 계산 업데이트
+            updateCalculation();
         }
 
         // 계산 업데이트
@@ -1036,102 +1277,21 @@
             }
         }
 
-        // 언어 슬라이더 초기화
-        function initLanguageSlider() {
-            const languageSwitch = document.getElementById('languageSwitch');
-            
-            languageSwitch.addEventListener('click', function() {
-                toggleLanguage();
-            });
-            
-            updateLanguageSlider();
-        }
-
-        // 언어 슬라이더 업데이트
-        function updateLanguageSlider() {
-            const langSliderBg = document.getElementById('langSliderBg');
-            const koreanOption = document.getElementById('langKorean');
-            const englishOption = document.getElementById('langEnglish');
-            
-            if (currentLang === 'ko') {
-                langSliderBg.style.transform = 'translateX(0)';
-                koreanOption.classList.add('active');
-                englishOption.classList.remove('active');
-            } else {
-                langSliderBg.style.transform = 'translateX(100%)';
-                koreanOption.classList.remove('active');
-                englishOption.classList.add('active');
-            }
-        }
-
-        // 언어 전환 함수
-        function toggleLanguage() {
-            currentLang = currentLang === 'en' ? 'ko' : 'en';
-            updateAllText();
-            updateLanguageSlider();
-        }
-
-        // 모든 텍스트 업데이트
-        function updateAllText() {
-            const trans = translations[currentLang];
-            
-            // 메인 페이지 텍스트 업데이트
-            document.getElementById('pageTitle').textContent = trans.title;
-            document.getElementById('pageSubtitle').textContent = trans.subtitle;
-            document.getElementById('exchangeTitle').textContent = trans.exchangeTitle;
-            document.getElementById('amountLabel').textContent = trans.amountLabel;
-            document.getElementById('calcAmountLabel').textContent = trans.calcAmountLabel;
-            document.getElementById('calcRateLabel').textContent = trans.calcRateLabel;
-            document.getElementById('calcUsdtLabel').textContent = trans.calcUsdtLabel;
-            document.getElementById('calcFeeLabel').textContent = trans.calcFeeLabel;
-            document.getElementById('calcTotalLabel').textContent = trans.calcTotalLabel;
-            document.getElementById('payButtonText').textContent = trans.payNow;
-            document.getElementById('activeOrdersTitle').textContent = trans.activeOrders;
-            document.getElementById('completedOrdersTitle').textContent = trans.completedOrders;
-            document.getElementById('noActiveOrders').textContent = trans.noActiveOrders;
-            document.getElementById('noCompletedOrders').textContent = trans.noCompletedOrders;
-            
-            // 업로드 버튼 업데이트
-            document.getElementById('uploadButtonText').innerHTML = `📎 ${trans.uploadText}`;
-            
-            // 환율 업데이트 텍스트
-            updateRateDisplay();
-            
-            // 모달 텍스트 업데이트
-            if (!document.getElementById('qrModal').classList.contains('hidden')) {
-                updateModalText();
-            }
-            
-            // 주문 목록 업데이트
-            updateOrdersList();
-        }
-
-        // 모달 텍스트 업데이트
-        function updateModalText() {
-            const trans = translations[currentLang];
-            
-            document.getElementById('modalTitle').textContent = trans.modalTitle;
-            document.getElementById('walletSelectionTitle').textContent = trans.walletSelectionTitle;
-            document.getElementById('step1Description').textContent = trans.step1Description;
-            document.getElementById('copyButtonText').textContent = trans.copyButtonText;
-            document.getElementById('modalTotalLabel').textContent = trans.modalTotalLabel;
-            document.getElementById('orderIdLabel').textContent = trans.orderIdLabel;
-            document.getElementById('statusMessage1Text').textContent = trans.statusMessage1Text;
-            document.getElementById('step2Description').textContent = trans.step2Description;
-            document.getElementById('statusMessage2Text').textContent = trans.statusMessage2Text;
-            document.getElementById('step3Description').textContent = trans.step3Description;
-            document.getElementById('statusMessage3Text').textContent = trans.statusMessage3Text;
-            document.getElementById('completeMessage').textContent = trans.completeMessage;
-            document.getElementById('step4Description').textContent = trans.step4Description;
-            document.getElementById('finishButtonText').textContent = trans.finishButtonText;
-            document.getElementById('timerLabel').textContent = trans.timerLabel;
-            document.getElementById('autoUpdateText').textContent = trans.autoUpdateText;
-        }
-
         // 이벤트 리스너 설정
         function setupEventListeners() {
             // 금액 입력 이벤트
             document.getElementById('thbAmount').addEventListener('input', updateCalculation);
+            
+            // 환율 새로고침 버튼
+            document.getElementById('refreshRate').addEventListener('click', function() {
+                fetchRealTimeExchangeRate();
+                // 애니메이션 효과
+                this.style.transform = 'rotate(360deg)';
+                this.style.transition = 'transform 0.5s';
+                setTimeout(() => {
+                    this.style.transform = 'rotate(0deg)';
+                }, 500);
+            });
             
             // 파일 업로드 이벤트
             document.getElementById('paymentProof').addEventListener('change', function(e) {
@@ -1163,23 +1323,33 @@
             
             // 업로드 버튼 드래그 앤 드롭 이벤트
             const uploadButton = document.querySelector('.upload-button');
-            uploadButton.addEventListener('dragover', function(e) {
-                e.preventDefault();
-                this.style.borderColor = '#667eea';
-            });
-            
-            uploadButton.addEventListener('dragleave', function(e) {
-                e.preventDefault();
-                this.style.borderColor = '#cbd5e0';
-            });
-            
-            uploadButton.addEventListener('drop', function(e) {
-                e.preventDefault();
-                this.style.borderColor = '#cbd5e0';
+            if (uploadButton) {
+                uploadButton.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    this.style.borderColor = '#667eea';
+                });
                 
-                if (e.dataTransfer.files.length) {
-                    handleFileUpload(e.dataTransfer.files[0]);
-                    document.getElementById('paymentProof').files = e.dataTransfer.files;
+                uploadButton.addEventListener('dragleave', function(e) {
+                    e.preventDefault();
+                    this.style.borderColor = '#cbd5e0';
+                });
+                
+                uploadButton.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    this.style.borderColor = '#cbd5e0';
+                    
+                    if (e.dataTransfer.files.length) {
+                        handleFileUpload(e.dataTransfer.files[0]);
+                        document.getElementById('paymentProof').files = e.dataTransfer.files;
+                    }
+                });
+            }
+            
+            // 키보드 단축키 (Ctrl+R 또는 Cmd+R으로 환율 새로고침)
+            document.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+                    e.preventDefault();
+                    fetchRealTimeExchangeRate();
                 }
             });
         }
@@ -1258,6 +1428,13 @@
                 return;
             }
             
+            if (exchangeRate <= 0) {
+                alert(currentLang === 'en' ? 
+                    'Exchange rate is not loaded yet. Please wait.' : 
+                    '환율이 아직 로드되지 않았습니다. 잠시만 기다려주세요.');
+                return;
+            }
+            
             currentOrderId = 'ORD-' + Date.now().toString().slice(-6);
             document.getElementById('orderId').textContent = currentOrderId;
             
@@ -1297,10 +1474,367 @@
             startStatusChecking();
         }
 
-        // 나머지 함수들은 동일하게 유지...
-        // 주문 저장, 주문 목록 업데이트, 타이머, 지갑 관리 등의 함수
-        // (위의 코드와 동일하므로 생략)
+        // 주문 저장
+        function saveOrder(order) {
+            let orders = JSON.parse(localStorage.getItem('payment_orders') || '[]');
+            
+            const existingIndex = orders.findIndex(o => o.id === order.id);
+            
+            if (existingIndex > -1) {
+                orders[existingIndex] = order;
+            } else {
+                orders.unshift(order);
+            }
+            
+            if (orders.length > 20) {
+                orders = orders.slice(0, 20);
+            }
+            
+            localStorage.setItem('payment_orders', JSON.stringify(orders));
+        }
 
+        // 주문 목록 업데이트
+        function updateOrdersList() {
+            const orders = JSON.parse(localStorage.getItem('payment_orders') || '[]');
+            const trans = translations[currentLang];
+            
+            const activeOrders = orders.filter(order => 
+                order.status === '입금대기' || 
+                order.status === '입금확인' || 
+                order.status === '처리중'
+            );
+            
+            const completedOrders = orders.filter(order => 
+                order.status === '완료' || 
+                order.status === '취소'
+            );
+            
+            const activeOrdersList = document.getElementById('activeOrdersList');
+            const completedOrdersList = document.getElementById('completedOrdersList');
+            
+            if (activeOrders.length === 0) {
+                activeOrdersList.innerHTML = `
+                    <div class="no-orders">
+                        ${trans.noActiveOrders}
+                    </div>
+                `;
+            } else {
+                let html = '';
+                activeOrders.forEach(order => {
+                    html += createOrderCard(order);
+                });
+                activeOrdersList.innerHTML = html;
+            }
+            
+            if (completedOrders.length === 0) {
+                completedOrdersList.innerHTML = `
+                    <div class="no-orders">
+                        ${trans.noCompletedOrders}
+                    </div>
+                `;
+            } else {
+                let html = '';
+                completedOrders.forEach(order => {
+                    html += createOrderCard(order);
+                });
+                completedOrdersList.innerHTML = html;
+            }
+        }
+
+        // 주문 카드 생성
+        function createOrderCard(order) {
+            const trans = translations[currentLang];
+            
+            const statusClass = {
+                '입금대기': 'status-waiting',
+                '입금확인': 'status-confirmed',
+                '처리중': 'status-processing',
+                '완료': 'status-completed',
+                '취소': 'status-cancelled'
+            }[order.status] || 'status-waiting';
+            
+            const statusText = {
+                '입금대기': trans.waitingDeposit,
+                '입금확인': trans.depositConfirmed,
+                '처리중': trans.processing,
+                '완료': trans.completed,
+                '취소': trans.cancelled
+            }[order.status] || order.status;
+            
+            const time = new Date(order.time).toLocaleTimeString();
+            
+            const usdtLabel = currentLang === 'en' ? 'USDT Amount:' : 'USDT 금액:';
+            const stepLabel = currentLang === 'en' ? 'Current Step:' : '현재 단계:';
+            const walletLabel = currentLang === 'en' ? 'Deposit Wallet:' : '입금 지갑:';
+            
+            return `
+                <div class="order-card ${statusClass}">
+                    <div class="order-header">
+                        <div>
+                            <div class="order-id">${order.id}</div>
+                            <div class="order-time">${time}</div>
+                        </div>
+                        <div class="status-badge ${statusClass}">${statusText}</div>
+                    </div>
+                    <div class="order-details">
+                        <div class="order-amount">${order.amount.toLocaleString()} THB</div>
+                        <div class="order-breakdown">
+                            <div class="breakdown-item">
+                                <span>${usdtLabel}</span>
+                                <span>${order.usdt.toFixed(4)} USDT</span>
+                            </div>
+                            <div class="breakdown-item">
+                                <span>${stepLabel}</span>
+                                <span>${statusText}</span>
+                            </div>
+                            ${order.wallet ? `
+                            <div class="breakdown-item">
+                                <span>${walletLabel}</span>
+                                <span>${order.wallet.name}</span>
+                            </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 타이머 시작
+        function startTimer() {
+            timeLeft = 300;
+            updateTimerDisplay();
+            
+            if (timerInterval) clearInterval(timerInterval);
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    alert(currentLang === 'en' ? 
+                        'Payment time expired' : 
+                        '결제 시간이 만료되었습니다');
+                    cancelPayment();
+                }
+            }, 1000);
+        }
+
+        // 타이머 표시 업데이트
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            document.getElementById('timeLeft').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        // 지갑 주소 복사
+        function copyWalletAddress() {
+            const address = document.getElementById('walletAddress').textContent;
+            navigator.clipboard.writeText(address)
+                .then(() => {
+                    const copiedText = currentLang === 'en' ? 'Copied' : '복사됨';
+                    document.getElementById('copyButtonText').textContent = copiedText;
+                    setTimeout(() => {
+                        const trans = translations[currentLang];
+                        document.getElementById('copyButtonText').textContent = trans.copyButtonText;
+                    }, 2000);
+                });
+        }
+
+        // 결제 취소
+        function cancelPayment() {
+            if (statusCheckInterval) {
+                clearInterval(statusCheckInterval);
+                statusCheckInterval = null;
+            }
+            
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            
+            if (currentOrderId) {
+                updateOrderStatus('취소', 1);
+            }
+            
+            document.getElementById('qrModal').classList.add('hidden');
+            resetSteps();
+            
+            alert(currentLang === 'en' ? 'Payment cancelled' : '결제가 취소되었습니다');
+        }
+
+        // 단계 초기화
+        function resetSteps() {
+            currentStep = 1;
+            document.getElementById('step1').classList.add('active');
+            document.getElementById('step1').classList.remove('completed');
+            document.getElementById('step2').classList.remove('active', 'completed');
+            document.getElementById('step3').classList.remove('active', 'completed');
+            document.getElementById('step4').classList.remove('active', 'completed');
+            
+            document.getElementById('step1Content').style.display = 'block';
+            document.getElementById('step2Content').style.display = 'none';
+            document.getElementById('step3Content').style.display = 'none';
+            document.getElementById('step4Content').style.display = 'none';
+        }
+
+        // 결제 완료 처리
+        function finishPayment() {
+            if (statusCheckInterval) {
+                clearInterval(statusCheckInterval);
+                statusCheckInterval = null;
+            }
+            
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            
+            document.getElementById('qrModal').classList.add('hidden');
+            resetSteps();
+            
+            alert(currentLang === 'en' ? 'Payment completed!' : '결제가 완료되었습니다!');
+        }
+
+        // 지갑 정보 로드
+        function loadWallets() {
+            try {
+                const walletsData = localStorage.getItem('payment_wallets');
+                allWallets = walletsData ? JSON.parse(walletsData) : [];
+                
+                if (allWallets.length === 0) {
+                    allWallets = [
+                        {
+                            id: 'wallet_1',
+                            name: currentLang === 'en' ? 'Default Wallet (TRC20)' : '기본 지갑 (TRC20)',
+                            address: 'TXYZ1234567890abcdefghijklmnopqrstuvw',
+                            network: 'TRC20',
+                            qrCode: null,
+                            isActive: true,
+                            isDefault: true,
+                            createdAt: new Date().toISOString()
+                        }
+                    ];
+                    localStorage.setItem('payment_wallets', JSON.stringify(allWallets));
+                }
+            } catch (error) {
+                allWallets = [];
+            }
+        }
+
+        function setActiveWallet() {
+            activeWallet = allWallets.find(wallet => wallet.isActive) || allWallets[0];
+            if (activeWallet) {
+                updateWalletDisplay();
+            }
+        }
+
+        function updateWalletDisplay() {
+            if (!activeWallet) return;
+            
+            document.getElementById('walletAddress').textContent = activeWallet.address;
+            const networkClass = `network-${activeWallet.network.toLowerCase()}`;
+            document.getElementById('selectedWalletInfo').innerHTML = `
+                <div class="wallet-icon">👛</div>
+                <div class="wallet-details">
+                    <div class="wallet-name">${activeWallet.name}</div>
+                    <div class="wallet-network">
+                        ${activeWallet.network} Network
+                        <span class="network-badge ${networkClass}">${activeWallet.network}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 상태 체크 시작
+        function startStatusChecking() {
+            if (statusCheckInterval) clearInterval(statusCheckInterval);
+            
+            statusCheckInterval = setInterval(() => {
+                checkOrderStatus();
+            }, 3000);
+        }
+
+        // 주문 상태 체크
+        function checkOrderStatus() {
+            try {
+                const orders = JSON.parse(localStorage.getItem('payment_orders') || '[]');
+                const currentOrder = orders.find(order => order.id === currentOrderId);
+                
+                if (!currentOrder) return;
+                
+                switch(currentOrder.status) {
+                    case '입금확인':
+                        if (currentStep < 2) goToStep(2);
+                        break;
+                    case '처리중':
+                        if (currentStep < 3) goToStep(3);
+                        break;
+                    case '완료':
+                        if (currentStep < 4) {
+                            goToStep(4);
+                            clearInterval(statusCheckInterval);
+                        }
+                        break;
+                    case '취소':
+                        cancelPayment();
+                        clearInterval(statusCheckInterval);
+                        break;
+                }
+            } catch (error) {
+                console.error('Status check failed:', error);
+            }
+        }
+
+        // 단계 이동
+        function goToStep(step) {
+            document.getElementById(`step${currentStep}`).classList.remove('active');
+            document.getElementById(`step${currentStep}`).classList.add('completed');
+            document.getElementById(`step${currentStep}Content`).style.display = 'none';
+            
+            currentStep = step;
+            document.getElementById(`step${currentStep}`).classList.add('active');
+            document.getElementById(`step${currentStep}Content`).style.display = 'block';
+            
+            let status = '';
+            switch(step) {
+                case 1:
+                    status = '입금대기';
+                    break;
+                case 2:
+                    status = '입금확인';
+                    break;
+                case 3:
+                    status = '처리중';
+                    break;
+                case 4:
+                    status = '완료';
+                    break;
+            }
+            
+            if (status) {
+                updateOrderStatus(status, step);
+            }
+        }
+
+        // 주문 상태 업데이트
+        function updateOrderStatus(status, step = currentStep) {
+            let orders = JSON.parse(localStorage.getItem('payment_orders') || '[]');
+            orders = orders.map(order => {
+                if (order.id === currentOrderId) {
+                    return { 
+                        ...order, 
+                        status: status,
+                        step: step,
+                        updated: new Date().toISOString()
+                    };
+                }
+                return order;
+            });
+            
+            localStorage.setItem('payment_orders', JSON.stringify(orders));
+            updateOrdersList();
+        }
     </script>
 </body>
 </html>
