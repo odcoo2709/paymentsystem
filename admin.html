@@ -31,7 +31,7 @@
             border-radius: 15px;
             margin-bottom: 25px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-            text-align: center;
+            position: relative;
         }
 
         .admin-title {
@@ -42,10 +42,43 @@
             background: linear-gradient(135deg, #3498db, #2ecc71);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            text-align: center;
         }
 
         .admin-subtitle {
             color: #7f8c8d;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        /* 언어 전환 버튼 */
+        .language-switcher {
+            position: absolute;
+            top: 20px;
+            right: 25px;
+        }
+
+        .lang-switch-btn {
+            background: linear-gradient(135deg, #3498db 0%, #2ecc71 100%);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s;
+        }
+
+        .lang-switch-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .lang-icon {
             font-size: 16px;
         }
 
@@ -632,6 +665,14 @@
             .form-row {
                 grid-template-columns: 1fr;
             }
+            
+            .language-switcher {
+                position: relative;
+                top: 0;
+                right: 0;
+                margin-top: 15px;
+                text-align: center;
+            }
         }
     </style>
 </head>
@@ -639,37 +680,43 @@
     <div class="admin-container">
         <!-- 헤더 -->
         <div class="admin-header">
-            <h1 class="admin-title">📊 Order & Wallet Management System</h1>
-            <p class="admin-subtitle">Manage user orders and wallet settings in one place</p>
+            <div class="language-switcher">
+                <button class="lang-switch-btn" id="langSwitchBtn">
+                    <span class="lang-icon">🌐</span>
+                    <span id="langSwitchText">English</span>
+                </button>
+            </div>
+            <h1 class="admin-title" id="adminTitle">📊 주문 및 지갑 관리 시스템</h1>
+            <p class="admin-subtitle" id="adminSubtitle">한 곳에서 사용자 주문과 지갑 설정을 관리하세요</p>
         </div>
 
         <!-- 탭 메뉴 -->
         <div class="tabs">
-            <button class="tab-button active" data-tab="orders">📋 Order Management</button>
-            <button class="tab-button" data-tab="wallets">👛 Wallet Management</button>
+            <button class="tab-button active" data-tab="orders">📋 주문 관리</button>
+            <button class="tab-button" data-tab="wallets">👛 지갑 관리</button>
         </div>
 
         <!-- 통계 카드 -->
         <div class="stats-cards">
             <div class="stat-card">
-                <h3>Total Orders</h3>
+                <h3 id="statTotalOrders">총 주문</h3>
                 <div class="stat-value" id="totalOrders">0</div>
-                <div class="stat-change">All orders</div>
+                <div class="stat-change" id="statTotalChange">전체 주문</div>
             </div>
             <div class="stat-card">
-                <h3>Waiting Deposit</h3>
+                <h3 id="statWaiting">입금 대기</h3>
                 <div class="stat-value" id="waitingOrders">0</div>
-                <div class="stat-change" id="waitingChange">0 waiting</div>
+                <div class="stat-change" id="waitingChange">대기중</div>
             </div>
             <div class="stat-card">
-                <h3>Active Wallets</h3>
+                <h3 id="statActiveWallets">활성 지갑</h3>
                 <div class="stat-value" id="activeWallets">0</div>
-                <div class="stat-change" id="walletsChange">available</div>
+                <div class="stat-change" id="walletsChange">사용 가능</div>
             </div>
             <div class="stat-card">
-                <h3>Today's Revenue</h3>
+                <h3 id="statTodayRevenue">오늘 수익</h3>
                 <div class="stat-value" id="todayRevenue">0 THB</div>
-                <div class="stat-change">Total transaction</div>
+                <div class="stat-change" id="revenueChange">총 거래액</div>
             </div>
         </div>
 
@@ -677,24 +724,24 @@
         <div id="ordersTab" class="tab-content active">
             <div class="orders-section">
                 <div class="section-header">
-                    <h2 class="section-title">📋 Order List</h2>
+                    <h2 class="section-title" id="ordersTitle">📋 주문 목록</h2>
                     <div class="filter-controls">
-                        <input type="text" class="search-box" id="searchOrder" placeholder="Search order ID...">
+                        <input type="text" class="search-box" id="searchOrder" placeholder="주문 ID 검색...">
                         <select class="filter-select" id="statusFilter">
-                            <option value="all">All Status</option>
-                            <option value="입금대기">Waiting Deposit</option>
-                            <option value="입금확인">Deposit Confirmed</option>
-                            <option value="처리중">Processing</option>
-                            <option value="완료">Completed</option>
-                            <option value="취소">Cancelled</option>
+                            <option value="all">모든 상태</option>
+                            <option value="입금대기">입금 대기</option>
+                            <option value="입금확인">입금 확인</option>
+                            <option value="처리중">처리중</option>
+                            <option value="완료">완료</option>
+                            <option value="취소">취소</option>
                         </select>
                         <div class="time-filter">
                             <input type="date" class="time-input" id="dateFrom">
                             <span>~</span>
                             <input type="date" class="time-input" id="dateTo">
                         </div>
-                        <button class="export-button" id="exportOrders">📥 Export Orders</button>
-                        <button class="refresh-button" id="refreshOrders">🔄 Refresh</button>
+                        <button class="export-button" id="exportOrders">📥 내보내기</button>
+                        <button class="refresh-button" id="refreshOrders">🔄 새로고침</button>
                     </div>
                 </div>
 
@@ -702,19 +749,19 @@
                     <table class="orders-table" id="ordersTable">
                         <thead>
                             <tr>
-                                <th>Order ID</th>
-                                <th>Time</th>
-                                <th>Amount (THB)</th>
-                                <th>Wallet</th>
-                                <th>Status</th>
-                                <th>Step</th>
-                                <th>Proof</th>
-                                <th>Action</th>
+                                <th id="thOrderId">주문 ID</th>
+                                <th id="thTime">시간</th>
+                                <th id="thAmount">금액 (THB)</th>
+                                <th id="thWallet">지갑</th>
+                                <th id="thStatus">상태</th>
+                                <th id="thStep">단계</th>
+                                <th id="thProof">증명서</th>
+                                <th id="thAction">작업</th>
                             </tr>
                         </thead>
                         <tbody id="ordersTableBody">
                             <tr>
-                                <td colspan="8" class="no-orders">No orders</td>
+                                <td colspan="8" class="no-orders" id="noOrdersText">주문이 없습니다</td>
                             </tr>
                         </tbody>
                     </table>
@@ -726,23 +773,23 @@
         <div id="walletsTab" class="tab-content">
             <div class="wallets-section">
                 <div class="section-header">
-                    <h2 class="section-title">👛 Wallet List</h2>
+                    <h2 class="section-title" id="walletsTitle">👛 지갑 목록</h2>
                     <div class="filter-controls">
                         <select class="filter-select" id="walletStatusFilter">
-                            <option value="all">All Status</option>
-                            <option value="active">Active</option>
-                            <option value="inactive">Inactive</option>
+                            <option value="all">모든 상태</option>
+                            <option value="active">활성</option>
+                            <option value="inactive">비활성</option>
                         </select>
                         <select class="filter-select" id="walletNetworkFilter">
-                            <option value="all">All Networks</option>
+                            <option value="all">모든 네트워크</option>
                             <option value="TRC20">TRC20</option>
                             <option value="ERC20">ERC20</option>
                             <option value="BEP20">BEP20</option>
                             <option value="Solana">Solana</option>
                             <option value="Polygon">Polygon</option>
                         </select>
-                        <button class="add-button" id="addWallet">➕ Add New Wallet</button>
-                        <button class="refresh-button" id="refreshWallets">🔄 Refresh</button>
+                        <button class="add-button" id="addWallet">➕ 새 지갑 추가</button>
+                        <button class="refresh-button" id="refreshWallets">🔄 새로고침</button>
                     </div>
                 </div>
 
@@ -750,31 +797,31 @@
                     <table class="wallets-table" id="walletsTable">
                         <thead>
                             <tr>
-                                <th>Name</th>
-                                <th>Network</th>
-                                <th>Address</th>
-                                <th>QR Code</th>
-                                <th>Status</th>
-                                <th>Created</th>
-                                <th>Action</th>
+                                <th id="thWalletName">이름</th>
+                                <th id="thNetwork">네트워크</th>
+                                <th id="thAddress">주소</th>
+                                <th id="thQRCode">QR 코드</th>
+                                <th id="thWalletStatus">상태</th>
+                                <th id="thCreated">생성일</th>
+                                <th id="thWalletAction">작업</th>
                             </tr>
                         </thead>
                         <tbody id="walletsTableBody">
                             <tr>
-                                <td colspan="7" class="no-wallets">No wallets. Please add a new wallet.</td>
+                                <td colspan="7" class="no-wallets" id="noWalletsText">지갑이 없습니다. 새 지갑을 추가하세요.</td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
 
                 <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px;">
-                    <h3 style="color: #2c3e50; margin-bottom: 15px;">💡 Wallet Management Guide</h3>
-                    <ul style="color: #4a5568; line-height: 1.6; padding-left: 20px;">
-                        <li>You can add, edit, and delete multiple wallets.</li>
-                        <li><strong>Active wallets</strong> are displayed on the user page.</li>
-                        <li><strong>Default wallet</strong> cannot be deleted, but its active status can be changed.</li>
-                        <li>You can upload QR code images for each wallet.</li>
-                        <li>Manage wallets by network type.</li>
+                    <h3 style="color: #2c3e50; margin-bottom: 15px;" id="walletGuideTitle">💡 지갑 관리 안내</h3>
+                    <ul style="color: #4a5568; line-height: 1.6; padding-left: 20px;" id="walletGuideList">
+                        <li>여러 개의 지갑을 추가, 수정, 삭제할 수 있습니다.</li>
+                        <li><strong>활성 지갑</strong>은 사용자 페이지에 표시됩니다.</li>
+                        <li><strong>기본 지갑</strong>은 삭제할 수 없지만 활성 상태는 변경할 수 있습니다.</li>
+                        <li>각 지갑에 대한 QR 코드 이미지를 업로드할 수 있습니다.</li>
+                        <li>네트워크 유형별로 지갑을 관리할 수 있습니다.</li>
                     </ul>
                 </div>
             </div>
@@ -783,14 +830,14 @@
 
     <!-- 저장 상태 표시 -->
     <div class="save-status" id="saveStatus">
-        File saved successfully!
+        파일이 성공적으로 저장되었습니다!
     </div>
 
     <!-- 주문 상세 모달 -->
     <div class="modal-overlay hidden" id="orderDetailModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">📋 Order Details</h3>
+                <h3 class="modal-title" id="orderDetailTitle">📋 주문 상세 정보</h3>
                 <button class="modal-close" id="closeDetailModal">✕</button>
             </div>
             <div class="modal-body" id="orderDetailContent">
@@ -806,61 +853,61 @@
     <div class="modal-overlay hidden" id="walletModal">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title" id="walletModalTitle">👛 Add New Wallet</h3>
+                <h3 class="modal-title" id="walletModalTitle">👛 새 지갑 추가</h3>
                 <button class="modal-close" id="closeWalletModal">✕</button>
             </div>
             <div class="modal-body">
                 <form id="walletForm">
                     <div class="form-group">
-                        <label class="form-label">Wallet Name *</label>
+                        <label class="form-label" id="labelWalletName">지갑 이름 *</label>
                         <input type="text" class="form-input" id="walletName" 
-                               placeholder="ex: Main TRC20 Wallet" required>
+                               placeholder="예: 메인 TRC20 지갑" required>
                     </div>
 
                     <div class="form-row">
                         <div class="form-group">
-                            <label class="form-label">Network *</label>
+                            <label class="form-label" id="labelNetwork">네트워크 *</label>
                             <select class="form-select" id="walletNetwork" required>
-                                <option value="">Select</option>
-                                <option value="TRC20">TRC20 (Tron)</option>
-                                <option value="ERC20">ERC20 (Ethereum)</option>
-                                <option value="BEP20">BEP20 (BNB Smart Chain)</option>
+                                <option value="">선택</option>
+                                <option value="TRC20">TRC20 (트론)</option>
+                                <option value="ERC20">ERC20 (이더리움)</option>
+                                <option value="BEP20">BEP20 (BNB 스마트 체인)</option>
                                 <option value="Solana">Solana</option>
                                 <option value="Polygon">Polygon</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Status</label>
+                            <label class="form-label" id="labelStatus">상태</label>
                             <select class="form-select" id="walletStatus">
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
+                                <option value="active">활성</option>
+                                <option value="inactive">비활성</option>
                             </select>
                         </div>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Wallet Address *</label>
+                        <label class="form-label" id="labelAddress">지갑 주소 *</label>
                         <textarea class="form-textarea" id="walletAddress" 
-                                  placeholder="Enter wallet address" 
+                                  placeholder="지갑 주소 입력" 
                                   rows="3" required></textarea>
-                        <small style="color: #718096; font-size: 12px;">
-                            * Enter correct wallet address. Format varies by network.
+                        <small style="color: #718096; font-size: 12px;" id="addressHelp">
+                            * 올바른 지갑 주소를 입력하세요. 형식은 네트워크에 따라 다릅니다.
                         </small>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">QR Code Image (Optional)</label>
+                        <label class="form-label" id="labelQRCode">QR 코드 이미지 (선택사항)</label>
                         <input type="file" class="form-input" id="walletQRCode" 
                                accept="image/*">
-                        <small style="color: #718096; font-size: 12px;">
-                            * Upload QR code image for wallet address. (Recommended size: 200x200px)
+                        <small style="color: #718096; font-size: 12px;" id="qrCodeHelp">
+                            * 지갑 주소에 대한 QR 코드 이미지를 업로드하세요. (권장 크기: 200x200px)
                         </small>
                     </div>
 
                     <div class="form-group">
-                        <label class="form-label">Memo (Optional)</label>
+                        <label class="form-label" id="labelMemo">메모 (선택사항)</label>
                         <textarea class="form-textarea" id="walletMemo" 
-                                  placeholder="Additional information about the wallet" 
+                                  placeholder="지갑에 대한 추가 정보" 
                                   rows="2"></textarea>
                     </div>
 
@@ -868,8 +915,8 @@
                 </form>
             </div>
             <div class="modal-actions">
-                <button class="modal-button secondary" id="cancelWalletModal">Cancel</button>
-                <button class="modal-button primary" id="saveWallet">Save</button>
+                <button class="modal-button secondary" id="cancelWalletModal">취소</button>
+                <button class="modal-button primary" id="saveWallet">저장</button>
             </div>
         </div>
     </div>
@@ -883,9 +930,146 @@
         let selectedWallet = null;
         let currentTab = 'orders';
         let qrCodeFile = null;
+        let currentLang = 'ko'; // 기본 한국어
+
+        // 번역 데이터
+        const translations = {
+            en: {
+                adminTitle: "📊 Order & Wallet Management System",
+                adminSubtitle: "Manage user orders and wallet settings in one place",
+                langSwitchText: "한국어",
+                statTotalOrders: "Total Orders",
+                statWaiting: "Waiting Deposit",
+                statActiveWallets: "Active Wallets",
+                statTodayRevenue: "Today's Revenue",
+                ordersTitle: "📋 Order List",
+                walletsTitle: "👛 Wallet List",
+                thOrderId: "Order ID",
+                thTime: "Time",
+                thAmount: "Amount (THB)",
+                thWallet: "Wallet",
+                thStatus: "Status",
+                thStep: "Step",
+                thProof: "Proof",
+                thAction: "Action",
+                thWalletName: "Name",
+                thNetwork: "Network",
+                thAddress: "Address",
+                thQRCode: "QR Code",
+                thWalletStatus: "Status",
+                thCreated: "Created",
+                thWalletAction: "Action",
+                noOrdersText: "No orders",
+                noWalletsText: "No wallets. Please add a new wallet.",
+                searchPlaceholder: "Search order ID...",
+                statusAll: "All Status",
+                statusWaiting: "Waiting Deposit",
+                statusConfirmed: "Deposit Confirmed",
+                statusProcessing: "Processing",
+                statusCompleted: "Completed",
+                statusCancelled: "Cancelled",
+                exportBtn: "📥 Export",
+                refreshBtn: "🔄 Refresh",
+                addWalletBtn: "➕ Add New Wallet",
+                walletGuideTitle: "💡 Wallet Management Guide",
+                walletGuideList: [
+                    "You can add, edit, and delete multiple wallets.",
+                    "<strong>Active wallets</strong> are displayed on the user page.",
+                    "<strong>Default wallet</strong> cannot be deleted, but its active status can be changed.",
+                    "You can upload QR code images for each wallet.",
+                    "Manage wallets by network type."
+                ],
+                orderDetailTitle: "📋 Order Details",
+                walletModalTitle: "👛 Add New Wallet",
+                labelWalletName: "Wallet Name *",
+                labelNetwork: "Network *",
+                labelStatus: "Status",
+                labelAddress: "Wallet Address *",
+                addressHelp: "* Enter correct wallet address. Format varies by network.",
+                labelQRCode: "QR Code Image (Optional)",
+                qrCodeHelp: "* Upload QR code image for wallet address. (Recommended size: 200x200px)",
+                labelMemo: "Memo (Optional)",
+                saveBtn: "Save",
+                cancelBtn: "Cancel",
+                statTotalChange: "All orders",
+                waitingChange: "waiting",
+                walletsChange: "available",
+                revenueChange: "Total transaction"
+            },
+            ko: {
+                adminTitle: "📊 주문 및 지갑 관리 시스템",
+                adminSubtitle: "한 곳에서 사용자 주문과 지갑 설정을 관리하세요",
+                langSwitchText: "English",
+                statTotalOrders: "총 주문",
+                statWaiting: "입금 대기",
+                statActiveWallets: "활성 지갑",
+                statTodayRevenue: "오늘 수익",
+                ordersTitle: "📋 주문 목록",
+                walletsTitle: "👛 지갑 목록",
+                thOrderId: "주문 ID",
+                thTime: "시간",
+                thAmount: "금액 (THB)",
+                thWallet: "지갑",
+                thStatus: "상태",
+                thStep: "단계",
+                thProof: "증명서",
+                thAction: "작업",
+                thWalletName: "이름",
+                thNetwork: "네트워크",
+                thAddress: "주소",
+                thQRCode: "QR 코드",
+                thWalletStatus: "상태",
+                thCreated: "생성일",
+                thWalletAction: "작업",
+                noOrdersText: "주문이 없습니다",
+                noWalletsText: "지갑이 없습니다. 새 지갑을 추가하세요.",
+                searchPlaceholder: "주문 ID 검색...",
+                statusAll: "모든 상태",
+                statusWaiting: "입금 대기",
+                statusConfirmed: "입금 확인",
+                statusProcessing: "처리중",
+                statusCompleted: "완료",
+                statusCancelled: "취소",
+                exportBtn: "📥 내보내기",
+                refreshBtn: "🔄 새로고침",
+                addWalletBtn: "➕ 새 지갑 추가",
+                walletGuideTitle: "💡 지갑 관리 안내",
+                walletGuideList: [
+                    "여러 개의 지갑을 추가, 수정, 삭제할 수 있습니다.",
+                    "<strong>활성 지갑</strong>은 사용자 페이지에 표시됩니다.",
+                    "<strong>기본 지갑</strong>은 삭제할 수 없지만 활성 상태는 변경할 수 있습니다.",
+                    "각 지갑에 대한 QR 코드 이미지를 업로드할 수 있습니다.",
+                    "네트워크 유형별로 지갑을 관리할 수 있습니다."
+                ],
+                orderDetailTitle: "📋 주문 상세 정보",
+                walletModalTitle: "👛 새 지갑 추가",
+                labelWalletName: "지갑 이름 *",
+                labelNetwork: "네트워크 *",
+                labelStatus: "상태",
+                labelAddress: "지갑 주소 *",
+                addressHelp: "* 올바른 지갑 주소를 입력하세요. 형식은 네트워크에 따라 다릅니다.",
+                labelQRCode: "QR 코드 이미지 (선택사항)",
+                qrCodeHelp: "* 지갑 주소에 대한 QR 코드 이미지를 업로드하세요. (권장 크기: 200x200px)",
+                labelMemo: "메모 (선택사항)",
+                saveBtn: "저장",
+                cancelBtn: "취소",
+                statTotalChange: "전체 주문",
+                waitingChange: "대기중",
+                walletsChange: "사용 가능",
+                revenueChange: "총 거래액"
+            }
+        };
 
         // DOM 요소
         const elements = {
+            // 언어 전환
+            langSwitchBtn: document.getElementById('langSwitchBtn'),
+            langSwitchText: document.getElementById('langSwitchText'),
+            
+            // 헤더
+            adminTitle: document.getElementById('adminTitle'),
+            adminSubtitle: document.getElementById('adminSubtitle'),
+            
             // 통계
             totalOrders: document.getElementById('totalOrders'),
             waitingOrders: document.getElementById('waitingOrders'),
@@ -893,6 +1077,12 @@
             todayRevenue: document.getElementById('todayRevenue'),
             waitingChange: document.getElementById('waitingChange'),
             walletsChange: document.getElementById('walletsChange'),
+            revenueChange: document.getElementById('revenueChange'),
+            statTotalOrders: document.getElementById('statTotalOrders'),
+            statWaiting: document.getElementById('statWaiting'),
+            statActiveWallets: document.getElementById('statActiveWallets'),
+            statTodayRevenue: document.getElementById('statTodayRevenue'),
+            statTotalChange: document.getElementById('statTotalChange'),
             
             // 탭
             tabButtons: document.querySelectorAll('.tab-button'),
@@ -900,6 +1090,7 @@
             walletsTab: document.getElementById('walletsTab'),
             
             // 주문 관리
+            ordersTitle: document.getElementById('ordersTitle'),
             ordersTableBody: document.getElementById('ordersTableBody'),
             statusFilter: document.getElementById('statusFilter'),
             searchOrder: document.getElementById('searchOrder'),
@@ -907,19 +1098,44 @@
             dateTo: document.getElementById('dateTo'),
             exportOrders: document.getElementById('exportOrders'),
             refreshOrders: document.getElementById('refreshOrders'),
+            noOrdersText: document.getElementById('noOrdersText'),
+            
+            // 테이블 헤더
+            thOrderId: document.getElementById('thOrderId'),
+            thTime: document.getElementById('thTime'),
+            thAmount: document.getElementById('thAmount'),
+            thWallet: document.getElementById('thWallet'),
+            thStatus: document.getElementById('thStatus'),
+            thStep: document.getElementById('thStep'),
+            thProof: document.getElementById('thProof'),
+            thAction: document.getElementById('thAction'),
             
             // 지갑 관리
+            walletsTitle: document.getElementById('walletsTitle'),
             walletsTableBody: document.getElementById('walletsTableBody'),
             walletStatusFilter: document.getElementById('walletStatusFilter'),
             walletNetworkFilter: document.getElementById('walletNetworkFilter'),
             addWallet: document.getElementById('addWallet'),
             refreshWallets: document.getElementById('refreshWallets'),
+            noWalletsText: document.getElementById('noWalletsText'),
+            walletGuideTitle: document.getElementById('walletGuideTitle'),
+            walletGuideList: document.getElementById('walletGuideList'),
+            
+            // 지갑 테이블 헤더
+            thWalletName: document.getElementById('thWalletName'),
+            thNetwork: document.getElementById('thNetwork'),
+            thAddress: document.getElementById('thAddress'),
+            thQRCode: document.getElementById('thQRCode'),
+            thWalletStatus: document.getElementById('thWalletStatus'),
+            thCreated: document.getElementById('thCreated'),
+            thWalletAction: document.getElementById('thWalletAction'),
             
             // 모달
             orderDetailModal: document.getElementById('orderDetailModal'),
             closeDetailModal: document.getElementById('closeDetailModal'),
             orderDetailContent: document.getElementById('orderDetailContent'),
             orderDetailActions: document.getElementById('orderDetailActions'),
+            orderDetailTitle: document.getElementById('orderDetailTitle'),
             
             walletModal: document.getElementById('walletModal'),
             closeWalletModal: document.getElementById('closeWalletModal'),
@@ -935,12 +1151,24 @@
             walletId: document.getElementById('walletId'),
             saveWallet: document.getElementById('saveWallet'),
             
+            // 폼 라벨
+            labelWalletName: document.getElementById('labelWalletName'),
+            labelNetwork: document.getElementById('labelNetwork'),
+            labelStatus: document.getElementById('labelStatus'),
+            labelAddress: document.getElementById('labelAddress'),
+            addressHelp: document.getElementById('addressHelp'),
+            labelQRCode: document.getElementById('labelQRCode'),
+            qrCodeHelp: document.getElementById('qrCodeHelp'),
+            labelMemo: document.getElementById('labelMemo'),
+            
             // 저장 상태
             saveStatus: document.getElementById('saveStatus')
         };
 
         // 페이지 로드 시 초기화
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('관리자 페이지 로드됨');
+            
             // 오늘 날짜 설정
             const today = new Date().toISOString().split('T')[0];
             elements.dateFrom.value = today;
@@ -958,6 +1186,9 @@
 
         // 이벤트 리스너 설정
         function setupEventListeners() {
+            // 언어 전환 버튼
+            elements.langSwitchBtn.addEventListener('click', toggleLanguage);
+            
             // 탭 전환
             elements.tabButtons.forEach(button => {
                 button.addEventListener('click', switchTab);
@@ -982,7 +1213,7 @@
             elements.closeWalletModal.addEventListener('click', closeWalletModal);
             elements.cancelWalletModal.addEventListener('click', closeWalletModal);
             
-            // 지갑 모달 저장 - FIXED: 버튼 클릭 이벤트 추가
+            // 지갑 모달 저장
             elements.saveWallet.addEventListener('click', saveWallet);
             elements.walletQRCode.addEventListener('change', handleQRCodeUpload);
             
@@ -991,6 +1222,100 @@
                 e.preventDefault();
                 saveWallet();
             });
+        }
+
+        // 언어 전환
+        function toggleLanguage() {
+            currentLang = currentLang === 'en' ? 'ko' : 'en';
+            updateAllText();
+        }
+
+        // 모든 텍스트 업데이트
+        function updateAllText() {
+            const trans = translations[currentLang];
+            
+            // 헤더
+            elements.adminTitle.textContent = trans.adminTitle;
+            elements.adminSubtitle.textContent = trans.adminSubtitle;
+            elements.langSwitchText.textContent = trans.langSwitchText;
+            
+            // 통계
+            elements.statTotalOrders.textContent = trans.statTotalOrders;
+            elements.statWaiting.textContent = trans.statWaiting;
+            elements.statActiveWallets.textContent = trans.statActiveWallets;
+            elements.statTodayRevenue.textContent = trans.statTodayRevenue;
+            elements.statTotalChange.textContent = trans.statTotalChange;
+            elements.walletsChange.textContent = trans.walletsChange;
+            elements.revenueChange.textContent = trans.revenueChange;
+            
+            // 주문 관리
+            elements.ordersTitle.textContent = trans.ordersTitle;
+            elements.searchOrder.placeholder = trans.searchPlaceholder;
+            elements.noOrdersText.textContent = trans.noOrdersText;
+            elements.exportOrders.textContent = trans.exportBtn;
+            elements.refreshOrders.textContent = trans.refreshBtn;
+            
+
+// 테이블 헤더
+            elements.thOrderId.textContent = trans.thOrderId;
+            elements.thTime.textContent = trans.thTime;
+            elements.thAmount.textContent = trans.thAmount;
+            elements.thWallet.textContent = trans.thWallet;
+            elements.thStatus.textContent = trans.thStatus;
+            elements.thStep.textContent = trans.thStep;
+            elements.thProof.textContent = trans.thProof;
+            elements.thAction.textContent = trans.thAction;
+            
+            // 상태 필터 옵션
+            elements.statusFilter.innerHTML = `
+                <option value="all">${trans.statusAll}</option>
+                <option value="입금대기">${trans.statusWaiting}</option>
+                <option value="입금확인">${trans.statusConfirmed}</option>
+                <option value="처리중">${trans.statusProcessing}</option>
+                <option value="완료">${trans.statusCompleted}</option>
+                <option value="취소">${trans.statusCancelled}</option>
+            `;
+            
+            // 지갑 관리
+            elements.walletsTitle.textContent = trans.walletsTitle;
+            elements.noWalletsText.textContent = trans.noWalletsText;
+            elements.addWallet.textContent = trans.addWalletBtn;
+            elements.refreshWallets.textContent = trans.refreshBtn;
+            elements.walletGuideTitle.textContent = trans.walletGuideTitle;
+            
+            // 지갑 가이드 리스트
+            let guideListHtml = '';
+            trans.walletGuideList.forEach(item => {
+                guideListHtml += `<li>${item}</li>`;
+            });
+            elements.walletGuideList.innerHTML = guideListHtml;
+            
+            // 지갑 테이블 헤더
+            elements.thWalletName.textContent = trans.thWalletName;
+            elements.thNetwork.textContent = trans.thNetwork;
+            elements.thAddress.textContent = trans.thAddress;
+            elements.thQRCode.textContent = trans.thQRCode;
+            elements.thWalletStatus.textContent = trans.thWalletStatus;
+            elements.thCreated.textContent = trans.thCreated;
+            elements.thWalletAction.textContent = trans.thWalletAction;
+            
+            // 모달
+            elements.orderDetailTitle.textContent = trans.orderDetailTitle;
+            elements.walletModalTitle.textContent = trans.walletModalTitle;
+            elements.labelWalletName.textContent = trans.labelWalletName;
+            elements.labelNetwork.textContent = trans.labelNetwork;
+            elements.labelStatus.textContent = trans.labelStatus;
+            elements.labelAddress.textContent = trans.labelAddress;
+            elements.addressHelp.textContent = trans.addressHelp;
+            elements.labelQRCode.textContent = trans.labelQRCode;
+            elements.qrCodeHelp.textContent = trans.qrCodeHelp;
+            elements.labelMemo.textContent = trans.labelMemo;
+            elements.saveWallet.textContent = trans.saveBtn;
+            elements.cancelWalletModal.textContent = trans.cancelBtn;
+            
+            // 데이터 테이블 업데이트
+            updateOrders();
+            updateWallets();
         }
 
         // 탭 전환
@@ -1030,7 +1355,7 @@
                     allWallets = [
                         {
                             id: 'wallet_1',
-                            name: 'Default Wallet (TRC20)',
+                            name: currentLang === 'en' ? 'Default Wallet (TRC20)' : '기본 지갑 (TRC20)',
                             address: 'TXYZ1234567890abcdefghijklmnopqrstuvw',
                             network: 'TRC20',
                             qrCode: null,
@@ -1079,8 +1404,9 @@
             elements.activeWallets.textContent = activeWallets;
             elements.todayRevenue.textContent = todayRevenue.toLocaleString() + ' THB';
             
-            elements.waitingChange.textContent = `${waitingOrders} waiting`;
-            elements.walletsChange.textContent = `${activeWallets} available`;
+            const trans = translations[currentLang];
+            elements.waitingChange.textContent = `${waitingOrders} ${trans.waitingChange}`;
+            elements.walletsChange.textContent = `${activeWallets} ${trans.walletsChange}`;
             
             if (waitingOrders > 0) {
                 elements.waitingChange.classList.remove('negative');
@@ -1089,7 +1415,7 @@
             }
         }
 
-        // 주문 테이블 업데이트 (영문으로 번역)
+        // 주문 테이블 업데이트
         function updateOrders() {
             currentFilter = elements.statusFilter.value;
             const searchTerm = elements.searchOrder.value.toLowerCase();
@@ -1125,7 +1451,7 @@
             if (filteredOrders.length === 0) {
                 elements.ordersTableBody.innerHTML = `
                     <tr>
-                        <td colspan="8" class="no-orders">No search results</td>
+                        <td colspan="8" class="no-orders">${translations[currentLang].noOrdersText}</td>
                     </tr>
                 `;
                 return;
@@ -1150,27 +1476,36 @@
                 
                 // 상태 텍스트 번역
                 const statusText = {
-                    '입금대기': 'Waiting Deposit',
-                    '입금확인': 'Deposit Confirmed',
-                    '처리중': 'Processing',
-                    '완료': 'Completed',
-                    '취소': 'Cancelled'
+                    '입금대기': currentLang === 'en' ? 'Waiting Deposit' : '입금대기',
+                    '입금확인': currentLang === 'en' ? 'Deposit Confirmed' : '입금확인',
+                    '처리중': currentLang === 'en' ? 'Processing' : '처리중',
+                    '완료': currentLang === 'en' ? 'Completed' : '완료',
+                    '취소': currentLang === 'en' ? 'Cancelled' : '취소'
                 }[order.status] || order.status;
                 
                 const stepProgress = Math.min(100, (order.step || 1) * 25);
                 
                 // 증명서 여부 확인
                 const hasProof = order.proof && order.proof.data;
+                const proofText = currentLang === 'en' ? 'View' : '보기';
                 const proofButton = hasProof ? 
-                    `<button class="action-button action-view" onclick="viewProof('${order.id}')">View</button>` :
-                    'None';
+                    `<button class="action-button action-view" onclick="event.stopPropagation(); viewProof('${order.id}')">${proofText}</button>` :
+                    currentLang === 'en' ? 'None' : '없음';
                 
                 // 지갑 정보
                 const walletInfo = order.wallet ? 
-                    `${order.wallet.name} (${order.wallet.network})` : 'Not specified';
+                    `${order.wallet.name} (${order.wallet.network})` : 
+                    currentLang === 'en' ? 'Not specified' : '지정되지 않음';
                 
                 // 단계 텍스트
                 const stepText = getStepText(order.step || 1);
+                
+                // 액션 버튼 텍스트
+                const confirmText = currentLang === 'en' ? 'Confirm Deposit' : '입금 확인';
+                const cancelText = currentLang === 'en' ? 'Cancel' : '취소';
+                const processText = currentLang === 'en' ? 'Start Process' : '처리 시작';
+                const completeText = currentLang === 'en' ? 'Complete' : '완료';
+                const resetText = currentLang === 'en' ? 'Reset' : '재설정';
                 
                 html += `
                     <tr onclick="showOrderDetail('${order.id}')" style="cursor: pointer;">
@@ -1199,18 +1534,18 @@
                         <td>
                             <div class="action-buttons">
                                 ${order.status === '입금대기' ? `
-                                    <button class="action-button action-confirm" onclick="event.stopPropagation(); updateOrderStatus('${order.id}', '입금확인')">Confirm Deposit</button>
-                                    <button class="action-button action-cancel" onclick="event.stopPropagation(); updateOrderStatus('${order.id}', '취소')">Cancel</button>
+                                    <button class="action-button action-confirm" onclick="event.stopPropagation(); updateOrderStatus('${order.id}', '입금확인')">${confirmText}</button>
+                                    <button class="action-button action-cancel" onclick="event.stopPropagation(); updateOrderStatus('${order.id}', '취소')">${cancelText}</button>
                                 ` : ''}
                                 ${order.status === '입금확인' ? `
-                                    <button class="action-button action-process" onclick="event.stopPropagation(); updateOrderStatus('${order.id}', '처리중')">Start Process</button>
-                                    <button class="action-button action-cancel" onclick="event.stopPropagation(); updateOrderStatus('${order.id}', '취소')">Cancel Process</button>
+                                    <button class="action-button action-process" onclick="event.stopPropagation(); updateOrderStatus('${order.id}', '처리중')">${processText}</button>
+                                    <button class="action-button action-cancel" onclick="event.stopPropagation(); updateOrderStatus('${order.id}', '취소')">${cancelText}</button>
                                 ` : ''}
                                 ${order.status === '처리중' ? `
-                                    <button class="action-button action-complete" onclick="event.stopPropagation(); updateOrderStatus('${order.id}', '완료')">Complete</button>
+                                    <button class="action-button action-complete" onclick="event.stopPropagation(); updateOrderStatus('${order.id}', '완료')">${completeText}</button>
                                 ` : ''}
                                 ${['완료', '취소'].includes(order.status) ? `
-                                    <button class="action-button action-reset" onclick="event.stopPropagation(); updateOrderStatus('${order.id}', '입금대기')">Reset</button>
+                                    <button class="action-button action-reset" onclick="event.stopPropagation(); updateOrderStatus('${order.id}', '입금대기')">${resetText}</button>
                                 ` : ''}
                             </div>
                         </td>
@@ -1221,14 +1556,24 @@
             elements.ordersTableBody.innerHTML = html;
         }
 
-        // 단계 텍스트 변환 (영문)
+        // 단계 텍스트 변환
         function getStepText(step) {
-            switch(step) {
-                case 1: return 'Waiting USDT Transfer';
-                case 2: return 'Verifying Deposit';
-                case 3: return 'Processing THB';
-                case 4: return 'Completed';
-                default: return 'Waiting';
+            if (currentLang === 'en') {
+                switch(step) {
+                    case 1: return 'Waiting USDT Transfer';
+                    case 2: return 'Verifying Deposit';
+                    case 3: return 'Processing THB';
+                    case 4: return 'Completed';
+                    default: return 'Waiting';
+                }
+            } else {
+                switch(step) {
+                    case 1: return 'USDT 전송 대기';
+                    case 2: return '입금 확인 중';
+                    case 3: return 'THB 처리 중';
+                    case 4: return '완료';
+                    default: return '대기중';
+                }
             }
         }
 
@@ -1258,7 +1603,7 @@
             if (filteredWallets.length === 0) {
                 elements.walletsTableBody.innerHTML = `
                     <tr>
-                        <td colspan="7" class="no-wallets">No wallets match the filter</td>
+                        <td colspan="7" class="no-wallets">${translations[currentLang].noWalletsText}</td>
                     </tr>
                 `;
                 return;
@@ -1270,11 +1615,14 @@
                 const createdDate = new Date(wallet.createdAt).toLocaleDateString('ko-KR');
                 
                 // 상태 표시
-                const statusText = wallet.isActive ? 'Active' : 'Inactive';
+                const statusText = wallet.isActive ? 
+                    (currentLang === 'en' ? 'Active' : '활성') : 
+                    (currentLang === 'en' ? 'Inactive' : '비활성');
                 const statusClass = wallet.isActive ? 'wallet-active' : 'wallet-inactive';
                 
                 // 기본 지갑 배지
-                const defaultBadge = wallet.isDefault ? '<span class="default-wallet-badge">Default</span>' : '';
+                const defaultBadgeText = currentLang === 'en' ? 'Default' : '기본';
+                const defaultBadge = wallet.isDefault ? `<span class="default-wallet-badge">${defaultBadgeText}</span>` : '';
                 
                 // QR 코드 표시
                 let qrDisplay = '';
@@ -1292,6 +1640,13 @@
                 const shortAddress = wallet.address.length > 20 ? 
                     wallet.address.substring(0, 10) + '...' + wallet.address.substring(wallet.address.length - 10) : 
                     wallet.address;
+                
+                // 액션 버튼 텍스트
+                const editText = currentLang === 'en' ? 'Edit' : '수정';
+                const deleteText = currentLang === 'en' ? 'Delete' : '삭제';
+                const deactivateText = currentLang === 'en' ? 'Deactivate' : '비활성화';
+                const activateText = currentLang === 'en' ? 'Activate' : '활성화';
+                const setDefaultText = currentLang === 'en' ? 'Set Default' : '기본 설정';
                 
                 html += `
                     <tr>
@@ -1320,16 +1675,16 @@
                         <td>${createdDate}</td>
                         <td>
                             <div class="wallet-actions">
-                                <button class="action-button action-edit" onclick="editWallet('${wallet.id}')">Edit</button>
+                                <button class="action-button action-edit" onclick="editWallet('${wallet.id}')">${editText}</button>
                                 ${!wallet.isDefault ? `
-                                    <button class="action-button action-delete" onclick="deleteWallet('${wallet.id}')">Delete</button>
+                                    <button class="action-button action-delete" onclick="deleteWallet('${wallet.id}')">${deleteText}</button>
                                 ` : ''}
                                 ${wallet.isActive ? 
-                                    `<button class="action-button action-deactivate" onclick="toggleWalletStatus('${wallet.id}', false)">Deactivate</button>` :
-                                    `<button class="action-button action-activate" onclick="toggleWalletStatus('${wallet.id}', true)">Activate</button>`
+                                    `<button class="action-button action-deactivate" onclick="toggleWalletStatus('${wallet.id}', false)">${deactivateText}</button>` :
+                                    `<button class="action-button action-activate" onclick="toggleWalletStatus('${wallet.id}', true)">${activateText}</button>`
                                 }
                                 ${!wallet.isDefault ? 
-                                    `<button class="action-button action-setdefault" onclick="setDefaultWallet('${wallet.id}')">Set Default</button>` : 
+                                    `<button class="action-button action-setdefault" onclick="setDefaultWallet('${wallet.id}')">${setDefaultText}</button>` : 
                                     ''
                                 }
                             </div>
@@ -1345,14 +1700,18 @@
         function updateOrderStatus(orderId, newStatus) {
             // 상태 텍스트 번역
             const statusText = {
-                '입금대기': 'Waiting Deposit',
-                '입금확인': 'Deposit Confirmed',
-                '처리중': 'Processing',
-                '완료': 'Completed',
-                '취소': 'Cancelled'
+                '입금대기': currentLang === 'en' ? 'Waiting Deposit' : '입금대기',
+                '입금확인': currentLang === 'en' ? 'Deposit Confirmed' : '입금확인',
+                '처리중': currentLang === 'en' ? 'Processing' : '처리중',
+                '완료': currentLang === 'en' ? 'Completed' : '완료',
+                '취소': currentLang === 'en' ? 'Cancelled' : '취소'
             }[newStatus] || newStatus;
             
-            if (!confirm(`Change order ${orderId} status to "${statusText}"?`)) {
+            const confirmMessage = currentLang === 'en' ?
+                `Change order ${orderId} status to "${statusText}"?` :
+                `주문 ${orderId}의 상태를 "${statusText}"로 변경하시겠습니까?`;
+            
+            if (!confirm(confirmMessage)) {
                 return;
             }
             
@@ -1361,7 +1720,7 @@
             let orderIndex = orders.findIndex(o => o.id === orderId);
             
             if (orderIndex === -1) {
-                alert('Order not found');
+                alert(currentLang === 'en' ? 'Order not found' : '주문을 찾을 수 없습니다');
                 return;
             }
             
@@ -1391,7 +1750,10 @@
             updateStats();
             updateOrders();
             
-            alert(`Order status changed to "${statusText}"`);
+            const successMessage = currentLang === 'en' ?
+                `Order status changed to "${statusText}"` :
+                `주문 상태가 "${statusText}"로 변경되었습니다`;
+            alert(successMessage);
             
             // 상세 모달이 열려있으면 업데이트
             if (selectedOrder && selectedOrder.id === orderId) {
@@ -1416,15 +1778,17 @@
         function viewProof(orderId) {
             const order = allOrders.find(o => o.id === orderId);
             if (!order || !order.proof || !order.proof.data) {
-                alert('No proof document');
+                alert(currentLang === 'en' ? 'No proof document' : '증명서가 없습니다');
                 return;
             }
             
             const proofWindow = window.open('', '_blank');
+            const title = currentLang === 'en' ? 'Payment Proof' : '결제 증명서';
+            
             proofWindow.document.write(`
                 <html>
                 <head>
-                    <title>Payment Proof - ${order.id}</title>
+                    <title>${title} - ${order.id}</title>
                     <style>
                         body { font-family: Arial, sans-serif; padding: 20px; }
                         .header { text-align: center; margin-bottom: 30px; }
@@ -1433,79 +1797,93 @@
                 </head>
                 <body>
                     <div class="header">
-                        <h1>Payment Proof</h1>
-                        <p>Order ID: ${order.id}</p>
+                        <h1>${title}</h1>
+                        <p>${currentLang === 'en' ? 'Order ID:' : '주문 ID:'} ${order.id}</p>
                     </div>
                     <div class="info">
-                        <p><strong>Amount:</strong> ${order.amount.toLocaleString()} THB</p>
+                        <p><strong>${currentLang === 'en' ? 'Amount:' : '금액:'}</strong> ${order.amount.toLocaleString()} THB</p>
                         <p><strong>USDT:</strong> ${order.usdt.toFixed(4)} USDT</p>
-                        <p><strong>Upload Time:</strong> ${new Date(order.time).toLocaleString()}</p>
+                        <p><strong>${currentLang === 'en' ? 'Upload Time:' : '업로드 시간:'}</strong> ${new Date(order.time).toLocaleString()}</p>
                     </div>
                     ${order.proof.type.startsWith('image/') ? 
                         `<img src="${order.proof.data}" style="max-width: 100%; border: 1px solid #ddd; border-radius: 8px;">` : 
-                        `<p>File Name: ${order.proof.name}</p><p>File Size: ${(order.proof.size / 1024).toFixed(1)}KB</p>`
+                        `<p>${currentLang === 'en' ? 'File Name:' : '파일명:'} ${order.proof.name}</p><p>${currentLang === 'en' ? 'File Size:' : '파일 크기:'} ${(order.proof.size / 1024).toFixed(1)}KB</p>`
                     }
                 </body>
                 </html>
             `);
         }
 
-        // 주문 상세 정보 표시 (영문)
+        // 주문 상세 정보 표시
         function showOrderDetail(orderId) {
             const order = allOrders.find(o => o.id === orderId);
             if (!order) {
-                alert('Order not found');
+                alert(currentLang === 'en' ? 'Order not found' : '주문을 찾을 수 없습니다');
                 return;
             }
             
             selectedOrder = order;
             
             const createdTime = new Date(order.time).toLocaleString('ko-KR');
-            const updatedTime = order.updated ? new Date(order.updated).toLocaleString('ko-KR') : 'None';
+            const updatedTime = order.updated ? new Date(order.updated).toLocaleString('ko-KR') : 
+                (currentLang === 'en' ? 'None' : '없음');
             
             // 증명서 정보
-            let proofInfo = 'None';
+            let proofInfo = currentLang === 'en' ? 'None' : '없음';
             if (order.proof && order.proof.data) {
                 proofInfo = order.proof.type.startsWith('image/') ? 
-                    'Image file' : order.proof.name;
+                    (currentLang === 'en' ? 'Image file' : '이미지 파일') : 
+                    order.proof.name;
             }
             
-            // 상태 텍스트 번역
+            // 상태 텍스트
             const statusText = {
-                '입금대기': 'Waiting Deposit',
-                '입금확인': 'Deposit Confirmed',
-                '처리중': 'Processing',
-                '완료': 'Completed',
-                '취소': 'Cancelled'
+                '입금대기': currentLang === 'en' ? 'Waiting Deposit' : '입금대기',
+                '입금확인': currentLang === 'en' ? 'Deposit Confirmed' : '입금확인',
+                '처리중': currentLang === 'en' ? 'Processing' : '처리중',
+                '완료': currentLang === 'en' ? 'Completed' : '완료',
+                '취소': currentLang === 'en' ? 'Cancelled' : '취소'
             }[order.status] || order.status;
+            
+            // 레이블 텍스트
+            const orderIdLabel = currentLang === 'en' ? 'Order ID:' : '주문 ID:';
+            const createdLabel = currentLang === 'en' ? 'Created Time:' : '생성 시간:';
+            const updatedLabel = currentLang === 'en' ? 'Last Updated:' : '마지막 업데이트:';
+            const amountLabel = currentLang === 'en' ? 'Payment Amount:' : '결제 금액:';
+            const usdtLabel = currentLang === 'en' ? 'USDT Amount:' : 'USDT 금액:';
+            const statusLabel = currentLang === 'en' ? 'Current Status:' : '현재 상태:';
+            const stepLabel = currentLang === 'en' ? 'Current Step:' : '현재 단계:';
+            const walletLabel = currentLang === 'en' ? 'Deposit Wallet:' : '입금 지갑:';
+            const proofLabel = currentLang === 'en' ? 'Payment Proof:' : '결제 증명서:';
+            const viewProofText = currentLang === 'en' ? 'View' : '보기';
             
             // 상세 내용 생성
             let detailHtml = `
                 <div class="form-group">
-                    <label class="form-label">Order ID:</label>
+                    <label class="form-label">${orderIdLabel}</label>
                     <div style="padding: 10px; background: #f8f9fa; border-radius: 6px;">${order.id}</div>
                 </div>
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Created Time:</label>
+                        <label class="form-label">${createdLabel}</label>
                         <div style="padding: 10px; background: #f8f9fa; border-radius: 6px;">${createdTime}</div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Last Updated:</label>
+                        <label class="form-label">${updatedLabel}</label>
                         <div style="padding: 10px; background: #f8f9fa; border-radius: 6px;">${updatedTime}</div>
                     </div>
                 </div>
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Payment Amount:</label>
+                        <label class="form-label">${amountLabel}</label>
                         <div style="padding: 10px; background: #f8f9fa; border-radius: 6px; font-weight: bold;">
                             ${order.amount.toLocaleString()} THB
                         </div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">USDT Amount:</label>
+                        <label class="form-label">${usdtLabel}</label>
                         <div style="padding: 10px; background: #f8f9fa; border-radius: 6px;">
                             ${order.usdt.toFixed(4)} USDT
                         </div>
@@ -1514,7 +1892,7 @@
                 
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Current Status:</label>
+                        <label class="form-label">${statusLabel}</label>
                         <div style="padding: 10px; background: #f8f9fa; border-radius: 6px;">
                             <span class="status-badge ${order.status === '입금대기' ? 'status-waiting' : 
                                 order.status === '입금확인' ? 'status-confirmed' : 
@@ -1525,7 +1903,7 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Current Step:</label>
+                        <label class="form-label">${stepLabel}</label>
                         <div style="padding: 10px; background: #f8f9fa; border-radius: 6px;">
                             ${getStepText(order.step || 1)}
                         </div>
@@ -1534,7 +1912,7 @@
                 
                 ${order.wallet ? `
                 <div class="form-group">
-                    <label class="form-label">Deposit Wallet:</label>
+                    <label class="form-label">${walletLabel}</label>
                     <div style="padding: 10px; background: #f8f9fa; border-radius: 6px;">
                         ${order.wallet.name} (${order.wallet.network})<br>
                         <small style="color: #718096;">${order.wallet.address}</small>
@@ -1543,11 +1921,11 @@
                 ` : ''}
                 
                 <div class="form-group">
-                    <label class="form-label">Payment Proof:</label>
+                    <label class="form-label">${proofLabel}</label>
                     <div style="padding: 10px; background: #f8f9fa; border-radius: 6px;">
                         ${proofInfo}
                         ${order.proof && order.proof.data ? 
-                            `<button class="action-button action-view" style="margin-top: 5px;" onclick="viewProof('${order.id}')">View</button>` : ''
+                            `<button class="action-button action-view" style="margin-top: 5px;" onclick="viewProof('${order.id}')">${viewProofText}</button>` : ''
                         }
                     </div>
                 </div>
@@ -1559,22 +1937,28 @@
             let actionsHtml = '';
             
             if (order.status === '입금대기') {
+                const confirmText = currentLang === 'en' ? 'Confirm Deposit' : '입금 확인';
+                const cancelText = currentLang === 'en' ? 'Cancel Payment' : '결제 취소';
                 actionsHtml = `
-                    <button class="modal-button primary" onclick="updateOrderStatus('${order.id}', '입금확인')">Confirm Deposit</button>
-                    <button class="modal-button secondary" onclick="updateOrderStatus('${order.id}', '취소')">Cancel Payment</button>
+                    <button class="modal-button primary" onclick="updateOrderStatus('${order.id}', '입금확인')">${confirmText}</button>
+                    <button class="modal-button secondary" onclick="updateOrderStatus('${order.id}', '취소')">${cancelText}</button>
                 `;
             } else if (order.status === '입금확인') {
+                const processText = currentLang === 'en' ? 'Start Process' : '처리 시작';
+                const cancelText = currentLang === 'en' ? 'Cancel Process' : '처리 취소';
                 actionsHtml = `
-                    <button class="modal-button primary" onclick="updateOrderStatus('${order.id}', '처리중')">Start Process</button>
-                    <button class="modal-button secondary" onclick="updateOrderStatus('${order.id}', '취소')">Cancel Process</button>
+                    <button class="modal-button primary" onclick="updateOrderStatus('${order.id}', '처리중')">${processText}</button>
+                    <button class="modal-button secondary" onclick="updateOrderStatus('${order.id}', '취소')">${cancelText}</button>
                 `;
             } else if (order.status === '처리중') {
+                const completeText = currentLang === 'en' ? 'Complete Process' : '처리 완료';
                 actionsHtml = `
-                    <button class="modal-button success" onclick="updateOrderStatus('${order.id}', '완료')">Complete Process</button>
+                    <button class="modal-button success" onclick="updateOrderStatus('${order.id}', '완료')">${completeText}</button>
                 `;
             } else {
+                const resetText = currentLang === 'en' ? 'Reset Status' : '상태 재설정';
                 actionsHtml = `
-                    <button class="modal-button primary" onclick="updateOrderStatus('${order.id}', '입금대기')">Reset Status</button>
+                    <button class="modal-button primary" onclick="updateOrderStatus('${order.id}', '입금대기')">${resetText}</button>
                 `;
             }
             
@@ -1592,7 +1976,8 @@
 
         // 지갑 추가 모달 열기
         function openAddWalletModal() {
-            elements.walletModalTitle.textContent = '👛 Add New Wallet';
+            const trans = translations[currentLang];
+            elements.walletModalTitle.textContent = trans.walletModalTitle;
             elements.walletForm.reset();
             elements.walletId.value = '';
             qrCodeFile = null;
@@ -1610,7 +1995,8 @@
             
             selectedWallet = wallet;
             
-            elements.walletModalTitle.textContent = '✏️ Edit Wallet';
+            const trans = translations[currentLang];
+            elements.walletModalTitle.textContent = currentLang === 'en' ? '✏️ Edit Wallet' : '✏️ 지갑 수정';
             elements.walletId.value = wallet.id;
             elements.walletName.value = wallet.name;
             elements.walletNetwork.value = wallet.network;
@@ -1630,14 +2016,18 @@
             // 파일 크기 제한 (2MB)
             const maxSize = 2 * 1024 * 1024;
             if (file.size > maxSize) {
-                alert('File size must be less than 2MB');
+                alert(currentLang === 'en' ? 
+                    'File size must be less than 2MB' : 
+                    '파일 크기는 2MB 이하여야 합니다.');
                 event.target.value = '';
                 return;
             }
             
             // 이미지 파일인지 확인
             if (!file.type.startsWith('image/')) {
-                alert('Only image files can be uploaded');
+                alert(currentLang === 'en' ? 
+                    'Only image files can be uploaded' : 
+                    '이미지 파일만 업로드할 수 있습니다');
                 event.target.value = '';
                 return;
             }
@@ -1645,23 +2035,29 @@
             qrCodeFile = file;
         }
 
-        // 지갑 저장 - FIXED VERSION
+        // 지갑 저장
         function saveWallet() {
             console.log('Save wallet button clicked');
             
             // 폼 검증
             if (!elements.walletName.value.trim()) {
-                alert('Please enter wallet name');
+                alert(currentLang === 'en' ? 
+                    'Please enter wallet name' : 
+                    '지갑 이름을 입력하세요');
                 return;
             }
             
             if (!elements.walletNetwork.value) {
-                alert('Please select network');
+                alert(currentLang === 'en' ? 
+                    'Please select network' : 
+                    '네트워크를 선택하세요');
                 return;
             }
             
             if (!elements.walletAddress.value.trim()) {
-                alert('Please enter wallet address');
+                alert(currentLang === 'en' ? 
+                    'Please enter wallet address' : 
+                    '지갑 주소를 입력하세요');
                 return;
             }
             
@@ -1731,7 +2127,10 @@
                 // 모달 닫기
                 closeWalletModal();
                 
-                alert(`Wallet ${isEdit ? 'updated' : 'added'} successfully`);
+                const successMessage = currentLang === 'en' ?
+                    `Wallet ${isEdit ? 'updated' : 'added'} successfully` :
+                    `지갑이 성공적으로 ${isEdit ? '수정' : '추가'}되었습니다`;
+                alert(successMessage);
             }
         }
 
@@ -1741,12 +2140,20 @@
             if (!wallet) return;
             
             if (wallet.isDefault && !activate) {
-                alert('Default wallet cannot be deactivated');
+                alert(currentLang === 'en' ?
+                    'Default wallet cannot be deactivated' :
+                    '기본 지갑은 비활성화할 수 없습니다');
                 return;
             }
             
-            const action = activate ? 'Activate' : 'Deactivate';
-            if (!confirm(`${action} this wallet?`)) {
+            const action = activate ? 
+                (currentLang === 'en' ? 'Activate' : '활성화') : 
+                (currentLang === 'en' ? 'Deactivate' : '비활성화');
+            const confirmMessage = currentLang === 'en' ?
+                `${action} this wallet?` :
+                `이 지갑을 ${action}하시겠습니까?`;
+            
+            if (!confirm(confirmMessage)) {
                 return;
             }
             
@@ -1769,7 +2176,10 @@
             // 유저 페이지에 지갑 정보 업데이트 알림
             notifyUserPageWalletsUpdate();
             
-            alert(`Wallet ${action.toLowerCase()}d`);
+            const successMessage = currentLang === 'en' ?
+                `Wallet ${action.toLowerCase()}d` :
+                `지갑이 ${action}되었습니다`;
+            alert(successMessage);
         }
 
         // 기본 지갑 설정
@@ -1777,7 +2187,11 @@
             const wallet = allWallets.find(w => w.id === walletId);
             if (!wallet) return;
             
-            if (!confirm(`Set this wallet as default?\n\nDefault wallet cannot be deleted and is always active.`)) {
+            const confirmMessage = currentLang === 'en' ?
+                `Set this wallet as default?\n\nDefault wallet cannot be deleted and is always active.` :
+                `이 지갑을 기본 지갑으로 설정하시겠습니까?\n\n기본 지갑은 삭제할 수 없으며 항상 활성 상태입니다.`;
+            
+            if (!confirm(confirmMessage)) {
                 return;
             }
             
@@ -1801,7 +2215,7 @@
             // 유저 페이지에 지갑 정보 업데이트 알림
             notifyUserPageWalletsUpdate();
             
-            alert('Default wallet set');
+            alert(currentLang === 'en' ? 'Default wallet set' : '기본 지갑이 설정되었습니다');
         }
 
         // 지갑 삭제
@@ -1810,7 +2224,9 @@
             if (!wallet) return;
             
             if (wallet.isDefault) {
-                alert('Default wallet cannot be deleted');
+                alert(currentLang === 'en' ? 
+                    'Default wallet cannot be deleted' : 
+                    '기본 지갑은 삭제할 수 없습니다');
                 return;
             }
             
@@ -1820,11 +2236,17 @@
             );
             
             if (ordersUsingWallet.length > 0) {
-                alert(`There are ${ordersUsingWallet.length} active orders using this wallet.\nPlease change their status first.`);
+                alert(currentLang === 'en' ?
+                    `There are ${ordersUsingWallet.length} active orders using this wallet.\nPlease change their status first.` :
+                    `이 지갑을 사용하는 ${ordersUsingWallet.length}개의 활성 주문이 있습니다.\n먼저 상태를 변경해주세요.`);
                 return;
             }
             
-            if (!confirm(`Delete this wallet?\n\nCannot be recovered after deletion.`)) {
+            const confirmMessage = currentLang === 'en' ?
+                `Delete this wallet?\n\nCannot be recovered after deletion.` :
+                `이 지갑을 삭제하시겠습니까?\n\n삭제 후에는 복구할 수 없습니다.`;
+            
+            if (!confirm(confirmMessage)) {
                 return;
             }
             
@@ -1848,7 +2270,7 @@
             // 유저 페이지에 지갑 정보 업데이트 알림
             notifyUserPageWalletsUpdate();
             
-            alert('Wallet deleted');
+            alert(currentLang === 'en' ? 'Wallet deleted' : '지갑이 삭제되었습니다');
         }
 
         // 지갑 모달 닫기
@@ -1869,17 +2291,26 @@
             }
         }
 
-        // 주문 내보내기 (파일 저장 위치 알림)
+        // 주문 내보내기
         function exportOrdersToExcel() {
             try {
-                let csv = 'Order ID,Created Time,Amount(THB),USDT Amount,Status,Step,Wallet,Network,Proof,Updated Time\n';
+                let csv = '';
+                
+                if (currentLang === 'en') {
+                    csv = 'Order ID,Created Time,Amount(THB),USDT Amount,Status,Step,Wallet,Network,Proof,Updated Time\n';
+                } else {
+                    csv = '주문 ID,생성 시간,금액(THB),USDT 금액,상태,단계,지갑,네트워크,증명서,업데이트 시간\n';
+                }
                 
                 allOrders.forEach(order => {
                     const time = new Date(order.time).toLocaleString('ko-KR');
                     const updated = order.updated ? new Date(order.updated).toLocaleString('ko-KR') : '';
                     const stepText = getStepText(order.step || 1);
-                    const walletInfo = order.wallet ? `${order.wallet.name} (${order.wallet.network})` : 'Not specified';
-                    const hasProof = order.proof && order.proof.data ? 'Yes' : 'No';
+                    const walletInfo = order.wallet ? `${order.wallet.name} (${order.wallet.network})` : 
+                        currentLang === 'en' ? 'Not specified' : '지정되지 않음';
+                    const hasProof = order.proof && order.proof.data ? 
+                        (currentLang === 'en' ? 'Yes' : '예') : 
+                        (currentLang === 'en' ? 'No' : '아니오');
                     
                     csv += `"${order.id}","${time}","${order.amount}","${order.usdt || 0}","${order.status}","${stepText}","${walletInfo}","${order.wallet?.network || ''}","${hasProof}","${updated}"\n`;
                 });
@@ -1900,11 +2331,14 @@
                 document.body.removeChild(link);
                 
                 // 파일 저장 위치 알림
-                showSaveStatus(`File saved as: ${fileName}\n\nIt will be saved to your default download folder.`);
+                const message = currentLang === 'en' ?
+                    `File saved as: ${fileName}\n\nIt will be saved to your default download folder.` :
+                    `파일 저장됨: ${fileName}\n\n기본 다운로드 폴더에 저장됩니다.`;
+                showSaveStatus(message);
                 
             } catch (error) {
                 console.error('Export failed:', error);
-                alert('Export failed');
+                alert(currentLang === 'en' ? 'Export failed' : '내보내기 실패');
             }
         }
 
@@ -1946,23 +2380,33 @@
             localStorage.setItem('payment_orders', JSON.stringify(orders));
             loadAllData();
             
-            alert(`Test order ${testOrder.id} created`);
+            alert(currentLang === 'en' ?
+                `Test order ${testOrder.id} created` :
+                `테스트 주문 ${testOrder.id} 생성됨`);
         };
 
         // 모든 주문 삭제
         window.clearAllOrders = function() {
-            if (confirm('Delete all order records? This cannot be undone.')) {
+            const confirmMessage = currentLang === 'en' ?
+                'Delete all order records? This cannot be undone.' :
+                '모든 주문 기록을 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.';
+            
+            if (confirm(confirmMessage)) {
                 localStorage.removeItem('payment_orders');
                 allOrders = [];
                 updateStats();
                 updateOrders();
-                alert('All order records deleted');
+                alert(currentLang === 'en' ? 'All order records deleted' : '모든 주문 기록이 삭제되었습니다');
             }
         };
 
         // 모든 지갑 삭제 (기본 지갑 제외)
         window.clearAllWallets = function() {
-            if (confirm('Delete all wallets except default wallet? This cannot be undone.')) {
+            const confirmMessage = currentLang === 'en' ?
+                'Delete all wallets except default wallet? This cannot be undone.' :
+                '기본 지갑을 제외한 모든 지갑을 삭제하시겠습니까? 이 작업은 취소할 수 없습니다.';
+            
+            if (confirm(confirmMessage)) {
                 const defaultWallet = allWallets.find(w => w.isDefault);
                 const updatedWallets = defaultWallet ? [defaultWallet] : [];
                 
@@ -1972,7 +2416,9 @@
                 updateWallets();
                 notifyUserPageWalletsUpdate();
                 
-                alert('All wallets deleted (except default wallet)');
+                alert(currentLang === 'en' ?
+                    'All wallets deleted (except default wallet)' :
+                    '모든 지갑이 삭제되었습니다 (기본 지갑 제외)');
             }
         };
     </script>
