@@ -1,67 +1,104 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>관리자 대시보드 - USDT/THB 결제 시스템</title>
+    <title>Admin - Order & Wallet Management System</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', -apple-system, sans-serif;
+            font-family: 'Segoe UI', 'Apple SD Gothic Neo', -apple-system, sans-serif;
         }
 
         body {
-            background: linear-gradient(135deg, #1a2980 0%, #26d0ce 100%);
+            background: linear-gradient(135deg, #2c3e50 0%, #1a1a2e 100%);
             min-height: 100vh;
             padding: 20px;
+            color: #333;
         }
 
-        .container {
+        .admin-container {
             width: 100%;
             max-width: 1400px;
-            background: white;
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             margin: 0 auto;
         }
 
-        /* 헤더 */
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid #e2e8f0;
+        .admin-header {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
         }
 
-        .header-left h1 {
-            color: #1a2980;
+        .admin-title {
             font-size: 32px;
             font-weight: bold;
-            margin-bottom: 5px;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #3498db, #2ecc71);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
 
-        .header-left p {
-            color: #4a5568;
-            font-size: 14px;
+        .admin-subtitle {
+            color: #7f8c8d;
+            font-size: 16px;
         }
 
-        .logout-btn {
-            background: #e53e3e;
-            color: white;
-            border: none;
-            padding: 10px 20px;
+        .tabs {
+            display: flex;
+            background: white;
             border-radius: 10px;
-            font-weight: bold;
-            cursor: pointer;
+            margin-bottom: 25px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
 
-        /* 대시보드 통계 */
-        .dashboard-stats {
+        .tab-button {
+            flex: 1;
+            padding: 18px;
+            background: none;
+            border: none;
+            font-size: 16px;
+            font-weight: bold;
+            color: #7f8c8d;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .tab-button:hover {
+            background: #f8f9fa;
+        }
+
+        .tab-button.active {
+            color: #3498db;
+            background: white;
+        }
+
+        .tab-button.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #3498db;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .stats-cards {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
@@ -70,145 +107,376 @@
 
         .stat-card {
             background: white;
-            border-radius: 15px;
             padding: 25px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
-            border-left: 5px solid;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            text-align: center;
         }
 
         .stat-card h3 {
-            color: #2d3748;
-            font-size: 16px;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            color: #7f8c8d;
+            font-size: 14px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         .stat-value {
-            font-size: 36px;
+            font-size: 32px;
             font-weight: bold;
-            margin: 10px 0;
+            color: #2c3e50;
+            margin-bottom: 5px;
         }
 
         .stat-change {
             font-size: 14px;
-            color: #718096;
+            color: #27ae60;
         }
 
-        .stat-change.positive { color: #38a169; }
-        .stat-change.negative { color: #e53e3e; }
+        .stat-change.negative {
+            color: #e74c3c;
+        }
 
-        /* 지갑 관리 */
-        .wallet-management {
-            background: #f7fafc;
-            border: 2px solid #e2e8f0;
+        .orders-section, .wallets-section {
+            background: white;
+            padding: 30px;
             border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 30px;
-        }
-
-        .section-title {
-            color: #2d3748;
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .wallet-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
             margin-bottom: 25px;
         }
 
-        .wallet-item {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            border: 2px solid #e2e8f0;
-        }
-
-        .wallet-header {
+        .section-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
+            margin-bottom: 25px;
         }
 
-        .wallet-name {
+        .section-title {
+            font-size: 24px;
             font-weight: bold;
-            color: #2d3748;
-            font-size: 16px;
+            color: #2c3e50;
         }
 
-        .wallet-balance {
-            background: #4299e1;
+        .filter-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-select, .search-box {
+            padding: 10px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .search-box {
+            width: 250px;
+        }
+
+        .refresh-button, .add-button {
+            padding: 10px 20px;
+            background: #3498db;
             color: white;
-            padding: 4px 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        .add-button {
+            background: #27ae60;
+        }
+
+        .refresh-button:hover {
+            background: #2980b9;
+        }
+
+        .add-button:hover {
+            background: #219653;
+        }
+
+        .export-button {
+            padding: 10px 20px;
+            background: #9b59b6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        .export-button:hover {
+            background: #8e44ad;
+        }
+
+        .orders-table-container, .wallets-table-container {
+            overflow-x: auto;
+        }
+
+        .orders-table, .wallets-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1000px;
+        }
+
+        .wallets-table {
+            min-width: 800px;
+        }
+
+        .orders-table th, .wallets-table th {
+            background: #f8f9fa;
+            padding: 15px;
+            text-align: left;
+            font-weight: bold;
+            color: #2c3e50;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .orders-table td, .wallets-table td {
+            padding: 15px;
+            border-bottom: 1px solid #dee2e6;
+            vertical-align: middle;
+        }
+
+        .orders-table tr:hover, .wallets-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .order-id, .wallet-id {
+            font-weight: bold;
+            color: #2c3e50;
+            font-family: monospace;
+        }
+
+        .order-time {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
             border-radius: 20px;
             font-size: 12px;
             font-weight: bold;
+            color: white;
+            text-align: center;
+            min-width: 80px;
+        }
+
+        .status-waiting { background: #f39c12; }
+        .status-confirmed { background: #3498db; }
+        .status-processing { background: #9b59b6; }
+        .status-completed { background: #27ae60; }
+        .status-cancelled { background: #e74c3c; }
+
+        .wallet-status {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+            text-align: center;
+            min-width: 80px;
+        }
+
+        .wallet-active { background: #27ae60; }
+        .wallet-inactive { background: #95a5a6; }
+
+        .network-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 11px;
+            font-weight: bold;
+            color: white;
+            margin-right: 5px;
+        }
+
+        .network-trc20 { background: #e74c3c; }
+        .network-erc20 { background: #3498db; }
+        .network-bep20 { background: #2ecc71; }
+        .network-solana { background: #9b59b6; }
+        .network-polygon { background: #8e44ad; }
+
+        .action-buttons {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .action-button {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .action-button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .action-view { background: #3498db; color: white; }
+        .action-confirm { background: #2ecc71; color: white; }
+        .action-process { background: #9b59b6; color: white; }
+        .action-complete { background: #27ae60; color: white; }
+        .action-cancel { background: #e74c3c; color: white; }
+        .action-reset { background: #f39c12; color: white; }
+        .action-edit { background: #3498db; color: white; }
+        .action-delete { background: #e74c3c; color: white; }
+        .action-activate { background: #2ecc71; color: white; }
+        .action-deactivate { background: #95a5a6; color: white; }
+        .action-setdefault { background: #f39c12; color: white; }
+
+        .no-orders, .no-wallets {
+            text-align: center;
+            padding: 50px;
+            color: #95a5a6;
+            font-size: 16px;
+        }
+
+        .amount-display {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .progress-indicator {
+            width: 100px;
+            height: 6px;
+            background: #ecf0f1;
+            border-radius: 3px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background: #3498db;
+            border-radius: 3px;
+            transition: width 0.3s;
         }
 
         .wallet-address {
             font-family: monospace;
-            background: #f1f5f9;
-            padding: 10px;
-            border-radius: 8px;
-            margin: 10px 0;
+            font-size: 12px;
+            color: #2c3e50;
             word-break: break-all;
-            font-size: 13px;
+            background: #f8f9fa;
+            padding: 8px;
+            border-radius: 6px;
+            margin-top: 5px;
+            border: 1px solid #e9ecef;
         }
 
-        .wallet-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .btn {
-            padding: 8px 16px;
+        .qr-code-small {
+            width: 80px;
+            height: 80px;
+            background: #f8f9fa;
             border-radius: 8px;
-            border: none;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 14px;
+            padding: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid #dee2e6;
+            margin: 0 auto;
         }
 
-        .btn-primary { background: #4299e1; color: white; }
-        .btn-success { background: #38a169; color: white; }
-        .btn-danger { background: #e53e3e; color: white; }
-        .btn-secondary { background: #718096; color: white; }
+        .qr-code-small img {
+            max-width: 100%;
+            max-height: 100%;
+        }
 
-        .add-wallet-form {
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-content {
             background: white;
-            border-radius: 12px;
-            padding: 25px;
-            margin-top: 20px;
-            border: 2px dashed #cbd5e0;
+            border-radius: 20px;
+            padding: 40px;
+            width: 100%;
+            max-width: 600px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .modal-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #95a5a6;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            margin-bottom: 25px;
         }
 
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
         .form-label {
             display: block;
             margin-bottom: 8px;
-            color: #4a5568;
             font-weight: 600;
+            color: #2c3e50;
         }
 
-        .form-input {
+        .form-input, .form-select, .form-textarea {
             width: 100%;
             padding: 12px;
-            border: 2px solid #cbd5e0;
+            border: 2px solid #ddd;
             border-radius: 8px;
             font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
         }
 
         .form-row {
@@ -217,652 +485,1496 @@
             gap: 15px;
         }
 
-        /* 주문 관리 */
-        .orders-section {
-            background: #f7fafc;
-            border: 2px solid #e2e8f0;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 30px;
-        }
-
-        .filter-tabs {
+        .modal-actions {
             display: flex;
             gap: 10px;
-            margin-bottom: 20px;
+            justify-content: flex-end;
         }
 
-        .tab-btn {
-            padding: 10px 20px;
-            background: #e2e8f0;
+        .modal-button {
+            padding: 12px 24px;
             border: none;
             border-radius: 8px;
-            cursor: pointer;
+            font-size: 14px;
             font-weight: bold;
-            color: #4a5568;
+            cursor: pointer;
+            transition: all 0.2s;
         }
 
-        .tab-btn.active {
-            background: #4299e1;
+        .modal-button.primary {
+            background: #3498db;
             color: white;
         }
 
-        .orders-table {
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            border: 1px solid #e2e8f0;
+        .modal-button.secondary {
+            background: #ecf0f1;
+            color: #2c3e50;
         }
 
-        .table-header {
-            display: grid;
-            grid-template-columns: 120px 150px 150px 100px 100px 200px;
-            background: #f7fafc;
-            padding: 15px;
-            font-weight: bold;
-            color: #4a5568;
-            border-bottom: 2px solid #e2e8f0;
+        .modal-button.success {
+            background: #27ae60;
+            color: white;
         }
 
-        .table-row {
-            display: grid;
-            grid-template-columns: 120px 150px 150px 100px 100px 200px;
-            padding: 15px;
-            border-bottom: 1px solid #e2e8f0;
+        .modal-button.danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .modal-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .time-filter {
+            display: flex;
+            gap: 10px;
             align-items: center;
         }
 
-        .table-row:hover {
-            background: #f7fafc;
+        .time-input {
+            padding: 8px 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
         }
 
-        .order-id {
-            font-family: monospace;
-            font-weight: bold;
-            color: #2d3748;
-        }
-
-        .order-time {
-            font-size: 13px;
-            color: #718096;
-        }
-
-        .order-amount {
-            font-weight: bold;
-            color: #2d3748;
-        }
-
-        .order-usdt {
-            font-size: 13px;
-            color: #38a169;
-        }
-
-        .status-badge {
+        .active-wallet-indicator {
             display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
+            width: 10px;
+            height: 10px;
+            background: #2ecc71;
+            border-radius: 50%;
+            margin-right: 5px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .default-wallet-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            background: #f39c12;
             color: white;
+            font-size: 10px;
+            border-radius: 10px;
+            margin-left: 5px;
         }
 
-        .status-waiting { background: #f6ad55; }
-        .status-confirmed { background: #4299e1; }
-        .status-processing { background: #9f7aea; }
-        .status-completed { background: #38a169; }
-        .status-cancelled { background: #e53e3e; }
-
-        /* 거래 내역 */
-        .transactions-section {
-            background: #f7fafc;
-            border: 2px solid #e2e8f0;
-            border-radius: 15px;
-            padding: 25px;
+        .wallet-actions {
+            display: flex;
+            gap: 5px;
+            justify-content: center;
         }
 
-        /* 반응형 */
+        .total-row {
+            background: #f8f9fa;
+            font-weight: bold;
+        }
+
+        .save-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #27ae60;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            z-index: 1001;
+            display: none;
+        }
+
+        .save-status.show {
+            display: block;
+            animation: fadeInOut 3s ease-in-out;
+        }
+
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(20px); }
+            20% { opacity: 1; transform: translateY(0); }
+            80% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(20px); }
+        }
+
         @media (max-width: 768px) {
+            .admin-container {
+                padding: 10px;
+            }
+            
+            .stats-cards {
+                grid-template-columns: 1fr;
+            }
+            
+            .section-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            
+            .filter-controls {
+                width: 100%;
+                flex-wrap: wrap;
+            }
+            
+            .search-box {
+                width: 100%;
+            }
+            
             .form-row {
                 grid-template-columns: 1fr;
             }
-            
-            .table-header,
-            .table-row {
-                grid-template-columns: 1fr;
-                gap: 10px;
-            }
-            
-            .table-header {
-                display: none;
-            }
-            
-            .table-row {
-                padding: 20px;
-                border: 2px solid #e2e8f0;
-                border-radius: 12px;
-                margin-bottom: 10px;
-            }
-        }
-
-        /* 애니메이션 */
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .fade-in {
-            animation: fadeIn 0.3s ease-out;
         }
     </style>
 </head>
 <body>
-    <div class="container fade-in">
+    <div class="admin-container">
         <!-- 헤더 -->
-        <div class="header">
-            <div class="header-left">
-                <h1>🛠️ 관리자 대시보드</h1>
-                <p>USDT/THB 결제 시스템 관리</p>
-            </div>
-            <button class="logout-btn" onclick="logout()">로그아웃</button>
+        <div class="admin-header">
+            <h1 class="admin-title">📊 Order & Wallet Management System</h1>
+            <p class="admin-subtitle">Manage user orders and wallet settings in one place</p>
         </div>
 
-        <!-- 대시보드 통계 -->
-        <div class="dashboard-stats">
-            <div class="stat-card" style="border-left-color: #4299e1;">
-                <h3>📊 총 거래액</h3>
-                <div class="stat-value" id="totalRevenue">0 USDT</div>
-                <div class="stat-change" id="revenueChange">--</div>
+        <!-- 탭 메뉴 -->
+        <div class="tabs">
+            <button class="tab-button active" data-tab="orders">📋 Order Management</button>
+            <button class="tab-button" data-tab="wallets">👛 Wallet Management</button>
+        </div>
+
+        <!-- 통계 카드 -->
+        <div class="stats-cards">
+            <div class="stat-card">
+                <h3>Total Orders</h3>
+                <div class="stat-value" id="totalOrders">0</div>
+                <div class="stat-change">All orders</div>
             </div>
-            
-            <div class="stat-card" style="border-left-color: #38a169;">
-                <h3>👥 오늘 주문</h3>
-                <div class="stat-value" id="todayOrders">0</div>
-                <div class="stat-change" id="orderChange">--</div>
+            <div class="stat-card">
+                <h3>Waiting Deposit</h3>
+                <div class="stat-value" id="waitingOrders">0</div>
+                <div class="stat-change" id="waitingChange">0 waiting</div>
             </div>
-            
-            <div class="stat-card" style="border-left-color: #9f7aea;">
-                <h3>⏳ 대기 중</h3>
-                <div class="stat-value" id="pendingOrders">0</div>
-                <div class="stat-change">--</div>
+            <div class="stat-card">
+                <h3>Active Wallets</h3>
+                <div class="stat-value" id="activeWallets">0</div>
+                <div class="stat-change" id="walletsChange">available</div>
             </div>
-            
-            <div class="stat-card" style="border-left-color: #f6ad55;">
-                <h3>💰 평균 거래액</h3>
-                <div class="stat-value" id="avgTransaction">0 USDT</div>
-                <div class="stat-change">--</div>
+            <div class="stat-card">
+                <h3>Today's Revenue</h3>
+                <div class="stat-value" id="todayRevenue">0 THB</div>
+                <div class="stat-change">Total transaction</div>
             </div>
         </div>
 
-        <!-- 지갑 관리 -->
-        <div class="wallet-management">
-            <h2 class="section-title">💼 지갑 관리</h2>
-            
-            <div class="wallet-list" id="walletList">
-                <!-- 지갑 목록 동적 생성 -->
-            </div>
-            
-            <div class="add-wallet-form">
-                <h3 style="margin-bottom: 20px; color: #2d3748;">➕ 새 지갑 추가</h3>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">지갑 이름</label>
-                        <input type="text" class="form-input" id="walletName" placeholder="예: 메인 지갑">
+        <!-- 주문 관리 탭 -->
+        <div id="ordersTab" class="tab-content active">
+            <div class="orders-section">
+                <div class="section-header">
+                    <h2 class="section-title">📋 Order List</h2>
+                    <div class="filter-controls">
+                        <input type="text" class="search-box" id="searchOrder" placeholder="Search order ID...">
+                        <select class="filter-select" id="statusFilter">
+                            <option value="all">All Status</option>
+                            <option value="입금대기">Waiting Deposit</option>
+                            <option value="입금확인">Deposit Confirmed</option>
+                            <option value="처리중">Processing</option>
+                            <option value="완료">Completed</option>
+                            <option value="취소">Cancelled</option>
+                        </select>
+                        <div class="time-filter">
+                            <input type="date" class="time-input" id="dateFrom">
+                            <span>~</span>
+                            <input type="date" class="time-input" id="dateTo">
+                        </div>
+                        <button class="export-button" id="exportOrders">📥 Export Orders</button>
+                        <button class="refresh-button" id="refreshOrders">🔄 Refresh</button>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">지갑 주소</label>
-                        <input type="text" class="form-input" id="walletAddress" placeholder="USDT 지갑 주소">
+                </div>
+
+                <div class="orders-table-container">
+                    <table class="orders-table" id="ordersTable">
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Time</th>
+                                <th>Amount (THB)</th>
+                                <th>Wallet</th>
+                                <th>Status</th>
+                                <th>Step</th>
+                                <th>Proof</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTableBody">
+                            <tr>
+                                <td colspan="8" class="no-orders">No orders</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 지갑 관리 탭 -->
+        <div id="walletsTab" class="tab-content">
+            <div class="wallets-section">
+                <div class="section-header">
+                    <h2 class="section-title">👛 Wallet List</h2>
+                    <div class="filter-controls">
+                        <select class="filter-select" id="walletStatusFilter">
+                            <option value="all">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                        <select class="filter-select" id="walletNetworkFilter">
+                            <option value="all">All Networks</option>
+                            <option value="TRC20">TRC20</option>
+                            <option value="ERC20">ERC20</option>
+                            <option value="BEP20">BEP20</option>
+                            <option value="Solana">Solana</option>
+                            <option value="Polygon">Polygon</option>
+                        </select>
+                        <button class="add-button" id="addWallet">➕ Add New Wallet</button>
+                        <button class="refresh-button" id="refreshWallets">🔄 Refresh</button>
                     </div>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">초기 잔액 (USDT)</label>
-                    <input type="number" class="form-input" id="walletBalance" placeholder="0.00" step="0.01">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">QR 코드 이미지 (선택)</label>
-                    <input type="file" class="form-input" id="walletQr" accept="image/*">
-                </div>
-                <button class="btn btn-success" onclick="addWallet()">지갑 추가</button>
-            </div>
-        </div>
 
-        <!-- 주문 관리 -->
-        <div class="orders-section">
-            <h2 class="section-title">📋 주문 관리</h2>
-            
-            <div class="filter-tabs">
-                <button class="tab-btn active" onclick="filterOrders('all')">전체</button>
-                <button class="tab-btn" onclick="filterOrders('waiting')">입금대기</button>
-                <button class="tab-btn" onclick="filterOrders('confirmed')">입금확인</button>
-                <button class="tab-btn" onclick="filterOrders('processing')">처리중</button>
-                <button class="tab-btn" onclick="filterOrders('completed')">완료</button>
-            </div>
-            
-            <div class="orders-table">
-                <div class="table-header">
-                    <div>주문번호</div>
-                    <div>시간</div>
-                    <div>금액</div>
-                    <div>사용자</div>
-                    <div>상태</div>
-                    <div>작업</div>
+                <div class="wallets-table-container">
+                    <table class="wallets-table" id="walletsTable">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Network</th>
+                                <th>Address</th>
+                                <th>QR Code</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="walletsTableBody">
+                            <tr>
+                                <td colspan="7" class="no-wallets">No wallets. Please add a new wallet.</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-                <div id="ordersTableBody">
-                    <!-- 주문 목록 동적 생성 -->
+
+                <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                    <h3 style="color: #2c3e50; margin-bottom: 15px;">💡 Wallet Management Guide</h3>
+                    <ul style="color: #4a5568; line-height: 1.6; padding-left: 20px;">
+                        <li>You can add, edit, and delete multiple wallets.</li>
+                        <li><strong>Active wallets</strong> are displayed on the user page.</li>
+                        <li><strong>Default wallet</strong> cannot be deleted, but its active status can be changed.</li>
+                        <li>You can upload QR code images for each wallet.</li>
+                        <li>Manage wallets by network type.</li>
+                    </ul>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- 거래 내역 -->
-        <div class="transactions-section">
-            <h2 class="section-title">💸 거래 내역</h2>
-            <p style="color: #718096; margin-bottom: 20px;">최근 50건의 거래 내역을 확인하세요</p>
-            
-            <div id="transactionsList">
-                <!-- 거래 내역 동적 생성 -->
+    <!-- 저장 상태 표시 -->
+    <div class="save-status" id="saveStatus">
+        File saved successfully!
+    </div>
+
+    <!-- 주문 상세 모달 -->
+    <div class="modal-overlay hidden" id="orderDetailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">📋 Order Details</h3>
+                <button class="modal-close" id="closeDetailModal">✕</button>
+            </div>
+            <div class="modal-body" id="orderDetailContent">
+                <!-- 동적 내용 -->
+            </div>
+            <div class="modal-actions" id="orderDetailActions">
+                <!-- 동적 액션 버튼 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 지갑 추가/수정 모달 -->
+    <div class="modal-overlay hidden" id="walletModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="walletModalTitle">👛 Add New Wallet</h3>
+                <button class="modal-close" id="closeWalletModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="walletForm">
+                    <div class="form-group">
+                        <label class="form-label">Wallet Name *</label>
+                        <input type="text" class="form-input" id="walletName" 
+                               placeholder="ex: Main TRC20 Wallet" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Network *</label>
+                            <select class="form-select" id="walletNetwork" required>
+                                <option value="">Select</option>
+                                <option value="TRC20">TRC20 (Tron)</option>
+                                <option value="ERC20">ERC20 (Ethereum)</option>
+                                <option value="BEP20">BEP20 (BNB Smart Chain)</option>
+                                <option value="Solana">Solana</option>
+                                <option value="Polygon">Polygon</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Status</label>
+                            <select class="form-select" id="walletStatus">
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Wallet Address *</label>
+                        <textarea class="form-textarea" id="walletAddress" 
+                                  placeholder="Enter wallet address" 
+                                  rows="3" required></textarea>
+                        <small style="color: #718096; font-size: 12px;">
+                            * Enter correct wallet address. Format varies by network.
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">QR Code Image (Optional)</label>
+                        <input type="file" class="form-input" id="walletQRCode" 
+                               accept="image/*">
+                        <small style="color: #718096; font-size: 12px;">
+                            * Upload QR code image for wallet address. (Recommended size: 200x200px)
+                        </small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Memo (Optional)</label>
+                        <textarea class="form-textarea" id="walletMemo" 
+                                  placeholder="Additional information about the wallet" 
+                                  rows="2"></textarea>
+                    </div>
+
+                    <input type="hidden" id="walletId">
+                </form>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-button secondary" id="cancelWalletModal">Cancel</button>
+                <button class="modal-button primary" id="saveWallet">Save</button>
             </div>
         </div>
     </div>
 
     <script>
         // 상태 관리
-        let wallets = [];
-        let orders = [];
-        let transactions = [];
+        let allOrders = [];
+        let allWallets = [];
         let currentFilter = 'all';
+        let selectedOrder = null;
+        let selectedWallet = null;
+        let currentTab = 'orders';
+        let qrCodeFile = null;
 
-        // 페이지 로드 시 데이터 로드
-        document.addEventListener('DOMContentLoaded', function() {
-            loadData();
-            updateDashboard();
-            renderWallets();
-            renderOrders();
-            renderTransactions();
+        // DOM 요소
+        const elements = {
+            // 통계
+            totalOrders: document.getElementById('totalOrders'),
+            waitingOrders: document.getElementById('waitingOrders'),
+            activeWallets: document.getElementById('activeWallets'),
+            todayRevenue: document.getElementById('todayRevenue'),
+            waitingChange: document.getElementById('waitingChange'),
+            walletsChange: document.getElementById('walletsChange'),
             
-            // 10초마다 데이터 새로고침
-            setInterval(() => {
-                loadData();
-                updateDashboard();
-                renderOrders();
-            }, 10000);
+            // 탭
+            tabButtons: document.querySelectorAll('.tab-button'),
+            ordersTab: document.getElementById('ordersTab'),
+            walletsTab: document.getElementById('walletsTab'),
+            
+            // 주문 관리
+            ordersTableBody: document.getElementById('ordersTableBody'),
+            statusFilter: document.getElementById('statusFilter'),
+            searchOrder: document.getElementById('searchOrder'),
+            dateFrom: document.getElementById('dateFrom'),
+            dateTo: document.getElementById('dateTo'),
+            exportOrders: document.getElementById('exportOrders'),
+            refreshOrders: document.getElementById('refreshOrders'),
+            
+            // 지갑 관리
+            walletsTableBody: document.getElementById('walletsTableBody'),
+            walletStatusFilter: document.getElementById('walletStatusFilter'),
+            walletNetworkFilter: document.getElementById('walletNetworkFilter'),
+            addWallet: document.getElementById('addWallet'),
+            refreshWallets: document.getElementById('refreshWallets'),
+            
+            // 모달
+            orderDetailModal: document.getElementById('orderDetailModal'),
+            closeDetailModal: document.getElementById('closeDetailModal'),
+            orderDetailContent: document.getElementById('orderDetailContent'),
+            orderDetailActions: document.getElementById('orderDetailActions'),
+            
+            walletModal: document.getElementById('walletModal'),
+            closeWalletModal: document.getElementById('closeWalletModal'),
+            cancelWalletModal: document.getElementById('cancelWalletModal'),
+            walletModalTitle: document.getElementById('walletModalTitle'),
+            walletForm: document.getElementById('walletForm'),
+            walletName: document.getElementById('walletName'),
+            walletNetwork: document.getElementById('walletNetwork'),
+            walletStatus: document.getElementById('walletStatus'),
+            walletAddress: document.getElementById('walletAddress'),
+            walletQRCode: document.getElementById('walletQRCode'),
+            walletMemo: document.getElementById('walletMemo'),
+            walletId: document.getElementById('walletId'),
+            saveWallet: document.getElementById('saveWallet'),
+            
+            // 저장 상태
+            saveStatus: document.getElementById('saveStatus')
+        };
+
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            // 오늘 날짜 설정
+            const today = new Date().toISOString().split('T')[0];
+            elements.dateFrom.value = today;
+            elements.dateTo.value = today;
+            
+            // 이벤트 리스너 설정
+            setupEventListeners();
+            
+            // 초기 데이터 로드
+            loadAllData();
+            
+            // 10초마다 자동 새로고침
+            setInterval(loadAllData, 10000);
         });
 
-        // 데이터 로드
-        function loadData() {
-            // 지갑 데이터
-            const savedWallets = localStorage.getItem('admin_wallets');
-            if (savedWallets) {
-                wallets = JSON.parse(savedWallets);
+        // 이벤트 리스너 설정
+        function setupEventListeners() {
+            // 탭 전환
+            elements.tabButtons.forEach(button => {
+                button.addEventListener('click', switchTab);
+            });
+            
+            // 주문 관리 필터
+            elements.statusFilter.addEventListener('change', updateOrders);
+            elements.searchOrder.addEventListener('input', updateOrders);
+            elements.dateFrom.addEventListener('change', updateOrders);
+            elements.dateTo.addEventListener('change', updateOrders);
+            elements.refreshOrders.addEventListener('click', () => loadAllData());
+            elements.exportOrders.addEventListener('click', exportOrdersToExcel);
+            
+            // 지갑 관리 필터
+            elements.walletStatusFilter.addEventListener('change', updateWallets);
+            elements.walletNetworkFilter.addEventListener('change', updateWallets);
+            elements.refreshWallets.addEventListener('click', () => loadAllData());
+            elements.addWallet.addEventListener('click', openAddWalletModal);
+            
+            // 모달 닫기
+            elements.closeDetailModal.addEventListener('click', closeOrderDetail);
+            elements.closeWalletModal.addEventListener('click', closeWalletModal);
+            elements.cancelWalletModal.addEventListener('click', closeWalletModal);
+            
+            // 지갑 모달 저장 - FIXED: 버튼 클릭 이벤트 추가
+            elements.saveWallet.addEventListener('click', saveWallet);
+            elements.walletQRCode.addEventListener('change', handleQRCodeUpload);
+            
+            // 지갑 폼 제출 방지
+            elements.walletForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveWallet();
+            });
+        }
+
+        // 탭 전환
+        function switchTab(e) {
+            const tabId = e.target.dataset.tab;
+            currentTab = tabId;
+            
+            // 탭 버튼 업데이트
+            elements.tabButtons.forEach(button => {
+                button.classList.remove('active');
+            });
+            e.target.classList.add('active');
+            
+            // 탭 내용 업데이트
+            elements.ordersTab.classList.remove('active');
+            elements.walletsTab.classList.remove('active');
+            
+            if (tabId === 'orders') {
+                elements.ordersTab.classList.add('active');
+            } else if (tabId === 'wallets') {
+                elements.walletsTab.classList.add('active');
+            }
+        }
+
+        // 모든 데이터 로드
+        function loadAllData() {
+            try {
+                // 주문 데이터 로드
+                allOrders = JSON.parse(localStorage.getItem('payment_orders') || '[]');
+                
+                // 지갑 데이터 로드
+                const walletsData = localStorage.getItem('payment_wallets');
+                allWallets = walletsData ? JSON.parse(walletsData) : [];
+                
+                // 기본 지갑이 없으면 생성
+                if (allWallets.length === 0) {
+                    allWallets = [
+                        {
+                            id: 'wallet_1',
+                            name: 'Default Wallet (TRC20)',
+                            address: 'TXYZ1234567890abcdefghijklmnopqrstuvw',
+                            network: 'TRC20',
+                            qrCode: null,
+                            isActive: true,
+                            isDefault: true,
+                            memo: 'Default wallet',
+                            createdAt: new Date().toISOString()
+                        }
+                    ];
+                    localStorage.setItem('payment_wallets', JSON.stringify(allWallets));
+                }
+                
+                // 통계 업데이트
+                updateStats();
+                
+                // 테이블 업데이트
+                updateOrders();
+                updateWallets();
+                
+                // 유저 페이지에 지갑 정보 업데이트 알림
+                notifyUserPageWalletsUpdate();
+                
+                console.log(`Data loaded: ${allOrders.length} orders, ${allWallets.length} wallets`);
+            } catch (error) {
+                console.error('Data load failed:', error);
+            }
+        }
+
+        // 통계 업데이트
+        function updateStats() {
+            const totalOrders = allOrders.length;
+            const waitingOrders = allOrders.filter(o => o.status === '입금대기').length;
+            const activeWallets = allWallets.filter(w => w.isActive).length;
+            
+            // 오늘 매출 계산
+            const today = new Date().toISOString().split('T')[0];
+            const todayOrders = allOrders.filter(o => {
+                const orderDate = o.time.split('T')[0];
+                return orderDate === today && o.status === '완료';
+            });
+            
+            const todayRevenue = todayOrders.reduce((sum, order) => sum + order.amount, 0);
+            
+            elements.totalOrders.textContent = totalOrders;
+            elements.waitingOrders.textContent = waitingOrders;
+            elements.activeWallets.textContent = activeWallets;
+            elements.todayRevenue.textContent = todayRevenue.toLocaleString() + ' THB';
+            
+            elements.waitingChange.textContent = `${waitingOrders} waiting`;
+            elements.walletsChange.textContent = `${activeWallets} available`;
+            
+            if (waitingOrders > 0) {
+                elements.waitingChange.classList.remove('negative');
             } else {
-                // 기본 지갑
-                wallets = [
-                    {
-                        id: 1,
-                        name: '메인 지갑',
-                        address: '0x742d35Cc6634C0532925a3b844Bc9e',
-                        balance: 1250.50,
-                        qrImage: '',
-                        createdAt: new Date().toISOString()
-                    }
-                ];
+                elements.waitingChange.classList.add('negative');
+            }
+        }
+
+        // 주문 테이블 업데이트 (영문으로 번역)
+        function updateOrders() {
+            currentFilter = elements.statusFilter.value;
+            const searchTerm = elements.searchOrder.value.toLowerCase();
+            const dateFrom = elements.dateFrom.value;
+            const dateTo = elements.dateTo.value;
+            
+            let filteredOrders = [...allOrders];
+            
+            // 상태 필터링
+            if (currentFilter !== 'all') {
+                filteredOrders = filteredOrders.filter(o => o.status === currentFilter);
             }
             
-            // 주문 데이터 (유저 페이지에서 가져옴)
-            const userOrders = JSON.parse(localStorage.getItem('payment_orders') || '[]');
-            orders = userOrders.map(order => ({
-                ...order,
-                user: '익명사용자', // 실제로는 IP나 세션ID 사용
-                status: order.status || '입금대기'
-            }));
-            
-            // 거래 내역 생성
-            generateTransactions();
-        }
-
-        // 대시보드 업데이트
-        function updateDashboard() {
-            const today = new Date().toDateString();
-            
-            // 오늘 주문
-            const todayOrders = orders.filter(order => 
-                new Date(order.time).toDateString() === today
-            );
-            
-            // 총 거래액
-            const totalRevenue = orders
-                .filter(order => order.status === '완료')
-                .reduce((sum, order) => sum + (order.usdt || 0), 0);
-            
-            // 대기 중 주문
-            const pendingOrders = orders.filter(order => 
-                order.status === '입금대기' || order.status === '입금확인'
-            ).length;
-            
-            // 평균 거래액
-            const completedOrders = orders.filter(order => order.status === '완료');
-            const avgTransaction = completedOrders.length > 0 
-                ? (totalRevenue / completedOrders.length).toFixed(2)
-                : 0;
-            
-            // DOM 업데이트
-            document.getElementById('totalRevenue').textContent = totalRevenue.toFixed(2) + ' USDT';
-            document.getElementById('todayOrders').textContent = todayOrders.length;
-            document.getElementById('pendingOrders').textContent = pendingOrders;
-            document.getElementById('avgTransaction').textContent = avgTransaction + ' USDT';
-        }
-
-        // 지갑 렌더링
-        function renderWallets() {
-            const container = document.getElementById('walletList');
-            
-            if (wallets.length === 0) {
-                container.innerHTML = '<p style="text-align: center; color: #718096;">등록된 지갑이 없습니다</p>';
-                return;
+            // 검색어 필터링
+            if (searchTerm) {
+                filteredOrders = filteredOrders.filter(o => 
+                    o.id.toLowerCase().includes(searchTerm)
+                );
             }
             
-            let html = '';
-            wallets.forEach(wallet => {
-                html += `
-                    <div class="wallet-item">
-                        <div class="wallet-header">
-                            <span class="wallet-name">${wallet.name}</span>
-                            <span class="wallet-balance">${wallet.balance.toFixed(2)} USDT</span>
-                        </div>
-                        <div class="wallet-address">${wallet.address}</div>
-                        <div class="wallet-actions">
-                            <button class="btn btn-primary" onclick="viewWallet(${wallet.id})">상세</button>
-                            <button class="btn btn-success" onclick="editWallet(${wallet.id})">수정</button>
-                            <button class="btn btn-danger" onclick="deleteWallet(${wallet.id})">삭제</button>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            container.innerHTML = html;
-        }
-
-        // 지갑 추가
-        function addWallet() {
-            const name = document.getElementById('walletName').value;
-            const address = document.getElementById('walletAddress').value;
-            const balance = parseFloat(document.getElementById('walletBalance').value) || 0;
-            
-            if (!name || !address) {
-                alert('지갑 이름과 주소를 입력해주세요.');
-                return;
-            }
-            
-            const newWallet = {
-                id: wallets.length > 0 ? Math.max(...wallets.map(w => w.id)) + 1 : 1,
-                name,
-                address,
-                balance,
-                qrImage: '',
-                createdAt: new Date().toISOString()
-            };
-            
-            wallets.push(newWallet);
-            saveWallets();
-            renderWallets();
-            
-            // 입력 초기화
-            document.getElementById('walletName').value = '';
-            document.getElementById('walletAddress').value = '';
-            document.getElementById('walletBalance').value = '';
-            
-            alert('지갑이 추가되었습니다.');
-        }
-
-        // 지갑 저장
-        function saveWallets() {
-            localStorage.setItem('admin_wallets', JSON.stringify(wallets));
-        }
-
-        // 지갑 수정
-        function editWallet(walletId) {
-            const wallet = wallets.find(w => w.id === walletId);
-            if (!wallet) return;
-            
-            const newName = prompt('새 지갑 이름:', wallet.name);
-            if (!newName) return;
-            
-            const newBalance = prompt('새 잔액 (USDT):', wallet.balance);
-            if (newBalance === null) return;
-            
-            wallet.name = newName;
-            wallet.balance = parseFloat(newBalance) || wallet.balance;
-            
-            saveWallets();
-            renderWallets();
-            updateDashboard();
-        }
-
-        // 지갑 삭제
-        function deleteWallet(walletId) {
-            if (!confirm('이 지갑을 삭제하시겠습니까?')) return;
-            
-            wallets = wallets.filter(w => w.id !== walletId);
-            saveWallets();
-            renderWallets();
-        }
-
-        // 지갑 상세 보기
-        function viewWallet(walletId) {
-            const wallet = wallets.find(w => w.id === walletId);
-            if (!wallet) return;
-            
-            alert(`지갑 정보:\n\n이름: ${wallet.name}\n주소: ${wallet.address}\n잔액: ${wallet.balance.toFixed(2)} USDT`);
-        }
-
-        // 주문 필터링
-        function filterOrders(filter) {
-            currentFilter = filter;
-            
-            // 탭 활성화
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            event.target.classList.add('active');
-            
-            renderOrders();
-        }
-
-        // 주문 렌더링
-        function renderOrders() {
-            let filteredOrders = [...orders];
-            
-            // 필터 적용
-            if (currentFilter === 'waiting') {
-                filteredOrders = orders.filter(o => o.status === '입금대기');
-            } else if (currentFilter === 'confirmed') {
-                filteredOrders = orders.filter(o => o.status === '입금확인');
-            } else if (currentFilter === 'processing') {
-                filteredOrders = orders.filter(o => o.status === '처리중');
-            } else if (currentFilter === 'completed') {
-                filteredOrders = orders.filter(o => o.status === '완료');
+            // 날짜 필터링
+            if (dateFrom && dateTo) {
+                filteredOrders = filteredOrders.filter(o => {
+                    const orderDate = o.time.split('T')[0];
+                    return orderDate >= dateFrom && orderDate <= dateTo;
+                });
             }
             
             // 시간순 정렬 (최신순)
             filteredOrders.sort((a, b) => new Date(b.time) - new Date(a.time));
             
-            const container = document.getElementById('ordersTableBody');
-            
+            // 테이블 업데이트
             if (filteredOrders.length === 0) {
-                container.innerHTML = '<div style="padding: 40px; text-align: center; color: #718096;">주문이 없습니다</div>';
+                elements.ordersTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="no-orders">No search results</td>
+                    </tr>
+                `;
                 return;
             }
             
             let html = '';
             filteredOrders.forEach(order => {
-                const time = new Date(order.time).toLocaleTimeString();
-                const date = new Date(order.time).toLocaleDateString();
-                const amount = order.amount || 0;
-                const usdt = order.usdt || 0;
+                const time = new Date(order.time).toLocaleString('ko-KR', {
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
                 
                 const statusClass = {
                     '입금대기': 'status-waiting',
                     '입금확인': 'status-confirmed',
                     '처리중': 'status-processing',
-                    '완료': 'status-completed'
+                    '완료': 'status-completed',
+                    '취소': 'status-cancelled'
                 }[order.status] || 'status-waiting';
                 
+                // 상태 텍스트 번역
+                const statusText = {
+                    '입금대기': 'Waiting Deposit',
+                    '입금확인': 'Deposit Confirmed',
+                    '처리중': 'Processing',
+                    '완료': 'Completed',
+                    '취소': 'Cancelled'
+                }[order.status] || order.status;
+                
+                const stepProgress = Math.min(100, (order.step || 1) * 25);
+                
+                // 증명서 여부 확인
+                const hasProof = order.proof && order.proof.data;
+                const proofButton = hasProof ? 
+                    `<button class="action-button action-view" onclick="viewProof('${order.id}')">View</button>` :
+                    'None';
+                
+                // 지갑 정보
+                const walletInfo = order.wallet ? 
+                    `${order.wallet.name} (${order.wallet.network})` : 'Not specified';
+                
+                // 단계 텍스트
+                const stepText = getStepText(order.step || 1);
+                
                 html += `
-                    <div class="table-row">
-                        <div>
+                    <tr onclick="showOrderDetail('${order.id}')" style="cursor: pointer;">
+                        <td>
                             <div class="order-id">${order.id}</div>
-                            <div class="order-time">${date}</div>
-                        </div>
-                        <div>${time}</div>
-                        <div>
-                            <div class="order-amount">${amount.toLocaleString()} THB</div>
-                            <div class="order-usdt">${usdt.toFixed(4)} USDT</div>
-                        </div>
-                        <div>${order.user || '익명'}</div>
-                        <div>
-                            <span class="status-badge ${statusClass}">${order.status}</span>
-                        </div>
-                        <div>
-                            <div class="wallet-actions">
-                                ${order.status === '입금대기' ? `
-                                    <button class="btn btn-success" onclick="confirmDeposit('${order.id}')">입금확인</button>
-                                    <button class="btn btn-danger" onclick="cancelOrder('${order.id}')">취소</button>
-                                ` : ''}
-                                
-                                ${order.status === '입금확인' ? `
-                                    <button class="btn btn-primary" onclick="startProcessing('${order.id}')">처리시작</button>
-                                ` : ''}
-                                
-                                ${order.status === '처리중' ? `
-                                    <button class="btn btn-success" onclick="completeOrder('${order.id}')">완료</button>
-                                ` : ''}
-                                
-                                <button class="btn btn-secondary" onclick="viewOrder('${order.id}')">상세</button>
+                            <div class="order-time">${time}</div>
+                        </td>
+                        <td>
+                            <div class="amount-display">${order.amount.toLocaleString()} THB</div>
+                        </td>
+                        <td>
+                            <div>${walletInfo}</div>
+                        </td>
+                        <td>
+                            <span class="status-badge ${statusClass}">${statusText}</span>
+                        </td>
+                        <td>
+                            <div>${stepText}</div>
+                            <div class="progress-indicator">
+                                <div class="progress-bar" style="width: ${stepProgress}%"></div>
                             </div>
-                        </div>
-                    </div>
+                        </td>
+                        <td>
+                            ${proofButton}
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                ${order.status === '입금대기' ? `
+                                    <button class="action-button action-confirm" onclick="event.stopPropagation(); updateOrderStatus('${order.id}', '입금확인')">Confirm Deposit</button>
+                                    <button class="action-button action-cancel" onclick="event.stopPropagation(); updateOrderStatus('${order.id}', '취소')">Cancel</button>
+                                ` : ''}
+                                ${order.status === '입금확인' ? `
+                                    <button class="action-button action-process" onclick="event.stopPropagation(); updateOrderStatus('${order.id}', '처리중')">Start Process</button>
+                                    <button class="action-button action-cancel" onclick="event.stopPropagation(); updateOrderStatus('${order.id}', '취소')">Cancel Process</button>
+                                ` : ''}
+                                ${order.status === '처리중' ? `
+                                    <button class="action-button action-complete" onclick="event.stopPropagation(); updateOrderStatus('${order.id}', '완료')">Complete</button>
+                                ` : ''}
+                                ${['완료', '취소'].includes(order.status) ? `
+                                    <button class="action-button action-reset" onclick="event.stopPropagation(); updateOrderStatus('${order.id}', '입금대기')">Reset</button>
+                                ` : ''}
+                            </div>
+                        </td>
+                    </tr>
                 `;
             });
             
-            container.innerHTML = html;
+            elements.ordersTableBody.innerHTML = html;
         }
 
-        // 주문 액션들
-        function confirmDeposit(orderId) {
-            updateOrderStatus(orderId, '입금확인');
-        }
-
-        function startProcessing(orderId) {
-            updateOrderStatus(orderId, '처리중');
-        }
-
-        function completeOrder(orderId) {
-            updateOrderStatus(orderId, '완료');
-            
-            // 완료된 주문에 대한 거래 내역 추가
-            const order = orders.find(o => o.id === orderId);
-            if (order) {
-                transactions.unshift({
-                    id: 'TX-' + Date.now().toString().slice(-6),
-                    orderId: orderId,
-                    type: '입금',
-                    amount: order.usdt || 0,
-                    wallet: wallets[0]?.name || '메인 지갑',
-                    timestamp: new Date().toISOString()
-                });
-                renderTransactions();
+        // 단계 텍스트 변환 (영문)
+        function getStepText(step) {
+            switch(step) {
+                case 1: return 'Waiting USDT Transfer';
+                case 2: return 'Verifying Deposit';
+                case 3: return 'Processing THB';
+                case 4: return 'Completed';
+                default: return 'Waiting';
             }
         }
 
-        function cancelOrder(orderId) {
-            if (!confirm('이 주문을 취소하시겠습니까?')) return;
-            updateOrderStatus(orderId, '취소됨');
-        }
-
-        function viewOrder(orderId) {
-            const order = orders.find(o => o.id === orderId);
-            if (!order) return;
+        // 지갑 테이블 업데이트
+        function updateWallets() {
+            const statusFilter = elements.walletStatusFilter.value;
+            const networkFilter = elements.walletNetworkFilter.value;
             
-            alert(`주문 상세 정보:\n\n주문번호: ${order.id}\n금액: ${order.amount} THB\nUSDT: ${order.usdt}\n상태: ${order.status}\n시간: ${new Date(order.time).toLocaleString()}`);
+            let filteredWallets = [...allWallets];
+            
+            // 상태 필터링
+            if (statusFilter !== 'all') {
+                filteredWallets = filteredWallets.filter(w => 
+                    statusFilter === 'active' ? w.isActive : !w.isActive
+                );
+            }
+            
+            // 네트워크 필터링
+            if (networkFilter !== 'all') {
+                filteredWallets = filteredWallets.filter(w => w.network === networkFilter);
+            }
+            
+            // 생성일 기준 정렬
+            filteredWallets.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+            
+            // 테이블 업데이트
+            if (filteredWallets.length === 0) {
+                elements.walletsTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="no-wallets">No wallets match the filter</td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            let html = '';
+            filteredWallets.forEach(wallet => {
+                const networkClass = `network-${wallet.network.toLowerCase()}`;
+                const createdDate = new Date(wallet.createdAt).toLocaleDateString('ko-KR');
+                
+                // 상태 표시
+                const statusText = wallet.isActive ? 'Active' : 'Inactive';
+                const statusClass = wallet.isActive ? 'wallet-active' : 'wallet-inactive';
+                
+                // 기본 지갑 배지
+                const defaultBadge = wallet.isDefault ? '<span class="default-wallet-badge">Default</span>' : '';
+                
+                // QR 코드 표시
+                let qrDisplay = '';
+                if (wallet.qrCode && wallet.qrCode !== 'null' && wallet.qrCode !== '') {
+                    qrDisplay = `
+                        <div class="qr-code-small">
+                            <img src="${wallet.qrCode}" alt="QR Code">
+                        </div>
+                    `;
+                } else {
+                    qrDisplay = '<div style="text-align: center;">-</div>';
+                }
+                
+                // 주소 단축
+                const shortAddress = wallet.address.length > 20 ? 
+                    wallet.address.substring(0, 10) + '...' + wallet.address.substring(wallet.address.length - 10) : 
+                    wallet.address;
+                
+                html += `
+                    <tr>
+                        <td>
+                            <div style="font-weight: bold; color: #2c3e50;">
+                                ${wallet.name} ${defaultBadge}
+                            </div>
+                            ${wallet.memo ? `<div style="font-size: 12px; color: #718096; margin-top: 5px;">${wallet.memo}</div>` : ''}
+                        </td>
+                        <td>
+                            <span class="network-badge ${networkClass}">${wallet.network}</span>
+                        </td>
+                        <td>
+                            <div style="font-size: 12px; color: #2c3e50;">${shortAddress}</div>
+                            <div class="wallet-address" title="${wallet.address}">
+                                ${wallet.address}
+                            </div>
+                        </td>
+                        <td>${qrDisplay}</td>
+                        <td>
+                            <span class="wallet-status ${statusClass}">
+                                ${wallet.isActive ? '<span class="active-wallet-indicator"></span>' : ''}
+                                ${statusText}
+                            </span>
+                        </td>
+                        <td>${createdDate}</td>
+                        <td>
+                            <div class="wallet-actions">
+                                <button class="action-button action-edit" onclick="editWallet('${wallet.id}')">Edit</button>
+                                ${!wallet.isDefault ? `
+                                    <button class="action-button action-delete" onclick="deleteWallet('${wallet.id}')">Delete</button>
+                                ` : ''}
+                                ${wallet.isActive ? 
+                                    `<button class="action-button action-deactivate" onclick="toggleWalletStatus('${wallet.id}', false)">Deactivate</button>` :
+                                    `<button class="action-button action-activate" onclick="toggleWalletStatus('${wallet.id}', true)">Activate</button>`
+                                }
+                                ${!wallet.isDefault ? 
+                                    `<button class="action-button action-setdefault" onclick="setDefaultWallet('${wallet.id}')">Set Default</button>` : 
+                                    ''
+                                }
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            elements.walletsTableBody.innerHTML = html;
         }
 
         // 주문 상태 업데이트
         function updateOrderStatus(orderId, newStatus) {
-            // 유저 페이지 주문 업데이트
-            let userOrders = JSON.parse(localStorage.getItem('payment_orders') || '[]');
-            userOrders = userOrders.map(order => {
-                if (order.id === orderId) {
-                    return { ...order, status: newStatus };
-                }
-                return order;
-            });
-            localStorage.setItem('payment_orders', JSON.stringify(userOrders));
+            // 상태 텍스트 번역
+            const statusText = {
+                '입금대기': 'Waiting Deposit',
+                '입금확인': 'Deposit Confirmed',
+                '처리중': 'Processing',
+                '완료': 'Completed',
+                '취소': 'Cancelled'
+            }[newStatus] || newStatus;
             
-            // 관리자 주문 업데이트
-            orders = orders.map(order => {
-                if (order.id === orderId) {
-                    return { ...order, status: newStatus };
-                }
-                return order;
-            });
-            
-            renderOrders();
-            updateDashboard();
-            alert('주문 상태가 업데이트되었습니다.');
-        }
-
-        // 거래 내역 생성
-        function generateTransactions() {
-            // 완료된 주문에서 거래 내역 생성
-            transactions = orders
-                .filter(order => order.status === '완료')
-                .map(order => ({
-                    id: 'TX-' + order.id.slice(-6),
-                    orderId: order.id,
-                    type: '입금',
-                    amount: order.usdt || 0,
-                    wallet: wallets[0]?.name || '메인 지갑',
-                    timestamp: order.time
-                }))
-                .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-                .slice(0, 50); // 최근 50개만
-        }
-
-        // 거래 내역 렌더링
-        function renderTransactions() {
-            const container = document.getElementById('transactionsList');
-            
-            if (transactions.length === 0) {
-                container.innerHTML = '<p style="text-align: center; padding: 40px; color: #718096;">거래 내역이 없습니다</p>';
+            if (!confirm(`Change order ${orderId} status to "${statusText}"?`)) {
                 return;
             }
             
-            let html = '<div style="background: white; border-radius: 12px; overflow: hidden;">';
+            // 로컬스토리지에서 주문 찾기
+            let orders = JSON.parse(localStorage.getItem('payment_orders') || '[]');
+            let orderIndex = orders.findIndex(o => o.id === orderId);
             
-            transactions.forEach(tx => {
-                const time = new Date(tx.timestamp).toLocaleString();
-                
-                html += `
-                    <div style="display: grid; grid-template-columns: 100px 120px 150px 100px 100px; padding: 15px; border-bottom: 1px solid #e2e8f0;">
-                        <div style="font-family: monospace; font-weight: bold;">${tx.id}</div>
-                        <div>${time}</div>
-                        <div>${tx.orderId}</div>
-                        <div style="color: #38a169; font-weight: bold;">${tx.amount.toFixed(4)} USDT</div>
-                        <div>${tx.wallet}</div>
-                    </div>
-                `;
-            });
+            if (orderIndex === -1) {
+                alert('Order not found');
+                return;
+            }
             
-            html += '</div>';
-            container.innerHTML = html;
-        }
-
-        // 로그아웃
-        function logout() {
-            if (confirm('로그아웃 하시겠습니까?')) {
-                // 로그인 상태 제거
-                localStorage.removeItem('admin_logged_in');
-                window.location.href = '/'; // 메인 페이지로 이동
+            // 상태 업데이트
+            const newStep = getStepFromStatus(newStatus);
+            orders[orderIndex] = {
+                ...orders[orderIndex],
+                status: newStatus,
+                step: newStep,
+                updated: new Date().toISOString()
+            };
+            
+            // 로컬스토리지 저장
+            localStorage.setItem('payment_orders', JSON.stringify(orders));
+            
+            // 유저 페이지에 상태 변경 알림
+            try {
+                if (window.updateOrderStatusFromAdmin) {
+                    window.updateOrderStatusFromAdmin(orderId, newStatus);
+                }
+            } catch (e) {
+                console.log('User page notification failed');
+            }
+            
+            // 관리자 페이지 업데이트
+            allOrders = orders;
+            updateStats();
+            updateOrders();
+            
+            alert(`Order status changed to "${statusText}"`);
+            
+            // 상세 모달이 열려있으면 업데이트
+            if (selectedOrder && selectedOrder.id === orderId) {
+                selectedOrder = orders[orderIndex];
+                showOrderDetail(orderId);
             }
         }
+
+        // 상태에 따른 단계 가져오기
+        function getStepFromStatus(status) {
+            switch(status) {
+                case '입금대기': return 1;
+                case '입금확인': return 2;
+                case '처리중': return 3;
+                case '완료': return 4;
+                case '취소': return 1;
+                default: return 1;
+            }
+        }
+
+        // 증명서 보기
+        function viewProof(orderId) {
+            const order = allOrders.find(o => o.id === orderId);
+            if (!order || !order.proof || !order.proof.data) {
+                alert('No proof document');
+                return;
+            }
+            
+            const proofWindow = window.open('', '_blank');
+            proofWindow.document.write(`
+                <html>
+                <head>
+                    <title>Payment Proof - ${order.id}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; }
+                        .header { text-align: center; margin-bottom: 30px; }
+                        .info { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <h1>Payment Proof</h1>
+                        <p>Order ID: ${order.id}</p>
+                    </div>
+                    <div class="info">
+                        <p><strong>Amount:</strong> ${order.amount.toLocaleString()} THB</p>
+                        <p><strong>USDT:</strong> ${order.usdt.toFixed(4)} USDT</p>
+                        <p><strong>Upload Time:</strong> ${new Date(order.time).toLocaleString()}</p>
+                    </div>
+                    ${order.proof.type.startsWith('image/') ? 
+                        `<img src="${order.proof.data}" style="max-width: 100%; border: 1px solid #ddd; border-radius: 8px;">` : 
+                        `<p>File Name: ${order.proof.name}</p><p>File Size: ${(order.proof.size / 1024).toFixed(1)}KB</p>`
+                    }
+                </body>
+                </html>
+            `);
+        }
+
+        // 주문 상세 정보 표시 (영문)
+        function showOrderDetail(orderId) {
+            const order = allOrders.find(o => o.id === orderId);
+            if (!order) {
+                alert('Order not found');
+                return;
+            }
+            
+            selectedOrder = order;
+            
+            const createdTime = new Date(order.time).toLocaleString('ko-KR');
+            const updatedTime = order.updated ? new Date(order.updated).toLocaleString('ko-KR') : 'None';
+            
+            // 증명서 정보
+            let proofInfo = 'None';
+            if (order.proof && order.proof.data) {
+                proofInfo = order.proof.type.startsWith('image/') ? 
+                    'Image file' : order.proof.name;
+            }
+            
+            // 상태 텍스트 번역
+            const statusText = {
+                '입금대기': 'Waiting Deposit',
+                '입금확인': 'Deposit Confirmed',
+                '처리중': 'Processing',
+                '완료': 'Completed',
+                '취소': 'Cancelled'
+            }[order.status] || order.status;
+            
+            // 상세 내용 생성
+            let detailHtml = `
+                <div class="form-group">
+                    <label class="form-label">Order ID:</label>
+                    <div style="padding: 10px; background: #f8f9fa; border-radius: 6px;">${order.id}</div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Created Time:</label>
+                        <div style="padding: 10px; background: #f8f9fa; border-radius: 6px;">${createdTime}</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Last Updated:</label>
+                        <div style="padding: 10px; background: #f8f9fa; border-radius: 6px;">${updatedTime}</div>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Payment Amount:</label>
+                        <div style="padding: 10px; background: #f8f9fa; border-radius: 6px; font-weight: bold;">
+                            ${order.amount.toLocaleString()} THB
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">USDT Amount:</label>
+                        <div style="padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                            ${order.usdt.toFixed(4)} USDT
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Current Status:</label>
+                        <div style="padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                            <span class="status-badge ${order.status === '입금대기' ? 'status-waiting' : 
+                                order.status === '입금확인' ? 'status-confirmed' : 
+                                order.status === '처리중' ? 'status-processing' : 
+                                order.status === '완료' ? 'status-completed' : 'status-cancelled'}">
+                                ${statusText}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Current Step:</label>
+                        <div style="padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                            ${getStepText(order.step || 1)}
+                        </div>
+                    </div>
+                </div>
+                
+                ${order.wallet ? `
+                <div class="form-group">
+                    <label class="form-label">Deposit Wallet:</label>
+                    <div style="padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                        ${order.wallet.name} (${order.wallet.network})<br>
+                        <small style="color: #718096;">${order.wallet.address}</small>
+                    </div>
+                </div>
+                ` : ''}
+                
+                <div class="form-group">
+                    <label class="form-label">Payment Proof:</label>
+                    <div style="padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                        ${proofInfo}
+                        ${order.proof && order.proof.data ? 
+                            `<button class="action-button action-view" style="margin-top: 5px;" onclick="viewProof('${order.id}')">View</button>` : ''
+                        }
+                    </div>
+                </div>
+            `;
+            
+            elements.orderDetailContent.innerHTML = detailHtml;
+            
+            // 액션 버튼 생성
+            let actionsHtml = '';
+            
+            if (order.status === '입금대기') {
+                actionsHtml = `
+                    <button class="modal-button primary" onclick="updateOrderStatus('${order.id}', '입금확인')">Confirm Deposit</button>
+                    <button class="modal-button secondary" onclick="updateOrderStatus('${order.id}', '취소')">Cancel Payment</button>
+                `;
+            } else if (order.status === '입금확인') {
+                actionsHtml = `
+                    <button class="modal-button primary" onclick="updateOrderStatus('${order.id}', '처리중')">Start Process</button>
+                    <button class="modal-button secondary" onclick="updateOrderStatus('${order.id}', '취소')">Cancel Process</button>
+                `;
+            } else if (order.status === '처리중') {
+                actionsHtml = `
+                    <button class="modal-button success" onclick="updateOrderStatus('${order.id}', '완료')">Complete Process</button>
+                `;
+            } else {
+                actionsHtml = `
+                    <button class="modal-button primary" onclick="updateOrderStatus('${order.id}', '입금대기')">Reset Status</button>
+                `;
+            }
+            
+            elements.orderDetailActions.innerHTML = actionsHtml;
+            
+            // 모달 열기
+            elements.orderDetailModal.classList.remove('hidden');
+        }
+
+        // 주문 상세 모달 닫기
+        function closeOrderDetail() {
+            elements.orderDetailModal.classList.add('hidden');
+            selectedOrder = null;
+        }
+
+        // 지갑 추가 모달 열기
+        function openAddWalletModal() {
+            elements.walletModalTitle.textContent = '👛 Add New Wallet';
+            elements.walletForm.reset();
+            elements.walletId.value = '';
+            qrCodeFile = null;
+            
+            // 기본값 설정
+            elements.walletStatus.value = 'active';
+            
+            elements.walletModal.classList.remove('hidden');
+        }
+
+        // 지갑 수정 모달 열기
+        function editWallet(walletId) {
+            const wallet = allWallets.find(w => w.id === walletId);
+            if (!wallet) return;
+            
+            selectedWallet = wallet;
+            
+            elements.walletModalTitle.textContent = '✏️ Edit Wallet';
+            elements.walletId.value = wallet.id;
+            elements.walletName.value = wallet.name;
+            elements.walletNetwork.value = wallet.network;
+            elements.walletStatus.value = wallet.isActive ? 'active' : 'inactive';
+            elements.walletAddress.value = wallet.address;
+            elements.walletMemo.value = wallet.memo || '';
+            qrCodeFile = null;
+            
+            elements.walletModal.classList.remove('hidden');
+        }
+
+        // QR 코드 업로드 처리
+        function handleQRCodeUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // 파일 크기 제한 (2MB)
+            const maxSize = 2 * 1024 * 1024;
+            if (file.size > maxSize) {
+                alert('File size must be less than 2MB');
+                event.target.value = '';
+                return;
+            }
+            
+            // 이미지 파일인지 확인
+            if (!file.type.startsWith('image/')) {
+                alert('Only image files can be uploaded');
+                event.target.value = '';
+                return;
+            }
+            
+            qrCodeFile = file;
+        }
+
+        // 지갑 저장 - FIXED VERSION
+        function saveWallet() {
+            console.log('Save wallet button clicked');
+            
+            // 폼 검증
+            if (!elements.walletName.value.trim()) {
+                alert('Please enter wallet name');
+                return;
+            }
+            
+            if (!elements.walletNetwork.value) {
+                alert('Please select network');
+                return;
+            }
+            
+            if (!elements.walletAddress.value.trim()) {
+                alert('Please enter wallet address');
+                return;
+            }
+            
+            const walletId = elements.walletId.value;
+            const isEdit = !!walletId;
+            
+            // QR 코드 파일 처리
+            if (qrCodeFile) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    saveWalletData(e.target.result);
+                };
+                reader.readAsDataURL(qrCodeFile);
+            } else {
+                // QR 코드 없이 저장
+                saveWalletData(isEdit ? (selectedWallet?.qrCode || null) : null);
+            }
+            
+            function saveWalletData(qrCodeData) {
+                const walletData = {
+                    id: isEdit ? walletId : 'wallet_' + Date.now(),
+                    name: elements.walletName.value.trim(),
+                    network: elements.walletNetwork.value,
+                    address: elements.walletAddress.value.trim(),
+                    qrCode: qrCodeData,
+                    isActive: elements.walletStatus.value === 'active',
+                    isDefault: isEdit ? (selectedWallet?.isDefault || false) : false,
+                    memo: elements.walletMemo.value.trim(),
+                    createdAt: isEdit ? (selectedWallet?.createdAt || new Date().toISOString()) : new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                };
+                
+                console.log('Wallet data to save:', walletData);
+                
+                // 지갑 목록 업데이트
+                let updatedWallets = [...allWallets];
+                
+                if (isEdit) {
+                    // 수정 모드
+                    const index = updatedWallets.findIndex(w => w.id === walletId);
+                    if (index > -1) {
+                        updatedWallets[index] = walletData;
+                    }
+                } else {
+                    // 추가 모드
+                    updatedWallets.push(walletData);
+                }
+                
+                // 활성화된 지갑이 여러 개인지 확인
+                const activeWallets = updatedWallets.filter(w => w.isActive);
+                if (activeWallets.length === 0 && updatedWallets.length > 0) {
+                    // 활성화된 지갑이 없으면 첫 번째 지갑을 활성화
+                    updatedWallets[0].isActive = true;
+                }
+                
+                // 로컬스토리지 저장
+                localStorage.setItem('payment_wallets', JSON.stringify(updatedWallets));
+                
+                // 페이지 업데이트
+                allWallets = updatedWallets;
+                updateStats();
+                updateWallets();
+                
+                // 유저 페이지에 지갑 정보 업데이트 알림
+                notifyUserPageWalletsUpdate();
+                
+                // 모달 닫기
+                closeWalletModal();
+                
+                alert(`Wallet ${isEdit ? 'updated' : 'added'} successfully`);
+            }
+        }
+
+        // 지갑 상태 토글
+        function toggleWalletStatus(walletId, activate) {
+            const wallet = allWallets.find(w => w.id === walletId);
+            if (!wallet) return;
+            
+            if (wallet.isDefault && !activate) {
+                alert('Default wallet cannot be deactivated');
+                return;
+            }
+            
+            const action = activate ? 'Activate' : 'Deactivate';
+            if (!confirm(`${action} this wallet?`)) {
+                return;
+            }
+            
+            // 지갑 상태 업데이트
+            const updatedWallets = allWallets.map(w => {
+                if (w.id === walletId) {
+                    return { ...w, isActive: activate };
+                }
+                return w;
+            });
+            
+            // 로컬스토리지 저장
+            localStorage.setItem('payment_wallets', JSON.stringify(updatedWallets));
+            
+            // 페이지 업데이트
+            allWallets = updatedWallets;
+            updateStats();
+            updateWallets();
+            
+            // 유저 페이지에 지갑 정보 업데이트 알림
+            notifyUserPageWalletsUpdate();
+            
+            alert(`Wallet ${action.toLowerCase()}d`);
+        }
+
+        // 기본 지갑 설정
+        function setDefaultWallet(walletId) {
+            const wallet = allWallets.find(w => w.id === walletId);
+            if (!wallet) return;
+            
+            if (!confirm(`Set this wallet as default?\n\nDefault wallet cannot be deleted and is always active.`)) {
+                return;
+            }
+            
+            // 모든 지갑의 기본 설정 해제 후 선택한 지갑만 기본 설정
+            const updatedWallets = allWallets.map(w => {
+                if (w.id === walletId) {
+                    return { ...w, isDefault: true, isActive: true };
+                } else {
+                    return { ...w, isDefault: false };
+                }
+            });
+            
+            // 로컬스토리지 저장
+            localStorage.setItem('payment_wallets', JSON.stringify(updatedWallets));
+            
+            // 페이지 업데이트
+            allWallets = updatedWallets;
+            updateStats();
+            updateWallets();
+            
+            // 유저 페이지에 지갑 정보 업데이트 알림
+            notifyUserPageWalletsUpdate();
+            
+            alert('Default wallet set');
+        }
+
+        // 지갑 삭제
+        function deleteWallet(walletId) {
+            const wallet = allWallets.find(w => w.id === walletId);
+            if (!wallet) return;
+            
+            if (wallet.isDefault) {
+                alert('Default wallet cannot be deleted');
+                return;
+            }
+            
+            // 이 지갑을 사용하는 주문이 있는지 확인
+            const ordersUsingWallet = allOrders.filter(o => 
+                o.wallet && o.wallet.id === walletId && o.status !== '완료' && o.status !== '취소'
+            );
+            
+            if (ordersUsingWallet.length > 0) {
+                alert(`There are ${ordersUsingWallet.length} active orders using this wallet.\nPlease change their status first.`);
+                return;
+            }
+            
+            if (!confirm(`Delete this wallet?\n\nCannot be recovered after deletion.`)) {
+                return;
+            }
+            
+            // 지갑 삭제
+            const updatedWallets = allWallets.filter(w => w.id !== walletId);
+            
+            // 활성화된 지갑이 없으면 첫 번째 지갑 활성화
+            const activeWallets = updatedWallets.filter(w => w.isActive);
+            if (activeWallets.length === 0 && updatedWallets.length > 0) {
+                updatedWallets[0].isActive = true;
+            }
+            
+            // 로컬스토리지 저장
+            localStorage.setItem('payment_wallets', JSON.stringify(updatedWallets));
+            
+            // 페이지 업데이트
+            allWallets = updatedWallets;
+            updateStats();
+            updateWallets();
+            
+            // 유저 페이지에 지갑 정보 업데이트 알림
+            notifyUserPageWalletsUpdate();
+            
+            alert('Wallet deleted');
+        }
+
+        // 지갑 모달 닫기
+        function closeWalletModal() {
+            elements.walletModal.classList.add('hidden');
+            selectedWallet = null;
+            qrCodeFile = null;
+        }
+
+        // 유저 페이지에 지갑 정보 업데이트 알림
+        function notifyUserPageWalletsUpdate() {
+            try {
+                if (window.updateWalletsFromAdmin) {
+                    window.updateWalletsFromAdmin(allWallets);
+                }
+            } catch (e) {
+                console.log('User page wallet update notification failed');
+            }
+        }
+
+        // 주문 내보내기 (파일 저장 위치 알림)
+        function exportOrdersToExcel() {
+            try {
+                let csv = 'Order ID,Created Time,Amount(THB),USDT Amount,Status,Step,Wallet,Network,Proof,Updated Time\n';
+                
+                allOrders.forEach(order => {
+                    const time = new Date(order.time).toLocaleString('ko-KR');
+                    const updated = order.updated ? new Date(order.updated).toLocaleString('ko-KR') : '';
+                    const stepText = getStepText(order.step || 1);
+                    const walletInfo = order.wallet ? `${order.wallet.name} (${order.wallet.network})` : 'Not specified';
+                    const hasProof = order.proof && order.proof.data ? 'Yes' : 'No';
+                    
+                    csv += `"${order.id}","${time}","${order.amount}","${order.usdt || 0}","${order.status}","${stepText}","${walletInfo}","${order.wallet?.network || ''}","${hasProof}","${updated}"\n`;
+                });
+                
+                const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                
+                // 파일명 생성
+                const fileName = `orders_${new Date().toISOString().split('T')[0]}.csv`;
+                
+                link.setAttribute('href', url);
+                link.setAttribute('download', fileName);
+                link.style.visibility = 'hidden';
+                
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                // 파일 저장 위치 알림
+                showSaveStatus(`File saved as: ${fileName}\n\nIt will be saved to your default download folder.`);
+                
+            } catch (error) {
+                console.error('Export failed:', error);
+                alert('Export failed');
+            }
+        }
+
+        // 저장 상태 표시
+        function showSaveStatus(message) {
+            elements.saveStatus.textContent = message;
+            elements.saveStatus.classList.add('show');
+            
+            setTimeout(() => {
+                elements.saveStatus.classList.remove('show');
+            }, 3000);
+        }
+
+        // 테스트 주문 생성
+        window.createTestOrder = function() {
+            const activeWallet = allWallets.find(w => w.isActive) || allWallets[0];
+            const testOrder = {
+                id: 'ORD-' + Date.now().toString().slice(-6),
+                amount: Math.floor(Math.random() * 10000) + 1000,
+                usdt: Math.random() * 100 + 10,
+                status: '입금대기',
+                step: 1,
+                time: new Date().toISOString(),
+                wallet: activeWallet ? {
+                    id: activeWallet.id,
+                    name: activeWallet.name,
+                    address: activeWallet.address,
+                    network: activeWallet.network
+                } : null
+            };
+            
+            let orders = JSON.parse(localStorage.getItem('payment_orders') || '[]');
+            orders.unshift(testOrder);
+            
+            if (orders.length > 50) {
+                orders = orders.slice(0, 50);
+            }
+            
+            localStorage.setItem('payment_orders', JSON.stringify(orders));
+            loadAllData();
+            
+            alert(`Test order ${testOrder.id} created`);
+        };
+
+        // 모든 주문 삭제
+        window.clearAllOrders = function() {
+            if (confirm('Delete all order records? This cannot be undone.')) {
+                localStorage.removeItem('payment_orders');
+                allOrders = [];
+                updateStats();
+                updateOrders();
+                alert('All order records deleted');
+            }
+        };
+
+        // 모든 지갑 삭제 (기본 지갑 제외)
+        window.clearAllWallets = function() {
+            if (confirm('Delete all wallets except default wallet? This cannot be undone.')) {
+                const defaultWallet = allWallets.find(w => w.isDefault);
+                const updatedWallets = defaultWallet ? [defaultWallet] : [];
+                
+                localStorage.setItem('payment_wallets', JSON.stringify(updatedWallets));
+                allWallets = updatedWallets;
+                updateStats();
+                updateWallets();
+                notifyUserPageWalletsUpdate();
+                
+                alert('All wallets deleted (except default wallet)');
+            }
+        };
     </script>
 </body>
 </html>
