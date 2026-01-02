@@ -52,7 +52,7 @@
             background: #f7fafc;
             border-radius: 25px;
             border: 2px solid #667eea;
-            overflow: hidden;
+            overflow: visible;
             cursor: pointer;
             box-shadow: 0 4px 10px rgba(102, 126, 234, 0.2);
         }
@@ -71,7 +71,7 @@
 
         .language-slider {
             display: flex;
-            width: 200%;
+            width: 100%;
             height: 100%;
             position: relative;
             z-index: 1;
@@ -89,6 +89,7 @@
             user-select: none;
             position: relative;
             z-index: 2;
+            cursor: pointer;
             transition: color 0.3s ease;
         }
 
@@ -859,7 +860,7 @@
 
     <script>
         // 상태 관리
-        let exchangeRate = 0; // 기본값 없음
+        let exchangeRate = 0;
         let timeLeft = 300;
         let timerInterval = null;
         let currentStep = 1;
@@ -971,8 +972,11 @@
             // 실시간 환율 업데이트 시작
             fetchRealTimeExchangeRate();
             
-            // 60초마다 환율 업데이트
-            setInterval(fetchRealTimeExchangeRate, 60000);
+            // 30초마다 환율 업데이트
+            setInterval(fetchRealTimeExchangeRate, 30000);
+            
+            // 페이지 포커스 시 환율 업데이트
+            window.addEventListener('focus', fetchRealTimeExchangeRate);
             
             // 주문 목록 업데이트
             updateOrdersList();
@@ -994,10 +998,34 @@
         // 언어 슬라이더 초기화
         function initLanguageSlider() {
             const languageSwitch = document.getElementById('languageSwitch');
+            const langKorean = document.getElementById('langKorean');
+            const langEnglish = document.getElementById('langEnglish');
             
-            languageSwitch.addEventListener('click', function() {
-                console.log('언어 전환 클릭됨');
-                toggleLanguage();
+            // 한국어 클릭 시
+            langKorean.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (currentLang !== 'ko') {
+                    currentLang = 'ko';
+                    updateAllText();
+                    updateLanguageSlider();
+                }
+            });
+            
+            // 영어 클릭 시
+            langEnglish.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (currentLang !== 'en') {
+                    currentLang = 'en';
+                    updateAllText();
+                    updateLanguageSlider();
+                }
+            });
+            
+            // 전체 컨테이너 클릭 시
+            languageSwitch.addEventListener('click', function(e) {
+                if (e.target === languageSwitch) {
+                    toggleLanguage();
+                }
             });
             
             updateLanguageSlider();
@@ -1006,7 +1034,6 @@
         // 언어 슬라이더 업데이트
         function updateLanguageSlider() {
             const langSliderBg = document.getElementById('langSliderBg');
-            const languageSlider = document.getElementById('languageSlider');
             const koreanOption = document.getElementById('langKorean');
             const englishOption = document.getElementById('langEnglish');
             
@@ -1014,15 +1041,22 @@
             
             if (currentLang === 'ko') {
                 langSliderBg.style.transform = 'translateX(0)';
-                languageSlider.style.transform = 'translateX(0)';
                 koreanOption.classList.add('active');
                 englishOption.classList.remove('active');
             } else {
-                langSliderBg.style.transform = 'translateX(100%)';
-                languageSlider.style.transform = 'translateX(-50%)';
+                langSliderBg.style.transform = 'translateX(calc(140px - 70px - 4px))';
                 koreanOption.classList.remove('active');
                 englishOption.classList.add('active');
             }
+        }
+
+        // 언어 전환 함수
+        function toggleLanguage() {
+            console.log('현재 언어:', currentLang);
+            currentLang = currentLang === 'en' ? 'ko' : 'en';
+            console.log('변경된 언어:', currentLang);
+            updateAllText();
+            updateLanguageSlider();
         }
 
         // 실시간 환율 가져오기 - 실제 API 연결
@@ -1030,38 +1064,67 @@
             try {
                 console.log('실시간 환율 조회 시작...');
                 
-                // ExchangeRate-API를 통한 USD/THB 환율
-                const apiUrl = 'https://api.exchangerate-api.com/v4/latest/USD';
+                // 여러 API 엔드포인트 시도
+                const apiEndpoints = [
+                    'https://api.exchangerate-api.com/v4/latest/USD',
+                    'https://api.exchangerate.host/latest?base=USD&symbols=THB',
+                    'https://open.er-api.com/v6/latest/USD'
+                ];
                 
-                const response = await fetch(apiUrl, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    }
-                });
+                let rate = 0;
+                let success = false;
                 
-                if (response.ok) {
-                    const data = await response.json();
-                    const rate = parseFloat(data.rates.THB);
-                    
-                    if (rate && rate > 0) {
-                        exchangeRate = rate;
-                        updateExchangeRateDisplay(rate, true);
-                        console.log('환율 API 성공:', rate);
-                    } else {
-                        throw new Error('유효하지 않은 환율 데이터');
+                // 첫 번째 API 시도
+                for (const apiUrl of apiEndpoints) {
+                    try {
+                        console.log(`API 시도: ${apiUrl}`);
+                        const response = await fetch(apiUrl, {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            
+                            // API 응답 구조에 따른 처리
+                            if (apiUrl.includes('exchangerate-api.com')) {
+                                rate = parseFloat(data.rates.THB);
+                            } else if (apiUrl.includes('exchangerate.host')) {
+                                rate = parseFloat(data.rates.THB);
+                            } else if (apiUrl.includes('open.er-api.com')) {
+                                rate = parseFloat(data.rates.THB);
+                            }
+                            
+                            if (rate && rate > 0) {
+                                success = true;
+                                console.log(`환율 API 성공 (${apiUrl}):`, rate);
+                                break; // 성공하면 루프 종료
+                            }
+                        }
+                    } catch (apiError) {
+                        console.log(`API ${apiUrl} 실패:`, apiError);
+                        continue; // 다음 API 시도
                     }
-                } else {
-                    throw new Error(`API 응답 오류: ${response.status}`);
                 }
                 
-            } catch (error) {
-                console.error('환율 조회 실패:', error);
+                if (!success) {
+                    // 모든 API 실패 시 고정 환율 사용 (백업) - 31.2로 변경
+                    rate = 31.2;
+                    console.log('API 모두 실패, 고정 환율 사용:', rate);
+                }
                 
-                // 에러 시 기본값 없음, 로딩 실패 표시
-                exchangeRate = 0;
-                updateExchangeRateDisplay(0, false);
+                exchangeRate = rate;
+                updateExchangeRateDisplay(rate, success);
+                
+            } catch (error) {
+                console.error('환율 조회 전체 실패:', error);
+                
+                // 최종 백업: 고정 환율 - 31.2로 변경
+                exchangeRate = 31.2;
+                updateExchangeRateDisplay(31.2, false);
             }
         }
 
@@ -1073,7 +1136,7 @@
                 hour: '2-digit', 
                 minute: '2-digit', 
                 second: '2-digit',
-                hour12: true 
+                hour12: false 
             });
             
             if (success && rate > 0) {
@@ -1083,11 +1146,12 @@
                 document.getElementById('calcRate').textContent = rate.toFixed(2);
                 document.getElementById('rateUpdate').textContent = trans.lastUpdate + timeString;
             } else {
-                // 환율 로딩 실패
+                // API 실패지만 고정 환율 사용 중
                 document.getElementById('exchangeRate').innerHTML = 
-                    `<span class="rate-error">${trans.rateError}</span>`;
-                document.getElementById('calcRate').textContent = '0.00';
-                document.getElementById('rateUpdate').textContent = trans.lastUpdate + trans.rateError;
+                    `<span style="color:#e53e3e;font-weight:bold;">${rate.toFixed(2)}</span>`;
+                document.getElementById('calcRate').textContent = rate.toFixed(2);
+                document.getElementById('rateUpdate').textContent = 
+                    trans.lastUpdate + timeString + (currentLang === 'ko' ? ' (고정환율)' : ' (Fixed Rate)');
             }
             
             // 계산 업데이트
@@ -1133,15 +1197,6 @@
             }
         }
 
-        // 언어 전환 함수
-        function toggleLanguage() {
-            console.log('현재 언어:', currentLang);
-            currentLang = currentLang === 'en' ? 'ko' : 'en';
-            console.log('변경된 언어:', currentLang);
-            updateAllText();
-            updateLanguageSlider();
-        }
-
         // 모든 텍스트 업데이트
         function updateAllText() {
             console.log('텍스트 업데이트 시작, 언어:', currentLang);
@@ -1178,7 +1233,7 @@
                 hour: '2-digit', 
                 minute: '2-digit', 
                 second: '2-digit',
-                hour12: true 
+                hour12: false 
             });
             
             if (exchangeRate > 0) {
