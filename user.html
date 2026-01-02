@@ -863,9 +863,9 @@
         let uploadedFile = null;
         let activeWallet = null;
         let allWallets = [];
-        let currentLang = 'ko';
+        let currentLang = 'ko'; // 기본값 한국어
 
-        // 번역 데이터 - languageBtnText 수정됨!
+        // 번역 데이터 - 정확히 반대로 수정됨!
         const translations = {
             en: {
                 title: "USDT → THB Anonymous Payment",
@@ -912,7 +912,7 @@
                 uploadRequiredAlert: "Please upload payment proof (QR code screenshot) first",
                 amountMinAlert: "Minimum payment amount is 1,000 THB",
                 amountMaxAlert: "Maximum payment amount is 500,000 THB",
-                languageBtnText: "한국어"  // 영어일 때 버튼에 "한국어" 표시 (원하시는 대로)
+                languageBtnText: "한국어"  // ✅ 영어일 때 버튼에 "한국어" 표시
             },
             ko: {
                 title: "USDT → THB 익명 결제",
@@ -959,7 +959,7 @@
                 uploadRequiredAlert: "먼저 결제 증명서(QR 코드 스크린샷)를 업로드해주세요",
                 amountMinAlert: "최소 결제 금액은 1,000 THB 입니다",
                 amountMaxAlert: "최대 결제 금액은 500,000 THB 입니다",
-                languageBtnText: "English"  // 한국어일 때 버튼에 "English" 표시 (원하시는 대로)
+                languageBtnText: "English"  // ✅ 한국어일 때 버튼에 "English" 표시
             }
         };
 
@@ -967,11 +967,17 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('페이지 로드됨');
             
-            // 언어 전환 버튼 초기화
+            // ✅ 먼저 현재 언어 설정 (중요!)
+            currentLang = 'ko'; // 한국어로 시작
+            
+            // ✅ 언어 전환 버튼 초기화
             initLanguageButton();
             
-            // 언어 버튼 텍스트 먼저 업데이트
+            // ✅ 언어 버튼 텍스트 업데이트 (중요!)
             updateLanguageButtonText();
+            
+            // ✅ 모든 텍스트 업데이트
+            updateAllText();
             
             // 실시간 환율 업데이트 시작
             fetchRealTimeExchangeRate();
@@ -997,13 +1003,21 @@
             
             // 초기 결제 버튼 상태 확인
             checkPaymentButton();
+            
+            console.log('초기화 완료, 현재 언어:', currentLang);
         });
 
         // 언어 버튼 초기화
         function initLanguageButton() {
             const languageBtn = document.getElementById('languageToggleBtn');
             
+            if (!languageBtn) {
+                console.error('languageToggleBtn 요소를 찾을 수 없습니다!');
+                return;
+            }
+            
             languageBtn.addEventListener('click', function() {
+                console.log('언어 버튼 클릭됨');
                 toggleLanguage();
             });
             
@@ -1014,17 +1028,25 @@
         function updateLanguageButtonText() {
             const trans = translations[currentLang];
             const btnText = document.getElementById('languageBtnText');
-            if (btnText) {
+            
+            if (btnText && trans) {
                 btnText.textContent = trans.languageBtnText;
-                console.log('언어 버튼 텍스트 업데이트:', trans.languageBtnText);
+                console.log('언어 버튼 텍스트 업데이트:', currentLang, '->', trans.languageBtnText);
+            } else {
+                console.error('언어 버튼 텍스트 업데이트 실패:', {btnText, trans, currentLang});
             }
         }
 
         // 언어 전환 함수
         function toggleLanguage() {
-            console.log('현재 언어:', currentLang);
+            console.log('언어 전환 전:', currentLang);
             currentLang = currentLang === 'en' ? 'ko' : 'en';
-            console.log('변경된 언어:', currentLang);
+            console.log('언어 전환 후:', currentLang);
+            
+            // ✅ 언어 버튼 텍스트 먼저 업데이트
+            updateLanguageButtonText();
+            
+            // ✅ 모든 텍스트 업데이트
             updateAllText();
         }
 
@@ -1263,7 +1285,7 @@
                 document.getElementById('rateUpdate').textContent = trans.lastUpdate + trans.rateLoading;
             }
             
-            // 언어 버튼 텍스트 업데이트 추가
+            // ✅ 언어 버튼 텍스트 업데이트 추가
             updateLanguageButtonText();
             
             if (!document.getElementById('qrModal').classList.contains('hidden')) {
@@ -1498,7 +1520,6 @@
         // 주문 저장 - sessionStorage로 변경!
         function saveOrder(order) {
             try {
-                // sessionStorage 사용 (탭/세션별로 데이터 분리)
                 let orders = JSON.parse(sessionStorage.getItem('payment_orders') || '[]');
                 
                 const existingIndex = orders.findIndex(o => o.id === order.id);
@@ -1517,7 +1538,6 @@
                 console.log('주문 저장됨 (sessionStorage):', order.id);
             } catch (error) {
                 console.error('주문 저장 실패:', error);
-                // 실패시 임시 메모리 저장 (페이지 새로고침시 사라짐)
                 if (!window.tempOrders) window.tempOrders = [];
                 window.tempOrders.unshift(order);
                 if (window.tempOrders.length > 20) {
@@ -1531,12 +1551,10 @@
             let orders = [];
             
             try {
-                // sessionStorage에서 가져오기
                 orders = JSON.parse(sessionStorage.getItem('payment_orders') || '[]');
                 console.log('sessionStorage에서 주문 불러옴:', orders.length, '개');
             } catch (error) {
                 console.error('sessionStorage에서 주문 불러오기 실패:', error);
-                // 임시 메모리에서 가져오기
                 if (window.tempOrders) {
                     orders = window.tempOrders;
                     console.log('임시 메모리에서 주문 불러옴:', orders.length, '개');
@@ -1927,7 +1945,6 @@
                     return order;
                 });
                 
-                // sessionStorage에 저장
                 try {
                     sessionStorage.setItem('payment_orders', JSON.stringify(orders));
                 } catch (error) {
