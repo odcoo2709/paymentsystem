@@ -45,57 +45,34 @@
             margin-bottom: 15px;
         }
 
-        .language-switch-wrapper {
-            position: relative;
-            width: 140px;
-            height: 44px;
-            background: #f7fafc;
-            border-radius: 25px;
-            border: 2px solid #667eea;
-            overflow: hidden;
-            cursor: pointer;
-            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.2);
-        }
-
-        .lang-slider-bg {
-            position: absolute;
-            top: 2px;
-            left: 2px;
-            width: 68px;
-            height: 40px;
+        /* 새로 디자인된 언어 전환 버튼 */
+        .language-toggle-btn {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border-radius: 23px;
-            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 0;
-        }
-
-        .language-slider {
-            display: flex;
-            width: 100%;
-            height: 100%;
-            position: relative;
-            z-index: 2;
-        }
-
-        .lang-option {
-            flex: 1;
-            height: 100%;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 10px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
             display: flex;
             align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            color: #4a5568;
-            font-size: 15px;
-            user-select: none;
-            position: relative;
-            z-index: 2;
-            cursor: pointer;
-            transition: color 0.3s ease;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
         }
 
-        .lang-option.active {
-            color: white;
-            font-weight: 700;
+        .language-toggle-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .language-toggle-btn:active {
+            transform: translateY(0);
+        }
+
+        .lang-icon {
+            font-size: 16px;
         }
 
         .title {
@@ -689,13 +666,11 @@
     <div class="container">
         <div class="header">
             <div class="language-container">
-                <div class="language-switch-wrapper" id="languageSwitch">
-                    <div class="lang-slider-bg" id="langSliderBg"></div>
-                    <div class="language-slider" id="languageSlider">
-                        <div class="lang-option active" id="langKorean">한국어</div>
-                        <div class="lang-option" id="langEnglish">English</div>
-                    </div>
-                </div>
+                <!-- 새로 디자인된 언어 전환 버튼 -->
+                <button class="language-toggle-btn" id="languageToggleBtn">
+                    <span class="lang-icon">🌐</span>
+                    <span id="languageBtnText">English</span>
+                </button>
             </div>
             <h1 class="title" id="pageTitle">USDT → THB 익명 결제</h1>
             <p class="subtitle" id="pageSubtitle">로그인 없이 USDT로 태국 바트(THB) 결제하기</p>
@@ -885,7 +860,7 @@
         let currentStep = 1;
         let currentOrderId = '';
         let statusCheckInterval = null;
-        let uploadedFile = null; // 초기에는 null
+        let uploadedFile = null;
         let activeWallet = null;
         let allWallets = [];
         let currentLang = 'ko';
@@ -933,10 +908,11 @@
                 completed: "Completed",
                 cancelled: "Cancelled",
                 rateLoading: "Loading...",
-                rateError: "Failed to load",
+                rateError: "Failed to load rate",
                 uploadRequiredAlert: "Please upload payment proof (QR code screenshot) first",
                 amountMinAlert: "Minimum payment amount is 1,000 THB",
-                amountMaxAlert: "Maximum payment amount is 500,000 THB"
+                amountMaxAlert: "Maximum payment amount is 500,000 THB",
+                languageBtnText: "한국어"
             },
             ko: {
                 title: "USDT → THB 익명 결제",
@@ -979,10 +955,11 @@
                 completed: "완료",
                 cancelled: "취소",
                 rateLoading: "로딩 중...",
-                rateError: "로딩 실패",
+                rateError: "환율 로딩 실패",
                 uploadRequiredAlert: "먼저 결제 증명서(QR 코드 스크린샷)를 업로드해주세요",
                 amountMinAlert: "최소 결제 금액은 1,000 THB 입니다",
-                amountMaxAlert: "최대 결제 금액은 500,000 THB 입니다"
+                amountMaxAlert: "최대 결제 금액은 500,000 THB 입니다",
+                languageBtnText: "English"
             }
         };
 
@@ -990,14 +967,14 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('페이지 로드됨');
             
-            // 언어 전환 슬라이더 초기화
-            initLanguageSlider();
+            // 언어 전환 버튼 초기화
+            initLanguageButton();
             
             // 실시간 환율 업데이트 시작
             fetchRealTimeExchangeRate();
             
-            // 30초마다 환율 업데이트
-            setInterval(fetchRealTimeExchangeRate, 30000);
+            // 10초마다 환율 업데이트 (더 빠른 업데이트)
+            setInterval(fetchRealTimeExchangeRate, 10000);
             
             // 페이지 포커스 시 환율 업데이트
             window.addEventListener('focus', fetchRealTimeExchangeRate);
@@ -1019,129 +996,145 @@
             checkPaymentButton();
         });
 
-        // 언어 슬라이더 초기화
-        function initLanguageSlider() {
-            const langKorean = document.getElementById('langKorean');
-            const langEnglish = document.getElementById('langEnglish');
+        // 언어 버튼 초기화
+        function initLanguageButton() {
+            const languageBtn = document.getElementById('languageToggleBtn');
             
-            // 한국어 클릭 시
-            langKorean.addEventListener('click', function(e) {
-                e.stopPropagation();
-                if (currentLang !== 'ko') {
-                    currentLang = 'ko';
-                    updateAllText();
-                    updateLanguageSlider();
-                }
+            languageBtn.addEventListener('click', function() {
+                toggleLanguage();
             });
             
-            // 영어 클릭 시
-            langEnglish.addEventListener('click', function(e) {
-                e.stopPropagation();
-                if (currentLang !== 'en') {
-                    currentLang = 'en';
-                    updateAllText();
-                    updateLanguageSlider();
-                }
-            });
-            
-            updateLanguageSlider();
+            updateLanguageButtonText();
         }
 
-        // 언어 슬라이더 업데이트
-        function updateLanguageSlider() {
-            const langSliderBg = document.getElementById('langSliderBg');
-            const koreanOption = document.getElementById('langKorean');
-            const englishOption = document.getElementById('langEnglish');
-            
-            console.log('언어 슬라이더 업데이트, 현재 언어:', currentLang);
-            
-            if (currentLang === 'ko') {
-                langSliderBg.style.transform = 'translateX(0)';
-                koreanOption.classList.add('active');
-                englishOption.classList.remove('active');
-            } else {
-                langSliderBg.style.transform = 'translateX(70px)'; // 한 옵션의 너비만큼 이동
-                koreanOption.classList.remove('active');
-                englishOption.classList.add('active');
-            }
+        // 언어 버튼 텍스트 업데이트
+        function updateLanguageButtonText() {
+            const trans = translations[currentLang];
+            document.getElementById('languageBtnText').textContent = trans.languageBtnText;
         }
 
         // 언어 전환 함수
         function toggleLanguage() {
-            console.log('현재 언어:', currentLang);
             currentLang = currentLang === 'en' ? 'ko' : 'en';
-            console.log('변경된 언어:', currentLang);
             updateAllText();
-            updateLanguageSlider();
+            updateLanguageButtonText();
         }
 
-        // 실시간 환율 가져오기
+        // 실시간 환율 가져오기 - 더 신뢰성 있는 API 사용
         async function fetchRealTimeExchangeRate() {
             try {
                 console.log('실시간 환율 조회 시작...');
                 
-                // 여러 API 엔드포인트 시도
+                // 더 신뢰성 있는 API 사용 (Binance, Coinbase 등)
                 const apiEndpoints = [
-                    'https://api.exchangerate-api.com/v4/latest/USD',
-                    'https://api.exchangerate.host/latest?base=USD&symbols=THB',
-                    'https://open.er-api.com/v6/latest/USD'
+                    'https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=thb',
+                    'https://api.binance.com/api/v3/ticker/price?symbol=USDTTHB',
+                    'https://api.kraken.com/0/public/Ticker?pair=USDTTHB',
+                    'https://api.coinbase.com/v2/exchange-rates?currency=USDT'
                 ];
                 
                 let rate = 0;
                 let success = false;
                 
-                // 첫 번째 API 시도
+                // 각 API 시도
                 for (const apiUrl of apiEndpoints) {
                     try {
                         console.log(`API 시도: ${apiUrl}`);
+                        
+                        const controller = new AbortController();
+                        const timeoutId = setTimeout(() => controller.abort(), 5000);
+                        
                         const response = await fetch(apiUrl, {
                             method: 'GET',
                             headers: {
                                 'Accept': 'application/json',
                                 'Content-Type': 'application/json'
-                            }
+                            },
+                            signal: controller.signal
                         });
+                        
+                        clearTimeout(timeoutId);
                         
                         if (response.ok) {
                             const data = await response.json();
                             
                             // API 응답 구조에 따른 처리
-                            if (apiUrl.includes('exchangerate-api.com')) {
-                                rate = parseFloat(data.rates.THB);
-                            } else if (apiUrl.includes('exchangerate.host')) {
-                                rate = parseFloat(data.rates.THB);
-                            } else if (apiUrl.includes('open.er-api.com')) {
-                                rate = parseFloat(data.rates.THB);
+                            if (apiUrl.includes('coingecko')) {
+                                // CoinGecko API
+                                if (data.tether && data.tether.thb) {
+                                    rate = parseFloat(data.tether.thb);
+                                }
+                            } else if (apiUrl.includes('binance')) {
+                                // Binance API
+                                if (data.price) {
+                                    rate = parseFloat(data.price);
+                                }
+                            } else if (apiUrl.includes('kraken')) {
+                                // Kraken API
+                                if (data.result && data.result.USDTTHB) {
+                                    const ticker = data.result.USDTTHB;
+                                    if (ticker.c && ticker.c[0]) {
+                                        rate = parseFloat(ticker.c[0]);
+                                    }
+                                }
+                            } else if (apiUrl.includes('coinbase')) {
+                                // Coinbase API
+                                if (data.data && data.data.rates && data.data.rates.THB) {
+                                    rate = parseFloat(data.data.rates.THB);
+                                }
                             }
                             
-                            if (rate && rate > 0) {
+                            if (rate && rate > 0 && rate < 100) { // 유효성 검사 (0-100 사이)
                                 success = true;
                                 console.log(`환율 API 성공 (${apiUrl}):`, rate);
                                 break; // 성공하면 루프 종료
+                            } else {
+                                rate = 0; // 유효하지 않은 값 초기화
                             }
                         }
                     } catch (apiError) {
-                        console.log(`API ${apiUrl} 실패:`, apiError);
+                        console.log(`API ${apiUrl} 실패:`, apiError.name || apiError);
                         continue; // 다음 API 시도
                     }
                 }
                 
-                if (!success) {
-                    // 모든 API 실패 시 고정 환율 사용 (백업) - 31.2로 변경
-                    rate = 31.2;
-                    console.log('API 모두 실패, 고정 환율 사용:', rate);
+                if (success) {
+                    exchangeRate = rate;
+                    updateExchangeRateDisplay(rate, true);
+                } else {
+                    // 모든 API 실패 시 다른 방법 시도
+                    await tryAlternativeExchangeRate();
                 }
-                
-                exchangeRate = rate;
-                updateExchangeRateDisplay(rate, success);
                 
             } catch (error) {
                 console.error('환율 조회 전체 실패:', error);
-                
-                // 최종 백업: 고정 환율 - 31.2로 변경
-                exchangeRate = 31.2;
-                updateExchangeRateDisplay(31.2, false);
+                await tryAlternativeExchangeRate();
             }
+        }
+
+        // 대체 환율 조회 방법
+        async function tryAlternativeExchangeRate() {
+            try {
+                // USD/THB 환율 조회 후 USDT 가정 (USDT ≈ USD)
+                const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD');
+                if (response.ok) {
+                    const data = await response.json();
+                    const usdToThb = parseFloat(data.rates.THB);
+                    
+                    if (usdToThb && usdToThb > 0) {
+                        exchangeRate = usdToThb;
+                        updateExchangeRateDisplay(usdToThb, true);
+                        console.log('대체 환율 API 성공:', usdToThb);
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.log('대체 환율 API도 실패:', error);
+            }
+            
+            // 최종적으로 실시간 환율 표시 실패
+            exchangeRate = 0;
+            updateExchangeRateDisplay(0, false);
         }
 
         // 환율 표시 업데이트
@@ -1155,19 +1148,19 @@
                 hour12: false 
             });
             
+            const rateElement = document.getElementById('exchangeRate');
+            
             if (success && rate > 0) {
                 // 성공적으로 환율 받아옴
-                document.getElementById('exchangeRate').innerHTML = 
-                    `<span style="color:#e53e3e;font-weight:bold;">${rate.toFixed(2)}</span>`;
+                rateElement.innerHTML = `<span style="color:#e53e3e;font-weight:bold;">${rate.toFixed(2)}</span>`;
                 document.getElementById('calcRate').textContent = rate.toFixed(2);
                 document.getElementById('rateUpdate').textContent = trans.lastUpdate + timeString;
+                console.log('실시간 환율 업데이트:', rate);
             } else {
-                // API 실패지만 고정 환율 사용 중
-                document.getElementById('exchangeRate').innerHTML = 
-                    `<span style="color:#e53e3e;font-weight:bold;">${rate.toFixed(2)}</span>`;
-                document.getElementById('calcRate').textContent = rate.toFixed(2);
-                document.getElementById('rateUpdate').textContent = 
-                    trans.lastUpdate + timeString + (currentLang === 'ko' ? ' (고정환율)' : ' (Fixed Rate)');
+                // 실시간 환율 로딩 실패
+                rateElement.innerHTML = `<span class="rate-error">${trans.rateError}</span>`;
+                document.getElementById('calcRate').textContent = '0.00';
+                document.getElementById('rateUpdate').textContent = trans.lastUpdate + trans.rateError;
             }
             
             // 계산 업데이트
@@ -1284,6 +1277,9 @@
             if (!document.getElementById('qrModal').classList.contains('hidden')) {
                 updateModalText();
             }
+            
+            // 언어 버튼 텍스트 업데이트
+            updateLanguageButtonText();
             
             // 주문 목록 업데이트
             updateOrdersList();
