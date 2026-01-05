@@ -2153,14 +2153,115 @@
             updateOrdersList();
         };
 
-        window.updateWalletsFromAdmin = function(wallets) {
-            console.log('관리자로부터 지갑 업데이트:', wallets.length, '개');
-            allWallets = wallets;
-            localStorage.setItem('payment_wallets', JSON.stringify(wallets));
-            activeWallet = dataManager.getActiveWallet();
-            updateWalletDisplay();
-        };
+       // ==================== 지갑 업데이트 관련 함수 수정 ====================
 
+// 사용자 페이지의 지갑 업데이트 함수 수정
+window.updateWalletsFromAdmin = function(wallets) {
+    console.log('👛 사용자 페이지: 관리자로부터 지갑 업데이트 받음', wallets.length, '개');
+    
+    // 로컬 스토리지에 저장
+    localStorage.setItem('payment_wallets', JSON.stringify(wallets));
+    
+    // 전역 변수 업데이트
+    allWallets = wallets;
+    activeWallet = dataManager.getActiveWallet();
+    
+    // 지갑 정보 업데이트
+    updateWalletDisplay();
+    
+    // 모달이 열려있으면 QR 코드 업데이트
+    if (!document.getElementById('qrModal').classList.contains('hidden')) {
+        updateQRCodeDisplay();
+    }
+};
+
+// QR 코드 표시 함수 추가
+function updateQRCodeDisplay() {
+    if (!activeWallet) return;
+    
+    const qrCodeContainer = document.getElementById('qrCodeContainer');
+    const qrPlaceholder = qrCodeContainer.querySelector('.qr-placeholder');
+    
+    if (activeWallet.qrCode && 
+        activeWallet.qrCode !== 'null' && 
+        activeWallet.qrCode !== '' && 
+        activeWallet.qrCode !== null &&
+        typeof activeWallet.qrCode === 'string' && 
+        activeWallet.qrCode.startsWith('data:image/')) {
+        
+        console.log('QR 코드 표시:', activeWallet.id, '타입:', activeWallet.qrCode.substring(5, 15));
+        
+        // 기존 이미지 제거
+        const existingImg = qrCodeContainer.querySelector('img');
+        if (existingImg) {
+            existingImg.remove();
+        }
+        
+        // 새 이미지 추가
+        const img = document.createElement('img');
+        img.src = activeWallet.qrCode;
+        img.alt = 'QR Code';
+        img.style.maxWidth = '100%';
+        img.style.maxHeight = '100%';
+        img.onerror = function() {
+            this.style.display = 'none';
+            if (!qrPlaceholder) {
+                const newPlaceholder = document.createElement('div');
+                newPlaceholder.className = 'qr-placeholder';
+                newPlaceholder.textContent = '🔳';
+                qrCodeContainer.appendChild(newPlaceholder);
+            }
+        };
+        
+        if (qrPlaceholder) {
+            qrPlaceholder.style.display = 'none';
+        }
+        
+        qrCodeContainer.appendChild(img);
+    } else {
+        console.log('QR 코드 없음, 플레이스홀더 표시');
+        if (qrPlaceholder) {
+            qrPlaceholder.style.display = 'block';
+        } else {
+            const placeholder = document.createElement('div');
+            placeholder.className = 'qr-placeholder';
+            placeholder.textContent = '🔳';
+            qrCodeContainer.appendChild(placeholder);
+        }
+    }
+}
+
+// 지갑 정보 업데이트 함수 수정
+function updateWalletDisplay() {
+    if (!activeWallet) return;
+    
+    // 주소 표시
+    document.getElementById('walletAddress').textContent = activeWallet.address;
+    
+    const networkClass = `network-${activeWallet.network.toLowerCase()}`;
+    
+    let networkText = '';
+    switch(activeWallet.network) {
+        case 'TRC20': networkText = 'TRC20 Network'; break;
+        case 'ERC20': networkText = 'ERC20 Network'; break;
+        case 'BEP20': networkText = 'BEP20 Network'; break;
+        default: networkText = activeWallet.network + ' Network';
+    }
+    
+    document.getElementById('selectedWalletInfo').innerHTML = `
+        <div class="wallet-icon">👛</div>
+        <div class="wallet-details">
+            <div class="wallet-name">${activeWallet.name}</div>
+            <div class="wallet-network">
+                ${networkText}
+                <span class="network-badge ${networkClass}">${activeWallet.network}</span>
+            </div>
+        </div>
+    `;
+    
+    // QR 코드 업데이트
+    updateQRCodeDisplay();
+}
         function getStepFromStatus(status) {
             switch(status) {
                 case '입금대기': return 1;
