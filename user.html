@@ -1,130 +1,2257 @@
-// ==================== 지갑 테이블 업데이트 (수정된 버전) ====================
-function updateWallets() {
-    const statusFilter = document.getElementById('walletStatusFilter').value;
-    const networkFilter = document.getElementById('walletNetworkFilter').value;
-    
-    let filteredWallets = [...allWallets];
-    
-    if (statusFilter !== 'all') {
-        filteredWallets = filteredWallets.filter(w => 
-            statusFilter === 'active' ? w.isActive : !w.isActive
-        );
-    }
-    
-    if (networkFilter !== 'all') {
-        filteredWallets = filteredWallets.filter(w => w.network === networkFilter);
-    }
-    
-    filteredWallets.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-    
-    const walletsTableBody = document.getElementById('walletsTableBody');
-    if (!walletsTableBody) return;
-    
-    if (filteredWallets.length === 0) {
-        const trans = translations[currentLang];
-        walletsTableBody.innerHTML = `
-            <tr>
-                <td colspan="7" class="no-wallets">${trans.noWalletsText}</td>
-            </tr>
-        `;
-        return;
-    }
-    
-    let html = '';
-    filteredWallets.forEach(wallet => {
-        const networkClass = `network-${wallet.network.toLowerCase()}`;
-        const createdDate = new Date(wallet.createdAt).toLocaleDateString('ko-KR');
-        
-        const statusText = wallet.isActive ? 
-            (currentLang === 'en' ? 'Active' : '활성') : 
-            (currentLang === 'en' ? 'Inactive' : '비활성');
-        const statusClass = wallet.isActive ? 'wallet-active' : 'wallet-inactive';
-        
-        const defaultBadgeText = currentLang === 'en' ? 'Default' : '기본';
-        const defaultBadge = wallet.isDefault ? `<span class="default-wallet-badge">${defaultBadgeText}</span>` : '';
-        
-        // ✅ 수정된 QR 코드 표시 부분
-        let qrDisplay = '';
-        if (wallet.qrCode && 
-            wallet.qrCode !== 'null' && 
-            wallet.qrCode !== '' && 
-            wallet.qrCode !== null &&
-            typeof wallet.qrCode === 'string' && 
-            wallet.qrCode.startsWith('data:image/')) {
-            
-            // 고유 ID 생성
-            const imgId = 'qr_' + Date.now() + Math.random().toString(36).substr(2, 9);
-            qrDisplay = `
-                <div class="qr-code-small" id="${imgId}">
-                    <img src="${wallet.qrCode}" 
-                         alt="Wallet QR Code" 
-                         style="max-width: 80px; max-height: 80px;"
-                         onerror="
-                             const container = document.getElementById('${imgId}');
-                             if (container) {
-                                 container.innerHTML = '<div style=\\"color:#999;font-size:12px;\\">이미지 로드 오류</div>';
-                             }
-                         ">
-                </div>
-            `;
-        } else {
-            qrDisplay = '<div style="text-align: center; color: #999; font-size: 12px;">없음</div>';
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>USDT/THB Payment System - Anonymous Payment</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', 'Apple SD Gothic Neo', -apple-system, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a2980 0%, #26d0ce 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            position: relative;
+            padding-top: 50px;
+        }
+
+        .language-container {
+            position: absolute;
+            top: 0;
+            right: 0;
+            left: 0;
+            display: flex;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+
+        .language-toggle-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            padding: 10px 24px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .language-toggle-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .language-toggle-btn:active {
+            transform: translateY(0);
+        }
+
+        .lang-icon {
+            font-size: 16px;
+        }
+
+        .title {
+            color: #1a2980;
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #1a2980, #26d0ce);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            color: #4a5568;
+            font-size: 14px;
+        }
+
+        .exchange-section {
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+            color: #2d3748;
+            text-align: center;
+        }
+
+        .rate-display {
+            font-size: 22px;
+            font-weight: bold;
+            color: #2d3748;
+            margin: 10px 0;
+        }
+
+        .rate-value {
+            color: #e53e3e;
+        }
+
+        .payment-form {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .input-label {
+            color: #2d3748;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .amount-input {
+            width: 100%;
+            padding: 18px;
+            font-size: 20px;
+            border: 2px solid #cbd5e0;
+            border-radius: 12px;
+            text-align: center;
+            outline: none;
+        }
+
+        .amount-input:focus {
+            border-color: #667eea;
+        }
+
+        .amount-limit {
+            font-size: 14px;
+            color: #718096;
+            text-align: center;
+            margin-top: 5px;
+        }
+
+        .calculation-preview {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+        }
+
+        .calc-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 15px;
+            color: #4a5568;
+        }
+
+        .calc-total {
+            font-weight: bold;
+            color: #2d3748;
+            font-size: 18px;
+        }
+
+        .upload-section {
+            margin: 20px 0;
+        }
+
+        .upload-label {
+            display: block;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .upload-button {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            color: #2d3748;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            border: 2px dashed #cbd5e0;
+            text-align: center;
+            cursor: pointer;
+            width: 100%;
+            display: block;
+            transition: all 0.3s;
+        }
+
+        .upload-button:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+
+        .upload-input {
+            display: none;
+        }
+
+        .upload-preview {
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .upload-preview-image {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: 8px;
+            border: 2px solid #cbd5e0;
+            object-fit: contain;
+        }
+
+        .file-info {
+            font-size: 12px;
+            color: #718096;
+            margin-top: 5px;
+        }
+
+        .pay-button {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .pay-button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .pay-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .orders-section {
+            background: #f7fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+        }
+
+        .section-title {
+            color: #2d3748;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+
+        .orders-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .order-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            border: 2px solid #e2e8f0;
+        }
+
+        .order-card.status-waiting { border-color: #f6ad55; }
+        .order-card.status-confirmed { border-color: #4299e1; }
+        .order-card.status-processing { border-color: #9f7aea; }
+        .order-card.status-completed { border-color: #38a169; }
+        .order-card.status-cancelled { border-color: #e53e3c; }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .order-id {
+            font-weight: bold;
+            color: #2d3748;
+            font-size: 16px;
+        }
+
+        .order-time {
+            font-size: 12px;
+            color: #718096;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .status-waiting { background: #f6ad55; }
+        .status-confirmed { background: #4299e1; }
+        .status-processing { background: #9f7aea; }
+        .status-completed { background: #38a169; }
+        .status-cancelled { background: #e53e3c; }
+
+        .order-details {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .order-amount {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2d3748;
+            text-align: center;
+            padding: 10px;
+            background: #f1f5f9;
+            border-radius: 8px;
+        }
+
+        .order-breakdown {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .breakdown-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #4a5568;
+        }
+
+        .proof-image {
+            max-width: 100%;
+            max-height: 150px;
+            border-radius: 8px;
+            margin-top: 10px;
+            border: 1px solid #ddd;
+        }
+
+        .no-orders {
+            text-align: center;
+            padding: 40px 20px;
+            color: #a0aec0;
+            font-size: 16px;
+            background: white;
+            border-radius: 10px;
+            border: 2px dashed #cbd5e0;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 25px;
+            padding: 40px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .modal-title {
+            color: #2d3748;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: #718096;
+            cursor: pointer;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #718096;
+            z-index: 1;
+        }
+
+        .step-circle.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .step-circle.completed {
+            background: #38a169;
+            color: white;
+        }
+
+        .qr-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .qr-code {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 20px;
+            background: #f7fafc;
+            border-radius: 10px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #e2e8f0;
+        }
+
+        .qr-code img {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 4px;
+        }
+
+        .qr-placeholder {
+            font-size: 60px;
+            margin-bottom: 15px;
+        }
+
+        .wallet-address {
+            background: #f7fafc;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            word-break: break-all;
+            font-family: monospace;
+            border: 1px solid #e2e8f0;
+        }
+
+        .wallet-info {
+            text-align: center;
+            margin: 10px 0;
+            padding: 10px;
+            background: #f0fff4;
+            border-radius: 8px;
+            border: 1px solid #c6f6d5;
+        }
+
+        .wallet-name {
+            font-weight: bold;
+            color: #2d3748;
+        }
+
+        .copy-button {
+            background: #4299e1;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .timer {
+            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+            padding: 20px;
+            border-radius: 15px;
+            font-size: 22px;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .complete-message {
+            text-align: center;
+            font-size: 24px;
+            color: #38a169;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid #4299e1;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        .status-update-message {
+            text-align: center;
+            padding: 15px;
+            background: #f0fff4;
+            border-radius: 10px;
+            margin: 15px 0;
+            color: #2d3748;
+            font-size: 14px;
+            border: 1px solid #c6f6d5;
+        }
+
+        .step-description {
+            text-align: center;
+            color: #4a5568;
+            margin-bottom: 20px;
+        }
+
+        .wallet-selection {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 10px;
+            border: 2px solid #e2e8f0;
+        }
+
+        .wallet-selection-title {
+            font-size: 14px;
+            color: #4a5568;
+            margin-bottom: 8px;
+        }
+
+        .selected-wallet {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #c6f6d5;
+        }
+
+        .wallet-icon {
+            font-size: 20px;
+        }
+
+        .wallet-details {
+            flex: 1;
+        }
+
+        .wallet-network {
+            font-size: 12px;
+            color: #718096;
+            margin-top: 2px;
+        }
+
+        .network-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            color: white;
+            margin-left: 5px;
+        }
+
+        .network-trc20 { background: #f56565; }
+        .network-erc20 { background: #4299e1; }
+        .network-bep20 { background: #38a169; }
+
+        .completed-orders-section {
+            background: #f0fff4;
+            border: 2px solid #c6f6d5;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 30px;
+        }
+
+        .completed-section-title {
+            color: #38a169;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .completed-section-title::before {
+            content: '✓';
+            background: #38a169;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .rate-loading {
+            color: #718096;
+            font-size: 16px;
         }
         
-        const shortAddress = wallet.address.length > 20 ? 
-            wallet.address.substring(0, 10) + '...' + wallet.address.substring(wallet.address.length - 10) : 
-            wallet.address;
+        .rate-error {
+            color: #e53e3e;
+            font-size: 16px;
+        }
         
-        const editText = currentLang === 'en' ? 'Edit' : '수정';
-        const deleteText = currentLang === 'en' ? 'Delete' : '삭제';
-        const deactivateText = currentLang === 'en' ? 'Deactivate' : '비활성화';
-        const activateText = currentLang === 'en' ? 'Activate' : '활성화';
-        const setDefaultText = currentLang === 'en' ? 'Set Default' : '기본 설정';
+        .upload-required {
+            color: #e53e3e;
+            font-size: 12px;
+            text-align: center;
+            margin-top: 5px;
+        }
         
-        html += `
-            <tr>
-                <td>
-                    <div style="font-weight: bold; color: #2c3e50;">
-                        ${wallet.name} ${defaultBadge}
-                    </div>
-                    ${wallet.memo ? `<div style="font-size: 12px; color: #718096; margin-top: 5px;">${wallet.memo}</div>` : ''}
-                </td>
-                <td>
-                    <span class="network-badge ${networkClass}">${wallet.network}</span>
-                </td>
-                <td>
-                    <div style="font-size: 12px; color: #2c3e50;">${shortAddress}</div>
-                    <div class="wallet-address" title="${wallet.address}">
-                        ${wallet.address}
-                    </div>
-                </td>
-                <td>${qrDisplay}</td>
-                <td>
-                    <span class="wallet-status ${statusClass}">
-                        ${wallet.isActive ? '<span class="active-wallet-indicator"></span>' : ''}
-                        ${statusText}
-                    </span>
-                </td>
-                <td>${createdDate}</td>
-                <td>
-                    <div class="wallet-actions">
-                        <button class="action-button action-edit" onclick="editWallet('${wallet.id}')">${editText}</button>
-                        ${!wallet.isDefault ? `
-                            <button class="action-button action-delete" onclick="deleteWallet('${wallet.id}')">${deleteText}</button>
-                        ` : ''}
-                        ${wallet.isActive ? 
-                            `<button class="action-button action-deactivate" onclick="toggleWalletStatus('${wallet.id}', false)">${deactivateText}</button>` :
-                            `<button class="action-button action-activate" onclick="toggleWalletStatus('${wallet.id}', true)">${activateText}</button>`
-                        }
-                        ${!wallet.isDefault ? 
-                            `<button class="action-button action-setdefault" onclick="setDefaultWallet('${wallet.id}')">${setDefaultText}</button>` : 
-                            ''
-                        }
-                    </div>
-                </td>
-            </tr>
-        `;
-    });
+        .sync-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #38a169;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .sync-status.visible {
+            opacity: 1;
+        }
+        
+        .sync-pulse {
+            width: 8px;
+            height: 8px;
+            background: #38a169;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.5); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        
+        .wallet-loading {
+            text-align: center;
+            color: #718096;
+            font-size: 14px;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 동기화 상태 표시 -->
+    <div class="sync-status" id="syncStatus">
+        <div class="sync-pulse"></div>
+        <span id="syncText">동기화 중...</span>
+    </div>
     
-    walletsTableBody.innerHTML = html;
-}
+    <div class="container">
+        <div class="header">
+            <div class="language-container">
+                <button class="language-toggle-btn" id="languageToggleBtn">
+                    <span class="lang-icon">🌐</span>
+                    <span id="languageBtnText">English</span>
+                </button>
+            </div>
+            <h1 class="title" id="pageTitle">USDT → THB 결제</h1>
+            <p class="subtitle" id="pageSubtitle">로그인 없이 USDT로 태국 바트(THB) 결제하기</p>
+        </div>
+
+        <div class="exchange-section">
+            <h4 id="exchangeTitle">💱 실시간 환율</h4>
+            <div class="rate-display">
+                1 USDT = <span class="rate-value" id="exchangeRate">
+                    <span class="rate-loading">로딩 중...</span>
+                </span> THB
+            </div>
+            <div id="rateUpdate">마지막 업데이트: 로딩 중...</div>
+        </div>
+
+        <div class="payment-form">
+            <div class="input-group">
+                <label class="input-label" id="amountLabel">💰 결제 금액 입력 (THB):</label>
+                <input type="number" 
+                       class="amount-input" 
+                       id="thbAmount" 
+                       placeholder="금액을 입력하세요"
+                       min="1000"
+                       max="500000"
+                       value="">
+                <div class="amount-limit" id="amountLimit">
+                    최소 1,000 THB ~ 최대 500,000 THB
+                </div>
+            </div>
+
+            <div class="calculation-preview" id="calcPreview" style="display: none;">
+                <div class="calc-row">
+                    <span id="calcAmountLabel">결제 금액:</span>
+                    <span id="calcAmount">0 THB</span>
+                </div>
+                <div class="calc-row">
+                    <span id="calcRateLabel">환율:</span>
+                    <span>1 USDT = <span id="calcRate">0.00</span> THB</span>
+                </div>
+                <div class="calc-row">
+                    <span id="calcUsdtLabel">USDT 금액:</span>
+                    <span id="calcUsdt">0.0000 USDT</span>
+                </div>
+                <div class="calc-row">
+                    <span id="calcFeeLabel">수수료 (3%):</span>
+                    <span id="calcFee">0.0000 USDT</span>
+                </div>
+                <div class="calc-row">
+                    <span id="calcTotalLabel">총 결제 금액:</span>
+                    <span class="calc-total" id="calcTotal">0.0000 USDT</span>
+                </div>
+            </div>
+
+            <div class="upload-section">
+                <label class="upload-label" for="paymentProof">
+                    <div class="upload-button" id="uploadButtonText">
+                        📎 결제 할 상점 QR (필수)
+                    </div>
+                </label>
+                <div class="upload-required" id="uploadRequired">
+                    ※ 결제를 위해 QR 코드 스크린샷을 업로드해야 합니다
+                </div>
+                <input type="file" class="upload-input" id="paymentProof" accept="image/*,.pdf,.png,.jpg,.jpeg">
+                <div class="upload-preview" id="uploadPreview">
+                    <!-- 초기에는 미리보기 없음 -->
+                </div>
+            </div>
+
+            <button class="pay-button" id="payButton" disabled>
+                💳 <span id="payButtonText">지금 결제하기</span>
+            </button>
+        </div>
+
+        <div class="orders-section">
+            <h3 class="section-title">⏳ <span id="activeOrdersTitle">진행 중인 주문</span></h3>
+            <div class="orders-list" id="activeOrdersList">
+                <div class="no-orders" id="noActiveOrders">진행 중인 주문이 없습니다</div>
+            </div>
+        </div>
+
+        <div class="completed-orders-section">
+            <h3 class="completed-section-title">
+                <span id="completedOrdersTitle">✅ 완료된 주문</span>
+            </h3>
+            <div class="orders-list" id="completedOrdersList">
+                <div class="no-orders" id="noCompletedOrders">완료된 주문이 없습니다</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay hidden" id="qrModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">🔳 USDT 전송 안내</h3>
+                <button class="modal-close" id="closeModal">✕</button>
+            </div>
+
+            <div class="step-indicator">
+                <div class="step-circle active" id="step1">1</div>
+                <div class="step-circle" id="step2">2</div>
+                <div class="step-circle" id="step3">3</div>
+                <div class="step-circle" id="step4">4</div>
+            </div>
+
+            <div id="step1Content">
+                <div class="wallet-selection" id="walletSelection">
+                    <div class="wallet-selection-title" id="walletSelectionTitle">선택된 지갑:</div>
+                    <div class="selected-wallet" id="selectedWalletInfo">
+                        <div class="wallet-loading">지갑 정보 로딩 중...</div>
+                    </div>
+                </div>
+
+                <div class="qr-container">
+                    <div class="qr-code" id="qrCodeContainer">
+                        <div class="wallet-loading">QR 코드 로딩 중...</div>
+                    </div>
+                    <p class="step-description" id="step1Description">아래 지갑 주소로 USDT를 전송해주세요</p>
+                </div>
+                
+                <div class="wallet-address" id="walletAddress">
+                    지갑 정보 로딩 중...
+                </div>
+                
+                <button class="copy-button" id="copyAddress">
+                    📋 <span id="copyButtonText">주소 복사</span>
+                </button>
+
+                <div class="calculation-preview" style="margin-top: 20px;">
+                    <div class="calc-row">
+                        <span id="modalTotalLabel">총 결제 금액:</span>
+                        <span class="calc-total" id="modalTotal">0.0000 USDT</span>
+                    </div>
+                    <div class="calc-row">
+                        <span id="orderIdLabel">주문 ID:</span>
+                        <span id="orderId">ORD-000000</span>
+                    </div>
+                </div>
+
+                <div class="status-update-message" id="statusMessage1">
+                    ⏳ <span id="statusMessage1Text">USDT 전송 후 관리자 확인 대기 중...</span>
+                </div>
+            </div>
+
+            <div id="step2Content" style="display: none;">
+                <div class="spinner"></div>
+                <p class="step-description" id="step2Description">USDT 입금 확인 중...</p>
+                <div class="status-update-message" id="statusMessage2">
+                    <span id="statusMessage2Text">관리자가 입금을 확인 중입니다. 잠시만 기다려주세요...</span>
+                </div>
+            </div>
+
+            <div id="step3Content" style="display: none;">
+                <div class="spinner" style="border-top-color: #f6ad55;"></div>
+                <p class="step-description" id="step3Description">THB 결제 처리 중...</p>
+                <div class="status-update-message" id="statusMessage3">
+                    <span id="statusMessage3Text">THB 결제가 처리 중입니다...</span>
+                </div>
+            </div>
+
+            <div id="step4Content" style="display: none;">
+                <div class="complete-message">🎉 <span id="completeMessage">결제 완료!</span></div>
+                <p class="step-description" id="step4Description">결제가 성공적으로 완료되었습니다.</p>
+                <button class="pay-button" id="finishPayment">
+                    <span id="finishButtonText">확인</span>
+                </button>
+            </div>
+
+            <div class="timer" id="timer">
+                ⏰ <span id="timerLabel">남은 시간:</span> <span id="timeLeft">5:00</span>
+            </div>
+
+            <div class="status-update-message" id="autoUpdateInfo">
+                🔄 <span id="autoUpdateText">관리자 확인 후 자동으로 진행됩니다...</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 데이터 관리자 클래스 ====================
+        class DataManager {
+            constructor() {
+                this.ORDERS_KEY = 'payment_orders';
+                this.WALLETS_KEY = 'payment_wallets';
+                this.SYNC_KEY = 'payment_sync_flag';
+                this.USER_SYNC_KEY = 'user_sync_check';
+            }
+
+            getOrders() {
+                try {
+                    let orders = JSON.parse(localStorage.getItem(this.ORDERS_KEY) || '[]');
+                    
+                    sessionStorage.setItem(this.ORDERS_KEY, JSON.stringify(orders));
+                    
+                    return orders;
+                } catch (error) {
+                    console.error('Error loading orders:', error);
+                    return [];
+                }
+            }
+
+            saveOrders(orders) {
+                try {
+                    localStorage.setItem(this.ORDERS_KEY, JSON.stringify(orders));
+                    
+                    sessionStorage.setItem(this.ORDERS_KEY, JSON.stringify(orders));
+                    
+                    localStorage.setItem(this.SYNC_KEY, Date.now().toString());
+                    
+                    return true;
+                } catch (error) {
+                    console.error('Error saving orders:', error);
+                    return false;
+                }
+            }
+
+            getWallets() {
+                try {
+                    let wallets = JSON.parse(localStorage.getItem(this.WALLETS_KEY) || '[]');
+                    
+                    if (wallets.length === 0) {
+                        wallets = [this.createDefaultWallet()];
+                        this.saveWallets(wallets);
+                    }
+                    
+                    return wallets;
+                } catch (error) {
+                    console.error('Error loading wallets:', error);
+                    return [];
+                }
+            }
+
+            saveWallets(wallets) {
+                try {
+                    localStorage.setItem(this.WALLETS_KEY, JSON.stringify(wallets));
+                    localStorage.setItem(this.SYNC_KEY, Date.now().toString());
+                    return true;
+                } catch (error) {
+                    console.error('Error saving wallets:', error);
+                    return false;
+                }
+            }
+
+            createDefaultWallet() {
+                return {
+                    id: 'wallet_1',
+                    name: '기본 지갑 (TRC20)',
+                    address: 'TXYZ1234567890abcdefghijklmnopqrstuvw',
+                    network: 'TRC20',
+                    qrCode: null,
+                    isActive: true,
+                    isDefault: true,
+                    createdAt: new Date().toISOString()
+                };
+            }
+
+            generateOrderId() {
+                return 'ORD-' + Date.now().toString().slice(-6) + Math.random().toString(36).substr(2, 3).toUpperCase();
+            }
+
+            getActiveWallet() {
+                const wallets = this.getWallets();
+                return wallets.find(w => w.isActive) || wallets[0];
+            }
+
+            checkSync() {
+                return localStorage.getItem(this.SYNC_KEY);
+            }
+
+            updateUserSync() {
+                const syncTime = this.checkSync();
+                sessionStorage.setItem(this.USER_SYNC_KEY, syncTime || '0');
+                return syncTime;
+            }
+
+            needsSync() {
+                const lastSync = this.checkSync();
+                const lastUserSync = sessionStorage.getItem(this.USER_SYNC_KEY) || '0';
+                return lastSync !== lastUserSync;
+            }
+        }
+
+        // ==================== 전역 변수 및 DataManager 인스턴스 ====================
+        const dataManager = new DataManager();
+        
+        let exchangeRate = 0;
+        let timeLeft = 300;
+        let timerInterval = null;
+        let currentStep = 1;
+        let currentOrderId = '';
+        let statusCheckInterval = null;
+        let uploadedFile = null;
+        let activeWallet = null;
+        let allWallets = [];
+        let allOrders = [];
+        let currentLang = 'ko';
+        let syncCheckInterval = null;
+
+        // 번역 데이터
+        const translations = {
+            en: {
+                title: "USDT/THB Payment",
+                subtitle: "Pay with USDT to Thai Baht (THB) without login",
+                lastUpdate: "Last update: ",
+                amountLabel: "💰 Enter payment amount (THB):",
+                amountLimit: "Minimum 1,000 THB ~ Maximum 500,000 THB",
+                calcAmountLabel: "Payment Amount:",
+                calcRateLabel: "Exchange Rate:",
+                calcUsdtLabel: "USDT Amount:",
+                calcFeeLabel: "Fee (3%):",
+                calcTotalLabel: "Total Payment:",
+                uploadText: "Store QR to pay (Required)",
+                uploadRequired: "※ QR code screenshot must be uploaded for payment",
+                payNow: "Pay Now",
+                activeOrders: "My Active Orders",
+                completedOrders: "✅ Completed Orders",
+                noActiveOrders: "No active orders",
+                noCompletedOrders: "No completed orders",
+                modalTitle: "🔳 USDT Transfer Guide",
+                walletSelectionTitle: "Selected Wallet:",
+                step1Description: "Send USDT to the wallet address below",
+                copyButtonText: "Copy Address",
+                modalTotalLabel: "Total Payment:",
+                orderIdLabel: "Order ID:",
+                statusMessage1Text: "Waiting for admin confirmation after USDT transfer...",
+                step2Description: "Verifying USDT deposit...",
+                statusMessage2Text: "Admin is confirming the deposit. Please wait...",
+                step3Description: "Processing THB payment...",
+                statusMessage3Text: "THB payment is being processed...",
+                completeMessage: "Payment Completed!",
+                step4Description: "Payment has been successfully completed.",
+                finishButtonText: "Confirm",
+                timerLabel: "Time left:",
+                autoUpdateText: "Will proceed automatically after admin confirmation...",
+                waitingDeposit: "Waiting Deposit",
+                depositConfirmed: "Deposit Confirmed",
+                processing: "Processing",
+                completed: "Completed",
+                cancelled: "Cancelled",
+                rateLoading: "Loading...",
+                rateError: "Failed to load rate",
+                uploadRequiredAlert: "Please Store QR to pay (QR code screenshot) first",
+                amountMinAlert: "Minimum payment amount is 1,000 THB",
+                amountMaxAlert: "Maximum payment amount is 500,000 THB",
+                languageBtnText: "한국어",
+                syncText: "Syncing..."
+            },
+            ko: {
+                title: "USDT → THB 결제",
+                subtitle: "로그인 없이 USDT로 태국 바트(THB) 결제하기",
+                lastUpdate: "마지막 업데이트: ",
+                amountLabel: "💰 결제 금액 입력 (THB):",
+                amountLimit: "최소 1,000 THB ~ 최대 500,000 THB",
+                calcAmountLabel: "결제 금액:",
+                calcRateLabel: "환율:",
+                calcUsdtLabel: "USDT 금액:",
+                calcFeeLabel: "수수료 (3%):",
+                calcTotalLabel: "총 결제 금액:",
+                uploadText: "결제 할 상점 QR (필수)",
+                uploadRequired: "※ 결제를 위해 QR 코드 스크린샷을 업로드해야 합니다",
+                payNow: "지금 결제하기",
+                activeOrders: "진행 중인 주문",
+                completedOrders: "✅ 완료된 주문",
+                noActiveOrders: "진행 중인 주문이 없습니다",
+                noCompletedOrders: "완료된 주문이 없습니다",
+                modalTitle: "🔳 USDT 전송 안내",
+                walletSelectionTitle: "선택된 지갑:",
+                step1Description: "아래 지갑 주소로 USDT를 전송해주세요",
+                copyButtonText: "주소 복사",
+                modalTotalLabel: "총 결제 금액:",
+                orderIdLabel: "주문 ID:",
+                statusMessage1Text: "USDT 전송 후 관리자 확인 대기 중...",
+                step2Description: "USDT 입금 확인 중...",
+                statusMessage2Text: "관리자가 입금을 확인 중입니다. 잠시만 기다려주세요...",
+                step3Description: "THB 결제 처리 중...",
+                statusMessage3Text: "THB 결제가 처리 중입니다...",
+                completeMessage: "결제 완료!",
+                step4Description: "결제가 성공적으로 완료되었습니다.",
+                finishButtonText: "확인",
+                timerLabel: "남은 시간:",
+                autoUpdateText: "관리자 확인 후 자동으로 진행됩니다...",
+                waitingDeposit: "입금대기",
+                depositConfirmed: "입금확인",
+                processing: "처리중",
+                completed: "완료",
+                cancelled: "취소",
+                rateLoading: "로딩 중...",
+                rateError: "환율 로딩 실패",
+                uploadRequiredAlert: "먼저 결제 증명서(QR 코드 스크린샷)를 업로드해주세요",
+                amountMinAlert: "최소 결제 금액은 1,000 THB 입니다",
+                amountMaxAlert: "최대 결제 금액은 500,000 THB 입니다",
+                languageBtnText: "English",
+                syncText: "동기화 중..."
+            }
+        };
+
+        // ==================== 페이지 초기화 ====================
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('사용자 페이지 로드됨');
+            
+            currentLang = 'ko';
+            
+            initLanguageButton();
+            updateLanguageButtonText();
+            updateAllText();
+            
+            setTimeout(fetchRealTimeExchangeRate, 100);
+            setInterval(fetchRealTimeExchangeRate, 10000);
+            
+            loadInitialData();
+            
+            setupEventListeners();
+            
+            startSyncCheck();
+            
+            console.log('사용자 페이지 초기화 완료');
+        });
+
+        // ==================== 데이터 로드 ====================
+        function loadInitialData() {
+            allOrders = dataManager.getOrders();
+            console.log('주문 데이터 로드:', allOrders.length, '개');
+            
+            allWallets = dataManager.getWallets();
+            activeWallet = dataManager.getActiveWallet();
+            console.log('지갑 데이터 로드:', allWallets.length, '개', '활성 지갑:', activeWallet?.name);
+            
+            updateOrdersList();
+            updateWalletDisplay();
+            
+            checkPaymentButton();
+            
+            dataManager.updateUserSync();
+        }
+
+        // ==================== 언어 관련 함수 ====================
+        function initLanguageButton() {
+            const languageBtn = document.getElementById('languageToggleBtn');
+            if (!languageBtn) return;
+            
+            languageBtn.addEventListener('click', toggleLanguage);
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'en' ? 'ko' : 'en';
+            updateLanguageButtonText();
+            updateAllText();
+        }
+
+        function updateLanguageButtonText() {
+            const trans = translations[currentLang];
+            const btnText = document.getElementById('languageBtnText');
+            if (btnText && trans) {
+                btnText.textContent = trans.languageBtnText;
+            }
+        }
+
+        function updateAllText() {
+            const trans = translations[currentLang];
+            
+            document.getElementById('pageTitle').textContent = trans.title;
+            document.getElementById('pageSubtitle').textContent = trans.subtitle;
+            document.getElementById('exchangeTitle').textContent = trans.exchangeTitle;
+            document.getElementById('amountLabel').textContent = trans.amountLabel;
+            document.getElementById('amountLimit').textContent = trans.amountLimit;
+            document.getElementById('calcAmountLabel').textContent = trans.calcAmountLabel;
+            document.getElementById('calcRateLabel').textContent = trans.calcRateLabel;
+            document.getElementById('calcUsdtLabel').textContent = trans.calcUsdtLabel;
+            document.getElementById('calcFeeLabel').textContent = trans.calcFeeLabel;
+            document.getElementById('calcTotalLabel').textContent = trans.calcTotalLabel;
+            document.getElementById('uploadRequired').textContent = trans.uploadRequired;
+            document.getElementById('payButtonText').textContent = trans.payNow;
+            document.getElementById('activeOrdersTitle').textContent = trans.activeOrders;
+            document.getElementById('completedOrdersTitle').textContent = trans.completedOrders;
+            document.getElementById('noActiveOrders').textContent = trans.noActiveOrders;
+            document.getElementById('noCompletedOrders').textContent = trans.noCompletedOrders;
+            document.getElementById('syncText').textContent = trans.syncText;
+            
+            const uploadButtonText = document.getElementById('uploadButtonText');
+            if (uploadButtonText) {
+                if (!uploadedFile) {
+                    uploadButtonText.textContent = `📎 ${trans.uploadText}`;
+                } else {
+                    const uploadText = currentLang === 'en' ? 'Upload completed' : '업로드 완료';
+                    uploadButtonText.innerHTML = 
+                        `✅ ${uploadText}<br><span style="font-size:12px;color:#718096;">${uploadedFile.name}</span>`;
+                }
+            }
+            
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('ko-KR', { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit',
+                hour12: false 
+            });
+            
+            if (exchangeRate > 0) {
+                document.getElementById('exchangeRate').innerHTML = 
+                    `<span style="color:#e53e3e;font-weight:bold;">${exchangeRate.toFixed(2)}</span>`;
+                document.getElementById('rateUpdate').textContent = trans.lastUpdate + timeString;
+            }
+            
+            if (!document.getElementById('qrModal').classList.contains('hidden')) {
+                updateModalText();
+            }
+            
+            updateOrdersList();
+        }
+
+        // ==================== 환율 관련 함수 ====================
+        async function fetchRealTimeExchangeRate() {
+            try {
+                console.log('환율 조회 시작...');
+                
+                const apiUrls = [
+                    'https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=thb',
+                    'https://api.binance.com/api/v3/ticker/price?symbol=USDTTHB'
+                ];
+                
+                let rate = 0;
+                
+                for (const apiUrl of apiUrls) {
+                    try {
+                        console.log(`API 시도: ${apiUrl}`);
+                        
+                        const response = await fetch(apiUrl, {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json'
+                            }
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            
+                            if (apiUrl.includes('coingecko')) {
+                                if (data.tether && data.tether.thb) {
+                                    rate = parseFloat(data.tether.thb);
+                                }
+                            } else if (apiUrl.includes('binance')) {
+                                if (data.price) {
+                                    rate = parseFloat(data.price);
+                                }
+                            }
+                            
+                            if (rate && rate > 0 && rate < 100) {
+                                console.log('환율 조회 성공:', rate);
+                                break;
+                            }
+                        }
+                    } catch (error) {
+                        console.log(`${apiUrl} 실패:`, error.message);
+                        continue;
+                    }
+                }
+                
+                if (!rate || rate <= 0) {
+                    rate = 35.5;
+                    console.log('API 실패, 기본 환율 사용:', rate);
+                }
+                
+                exchangeRate = rate;
+                updateExchangeRateDisplay(rate, true);
+                
+            } catch (error) {
+                console.error('환율 조회 실패:', error);
+                exchangeRate = 35.5;
+                updateExchangeRateDisplay(35.5, false);
+            }
+        }
+
+        function updateExchangeRateDisplay(rate, success) {
+            const trans = translations[currentLang];
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('ko-KR', { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit',
+                hour12: false 
+            });
+            
+            const rateElement = document.getElementById('exchangeRate');
+            
+            if (success) {
+                rateElement.innerHTML = `<span style="color:#e53e3e;font-weight:bold;">${rate.toFixed(2)}</span>`;
+                document.getElementById('calcRate').textContent = rate.toFixed(2);
+                document.getElementById('rateUpdate').textContent = trans.lastUpdate + timeString;
+            } else {
+                rateElement.innerHTML = `<span style="color:#e53e3e;font-weight:bold;">${rate.toFixed(2)}</span> (기본값)`;
+                document.getElementById('calcRate').textContent = rate.toFixed(2);
+                document.getElementById('rateUpdate').textContent = trans.lastUpdate + '기본 환율 적용';
+            }
+            
+            updateCalculation();
+        }
+
+        // ==================== 계산 및 결제 관련 함수 ====================
+        function updateCalculation() {
+            const amount = parseInt(document.getElementById('thbAmount').value) || 0;
+            const calcPreview = document.getElementById('calcPreview');
+            
+            const minAmount = 1000;
+            const maxAmount = 500000;
+            
+            if (amount < minAmount || amount > maxAmount) {
+                calcPreview.style.display = 'none';
+                document.getElementById('payButton').disabled = true;
+                return;
+            }
+            
+            if (amount > 0 && exchangeRate > 0) {
+                calcPreview.style.display = 'block';
+                
+                const usdtAmount = amount / exchangeRate;
+                const fee = usdtAmount * 0.03;
+                const total = usdtAmount + fee;
+                
+                document.getElementById('calcAmount').textContent = amount.toLocaleString() + ' THB';
+                document.getElementById('calcUsdt').textContent = usdtAmount.toFixed(4) + ' USDT';
+                document.getElementById('calcFee').textContent = fee.toFixed(4) + ' USDT';
+                document.getElementById('calcTotal').textContent = total.toFixed(4) + ' USDT';
+                
+                checkPaymentButton();
+            } else {
+                calcPreview.style.display = 'none';
+                document.getElementById('payButton').disabled = true;
+            }
+        }
+
+        function checkPaymentButton() {
+            const amount = parseInt(document.getElementById('thbAmount').value) || 0;
+            const payButton = document.getElementById('payButton');
+            
+            if (amount >= 1000 && amount <= 500000 && uploadedFile !== null && exchangeRate > 0) {
+                payButton.disabled = false;
+            } else {
+                payButton.disabled = true;
+            }
+        }
+
+        // ==================== 이벤트 리스너 설정 ====================
+        function setupEventListeners() {
+            document.getElementById('thbAmount').addEventListener('input', updateCalculation);
+            
+            const fileInput = document.getElementById('paymentProof');
+            
+            document.querySelector('.upload-button').addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                fileInput.click();
+            });
+            
+            fileInput.addEventListener('change', function(e) {
+                if (this.files && this.files[0]) {
+                    handleFileUpload(this.files[0]);
+                } else {
+                    uploadedFile = null;
+                    checkPaymentButton();
+                    const trans = translations[currentLang];
+                    document.getElementById('uploadButtonText').textContent = `📎 ${trans.uploadText}`;
+                    document.getElementById('uploadPreview').innerHTML = '';
+                }
+            });
+            
+            document.getElementById('payButton').addEventListener('click', startPayment);
+            
+            document.getElementById('closeModal').addEventListener('click', function() {
+                if (confirm(currentLang === 'en' ? 
+                    'Cancel payment?\n\nCurrent payment will be cancelled.' : 
+                    '결제를 취소하시겠습니까?\n\n현재 결제가 취소됩니다.')) {
+                    cancelPayment();
+                }
+            });
+            
+            document.getElementById('copyAddress').addEventListener('click', copyWalletAddress);
+            
+            document.getElementById('finishPayment').addEventListener('click', finishPayment);
+            
+            const uploadButton = document.querySelector('.upload-button');
+            uploadButton.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                this.style.borderColor = '#667eea';
+            });
+            
+            uploadButton.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                this.style.borderColor = '#cbd5e0';
+            });
+            
+            uploadButton.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.style.borderColor = '#cbd5e0';
+                
+                if (e.dataTransfer.files.length) {
+                    const file = e.dataTransfer.files[0];
+                    handleFileUpload(file);
+                    fileInput.files = e.dataTransfer.files;
+                }
+            });
+        }
+
+        // ==================== 파일 업로드 처리 ====================
+        function handleFileUpload(file) {
+            console.log('파일 업로드 처리 시작:', file.name, file.type, file.size);
+            
+            if (!file) {
+                uploadedFile = null;
+                checkPaymentButton();
+                return;
+            }
+            
+            uploadedFile = file;
+            
+            const maxSize = 5 * 1024 * 1024;
+            if (file.size > maxSize) {
+                alert(currentLang === 'en' ? 
+                    'File size must be less than 5MB' : 
+                    '파일 크기는 5MB 이하여야 합니다.');
+                uploadedFile = null;
+                checkPaymentButton();
+                return;
+            }
+            
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
+            if (!allowedTypes.includes(file.type.toLowerCase())) {
+                alert(currentLang === 'en' ? 
+                    'Only images (JPEG, PNG, GIF, WebP) are allowed for QR code screenshot' : 
+                    'QR 코드 스크린샷은 이미지(JPEG, PNG, GIF, WebP) 파일만 허용됩니다.');
+                uploadedFile = null;
+                checkPaymentButton();
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                console.log('파일 읽기 완료');
+                
+                const trans = translations[currentLang];
+                const uploadButtonText = document.getElementById('uploadButtonText');
+                const uploadPreview = document.getElementById('uploadPreview');
+                
+                if (uploadButtonText) {
+                    uploadButtonText.innerHTML = 
+                        `✅ ${currentLang === 'en' ? 'Upload completed' : '업로드 완료'}<br>
+                        <span style="font-size:12px;color:#718096;">${file.name}</span>`;
+                }
+                
+                if (uploadPreview) {
+                    uploadPreview.innerHTML = `
+                        <img src="${e.target.result}" alt="Payment proof" class="upload-preview-image">
+                        <div class="file-info">
+                            ${file.name} (${(file.size / 1024).toFixed(1)}KB)
+                        </div>
+                    `;
+                }
+                
+                checkPaymentButton();
+                console.log('파일 업로드 처리 완료');
+            };
+            
+            reader.onerror = function(e) {
+                console.error('파일 읽기 오류:', e);
+                alert(currentLang === 'en' ? 
+                    'Failed to read file. Please try again.' : 
+                    '파일을 읽을 수 없습니다. 다시 시도해주세요.');
+                uploadedFile = null;
+                checkPaymentButton();
+            };
+            
+            reader.readAsDataURL(file);
+        }
+
+        // ==================== 결제 시작 ====================
+        function startPayment() {
+            const amount = parseInt(document.getElementById('thbAmount').value);
+            const trans = translations[currentLang];
+            
+            if (!amount || amount < 1000) {
+                alert(trans.amountMinAlert);
+                return;
+            }
+            
+            if (amount > 500000) {
+                alert(trans.amountMaxAlert);
+                return;
+            }
+            
+            if (!uploadedFile) {
+                alert(trans.uploadRequiredAlert);
+                return;
+            }
+
+            if (exchangeRate <= 0) {
+                alert(currentLang === 'en' ? 
+                    'Exchange rate is not loaded yet. Please wait.' : 
+                    '환율이 아직 로드되지 않았습니다. 잠시만 기다려주세요.');
+                return;
+            }
+
+            currentOrderId = dataManager.generateOrderId();
+            document.getElementById('orderId').textContent = currentOrderId;
+            
+            const usdtAmount = amount / exchangeRate;
+            const fee = usdtAmount * 0.03;
+            const total = usdtAmount + fee;
+            
+            document.getElementById('modalTotal').textContent = total.toFixed(4) + ' USDT';
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const proofData = {
+                    name: uploadedFile.name,
+                    type: uploadedFile.type,
+                    size: uploadedFile.size,
+                    data: e.target.result
+                };
+                
+                const order = {
+                    id: currentOrderId,
+                    amount: amount,
+                    usdt: total,
+                    status: '입금대기',
+                    step: 1,
+                    time: new Date().toISOString(),
+                    wallet: activeWallet ? {
+                        id: activeWallet.id,
+                        name: activeWallet.name,
+                        address: activeWallet.address,
+                        network: activeWallet.network
+                    } : null,
+                    proof: proofData
+                };
+                
+                saveOrder(order);
+                
+                updateOrdersList();
+                
+                document.getElementById('qrModal').classList.remove('hidden');
+                updateModalText();
+                updateQRCodeDisplay();
+                
+                startTimer();
+                
+                startStatusChecking();
+            };
+            
+            reader.onerror = function(e) {
+                alert(currentLang === 'en' ? 
+                    'File reading error. Please try again.' : 
+                    '파일 읽기 오류. 다시 시도해주세요.');
+            };
+            
+            reader.readAsDataURL(uploadedFile);
+        }
+
+        // ==================== 주문 저장 ====================
+        function saveOrder(order) {
+            let orders = dataManager.getOrders();
+            
+            const existingIndex = orders.findIndex(o => o.id === order.id);
+            
+            if (existingIndex > -1) {
+                orders[existingIndex] = order;
+            } else {
+                orders.unshift(order);
+            }
+            
+            if (orders.length > 50) {
+                orders = orders.slice(0, 50);
+            }
+            
+            const saved = dataManager.saveOrders(orders);
+            if (saved) {
+                console.log('주문 저장됨:', order.id);
+            } else {
+                console.error('주문 저장 실패:', order.id);
+            }
+            
+            allOrders = orders;
+        }
+
+        // ==================== 주문 목록 업데이트 ====================
+        function updateOrdersList() {
+            const trans = translations[currentLang];
+            
+            const activeOrders = allOrders.filter(order => 
+                order.status === '입금대기' || 
+                order.status === '입금확인' || 
+                order.status === '처리중'
+            );
+            
+            const completedOrders = allOrders.filter(order => 
+                order.status === '완료' || 
+                order.status === '취소'
+            );
+            
+            const activeOrdersList = document.getElementById('activeOrdersList');
+            const completedOrdersList = document.getElementById('completedOrdersList');
+            
+            if (activeOrders.length === 0) {
+                activeOrdersList.innerHTML = `
+                    <div class="no-orders">
+                        ${trans.noActiveOrders}
+                    </div>
+                `;
+            } else {
+                let html = '';
+                activeOrders.forEach(order => {
+                    html += createOrderCard(order);
+                });
+                activeOrdersList.innerHTML = html;
+            }
+            
+            if (completedOrders.length === 0) {
+                completedOrdersList.innerHTML = `
+                    <div class="no-orders">
+                        ${trans.noCompletedOrders}
+                    </div>
+                `;
+            } else {
+                let html = '';
+                completedOrders.forEach(order => {
+                    html += createOrderCard(order);
+                });
+                completedOrdersList.innerHTML = html;
+            }
+        }
+
+        function createOrderCard(order) {
+            const trans = translations[currentLang];
+            
+            const statusClass = {
+                '입금대기': 'status-waiting',
+                '입금확인': 'status-confirmed',
+                '처리중': 'status-processing',
+                '완료': 'status-completed',
+                '취소': 'status-cancelled'
+            }[order.status] || 'status-waiting';
+            
+            const statusText = {
+                '입금대기': trans.waitingDeposit,
+                '입금확인': trans.depositConfirmed,
+                '처리중': trans.processing,
+                '완료': trans.completed,
+                '취소': trans.cancelled
+            }[order.status] || order.status;
+            
+            const time = new Date(order.time).toLocaleString('ko-KR');
+            
+            let proofHtml = '';
+            if (order.proof && order.proof.data) {
+                const proofLabel = currentLang === 'en' ? 'Proof:' : '증명서:';
+                const attachedText = currentLang === 'en' ? 'Attached' : '첨부됨';
+                
+                if (order.proof.type && order.proof.type.startsWith('image/')) {
+                    proofHtml = `
+                        <div class="breakdown-item">
+                            <span>${proofLabel}</span>
+                            <span>${attachedText}</span>
+                        </div>
+                        <img src="${order.proof.data}" alt="Payment proof" class="proof-image">
+                    `;
+                } else {
+                    proofHtml = `
+                        <div class="breakdown-item">
+                            <span>${proofLabel}</span>
+                            <span>${order.proof.name}</span>
+                        </div>
+                    `;
+                }
+            }
+            
+            const usdtLabel = currentLang === 'en' ? 'USDT Amount:' : 'USDT 금액:';
+            const stepLabel = currentLang === 'en' ? 'Current Step:' : '현재 단계:';
+            const walletLabel = currentLang === 'en' ? 'Deposit Wallet:' : '입금 지갑:';
+            
+            return `
+                <div class="order-card ${statusClass}">
+                    <div class="order-header">
+                        <div>
+                            <div class="order-id">${order.id}</div>
+                            <div class="order-time">${time}</div>
+                        </div>
+                        <div class="status-badge ${statusClass}">${statusText}</div>
+                    </div>
+                    <div class="order-details">
+                        <div class="order-amount">${order.amount.toLocaleString()} THB</div>
+                        <div class="order-breakdown">
+                            <div class="breakdown-item">
+                                <span>${usdtLabel}</span>
+                                <span>${order.usdt.toFixed(4)} USDT</span>
+                            </div>
+                            <div class="breakdown-item">
+                                <span>${stepLabel}</span>
+                                <span>${statusText}</span>
+                            </div>
+                            ${order.wallet ? `
+                            <div class="breakdown-item">
+                                <span>${walletLabel}</span>
+                                <span>${order.wallet.name}</span>
+                            </div>
+                            ` : ''}
+                            ${proofHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==================== 모달 관련 함수 ====================
+        function updateModalText() {
+            const trans = translations[currentLang];
+            
+            document.getElementById('modalTitle').textContent = trans.modalTitle;
+            document.getElementById('walletSelectionTitle').textContent = trans.walletSelectionTitle;
+            document.getElementById('step1Description').textContent = trans.step1Description;
+            document.getElementById('copyButtonText').textContent = trans.copyButtonText;
+            document.getElementById('modalTotalLabel').textContent = trans.modalTotalLabel;
+            document.getElementById('orderIdLabel').textContent = trans.orderIdLabel;
+            document.getElementById('statusMessage1Text').textContent = trans.statusMessage1Text;
+            document.getElementById('step2Description').textContent = trans.step2Description;
+            document.getElementById('statusMessage2Text').textContent = trans.statusMessage2Text;
+            document.getElementById('step3Description').textContent = trans.step3Description;
+            document.getElementById('statusMessage3Text').textContent = trans.statusMessage3Text;
+            document.getElementById('completeMessage').textContent = trans.completeMessage;
+            document.getElementById('step4Description').textContent = trans.step4Description;
+            document.getElementById('finishButtonText').textContent = trans.finishButtonText;
+            document.getElementById('timerLabel').textContent = trans.timerLabel;
+            document.getElementById('autoUpdateText').textContent = trans.autoUpdateText;
+        }
+
+        function updateWalletDisplay() {
+            if (!activeWallet) {
+                console.log('활성 지갑이 없습니다');
+                return;
+            }
+            
+            console.log('지갑 정보 업데이트:', activeWallet.name);
+            document.getElementById('walletAddress').textContent = activeWallet.address;
+            const networkClass = `network-${activeWallet.network.toLowerCase()}`;
+            
+            let networkText = '';
+            switch(activeWallet.network) {
+                case 'TRC20': networkText = 'TRC20 Network'; break;
+                case 'ERC20': networkText = 'ERC20 Network'; break;
+                case 'BEP20': networkText = 'BEP20 Network'; break;
+                default: networkText = activeWallet.network + ' Network';
+            }
+            
+            document.getElementById('selectedWalletInfo').innerHTML = `
+                <div class="wallet-icon">👛</div>
+                <div class="wallet-details">
+                    <div class="wallet-name">${activeWallet.name}</div>
+                    <div class="wallet-network">
+                        ${networkText}
+                        <span class="network-badge ${networkClass}">${activeWallet.network}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==================== QR 코드 표시 함수 (수정됨) ====================
+        function updateQRCodeDisplay() {
+            if (!activeWallet) {
+                console.log('활성 지갑이 없음');
+                return;
+            }
+            
+            const qrCodeContainer = document.getElementById('qrCodeContainer');
+            if (!qrCodeContainer) return;
+            
+            // 기존 내용 모두 제거
+            qrCodeContainer.innerHTML = '';
+            
+            if (activeWallet.qrCode && 
+                activeWallet.qrCode !== 'null' && 
+                activeWallet.qrCode !== '' && 
+                activeWallet.qrCode !== null &&
+                typeof activeWallet.qrCode === 'string' && 
+                activeWallet.qrCode.startsWith('data:image/')) {
+                
+                console.log('QR 코드 표시 시도:', activeWallet.id, '타입:', activeWallet.qrCode.substring(0, 50) + '...');
+                
+                const img = document.createElement('img');
+                img.src = activeWallet.qrCode;
+                img.alt = 'QR Code';
+                img.style.maxWidth = '100%';
+                img.style.maxHeight = '100%';
+                img.style.borderRadius = '4px';
+                
+                // 이미지 로드 에러 처리
+                img.onerror = function() {
+                    console.log('QR 코드 이미지 로드 실패');
+                    this.style.display = 'none';
+                    const errorDiv = document.createElement('div');
+                    errorDiv.style.color = '#999';
+                    errorDiv.style.fontSize = '12px';
+                    errorDiv.style.textAlign = 'center';
+                    errorDiv.style.padding = '20px';
+                    errorDiv.textContent = 'QR 코드 로드 실패';
+                    qrCodeContainer.appendChild(errorDiv);
+                };
+                
+                // 이미지 로드 성공 처리
+                img.onload = function() {
+                    console.log('QR 코드 이미지 로드 성공');
+                };
+                
+                qrCodeContainer.appendChild(img);
+                
+            } else {
+                console.log('QR 코드 없음, 플레이스홀더 표시');
+                const placeholder = document.createElement('div');
+                placeholder.className = 'qr-placeholder';
+                placeholder.textContent = '🔳';
+                placeholder.style.fontSize = '60px';
+                placeholder.style.marginBottom = '15px';
+                placeholder.style.textAlign = 'center';
+                qrCodeContainer.appendChild(placeholder);
+            }
+        }
+
+        function copyWalletAddress() {
+            const address = document.getElementById('walletAddress').textContent;
+            navigator.clipboard.writeText(address)
+                .then(() => {
+                    const copiedText = currentLang === 'en' ? 'Copied' : '복사됨';
+                    document.getElementById('copyButtonText').textContent = copiedText;
+                    setTimeout(() => {
+                        const trans = translations[currentLang];
+                        document.getElementById('copyButtonText').textContent = trans.copyButtonText;
+                    }, 2000);
+                })
+                .catch(err => {
+                    console.error('복사 실패:', err);
+                });
+        }
+
+        // ==================== 타이머 ====================
+        function startTimer() {
+            timeLeft = 300;
+            updateTimerDisplay();
+            
+            if (timerInterval) clearInterval(timerInterval);
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateTimerDisplay();
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    alert(currentLang === 'en' ? 
+                        'Payment time expired' : 
+                        '결제 시간이 만료되었습니다');
+                    cancelPayment();
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            document.getElementById('timeLeft').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        // ==================== 결제 취소/완료 ====================
+        function cancelPayment() {
+            if (statusCheckInterval) {
+                clearInterval(statusCheckInterval);
+                statusCheckInterval = null;
+            }
+            
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            
+            if (currentOrderId) {
+                updateOrderStatus('취소', 1);
+                currentOrderId = '';
+            }
+            
+            document.getElementById('qrModal').classList.add('hidden');
+            resetSteps();
+            
+            alert(currentLang === 'en' ? 'Payment cancelled' : '결제가 취소되었습니다');
+        }
+
+        function finishPayment() {
+            if (statusCheckInterval) {
+                clearInterval(statusCheckInterval);
+                statusCheckInterval = null;
+            }
+            
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            
+            document.getElementById('qrModal').classList.add('hidden');
+            resetSteps();
+            
+            currentOrderId = '';
+            
+            alert(currentLang === 'en' ? 'Payment completed!' : '결제가 완료되었습니다!');
+            
+            document.getElementById('thbAmount').value = '';
+            document.getElementById('paymentProof').value = '';
+            const trans = translations[currentLang];
+            const uploadButtonText = document.getElementById('uploadButtonText');
+            if (uploadButtonText) {
+                uploadButtonText.textContent = `📎 ${trans.uploadText}`;
+            }
+            document.getElementById('uploadPreview').innerHTML = '';
+            uploadedFile = null;
+            updateCalculation();
+        }
+
+        function resetSteps() {
+            currentStep = 1;
+            document.getElementById('step1').classList.add('active');
+            document.getElementById('step1').classList.remove('completed');
+            document.getElementById('step2').classList.remove('active', 'completed');
+            document.getElementById('step3').classList.remove('active', 'completed');
+            document.getElementById('step4').classList.remove('active', 'completed');
+            
+            document.getElementById('step1Content').style.display = 'block';
+            document.getElementById('step2Content').style.display = 'none';
+            document.getElementById('step3Content').style.display = 'none';
+            document.getElementById('step4Content').style.display = 'none';
+        }
+
+        // ==================== 상태 체크 및 업데이트 ====================
+        function startStatusChecking() {
+            if (statusCheckInterval) clearInterval(statusCheckInterval);
+            
+            statusCheckInterval = setInterval(() => {
+                checkOrderStatus();
+            }, 3000);
+        }
+
+        function checkOrderStatus() {
+            const currentOrder = allOrders.find(order => order.id === currentOrderId);
+            
+            if (!currentOrder) return;
+            
+            switch(currentOrder.status) {
+                case '입금확인':
+                    if (currentStep < 2) goToStep(2);
+                    break;
+                case '처리중':
+                    if (currentStep < 3) goToStep(3);
+                    break;
+                case '완료':
+                    if (currentStep < 4) {
+                        goToStep(4);
+                        clearInterval(statusCheckInterval);
+                    }
+                    break;
+                case '취소':
+                    cancelPayment();
+                    clearInterval(statusCheckInterval);
+                    break;
+            }
+        }
+
+        function goToStep(step) {
+            console.log('🔧 goToStep 실행:', currentStep, '->', step);
+            
+            if (currentStep >= 1 && currentStep <= 4) {
+                const currentStepElement = document.getElementById(`step${currentStep}`);
+                const currentContentElement = document.getElementById(`step${currentStep}Content`);
+                
+                if (currentStepElement) {
+                    currentStepElement.classList.remove('active');
+                    currentStepElement.classList.add('completed');
+                    console.log(`단계 ${currentStep} 비활성화`);
+                }
+                
+                if (currentContentElement) {
+                    currentContentElement.style.display = 'none';
+                }
+            }
+            
+            currentStep = step;
+            
+            const newStepElement = document.getElementById(`step${currentStep}`);
+            const newContentElement = document.getElementById(`step${currentStep}Content`);
+            
+            if (newStepElement) {
+                newStepElement.classList.add('active');
+                newStepElement.classList.remove('completed');
+                console.log(`단계 ${currentStep} 활성화`);
+            } else {
+                console.error(`❌ 단계 ${currentStep} 요소 찾을 수 없음!`);
+            }
+            
+            if (newContentElement) {
+                newContentElement.style.display = 'block';
+            } else {
+                console.error(`❌ 단계 ${currentStep} 콘텐츠 찾을 수 없음!`);
+            }
+            
+            let status = '';
+            switch(step) {
+                case 1: status = '입금대기'; break;
+                case 2: status = '입금확인'; break;
+                case 3: status = '처리중'; break;
+                case 4: status = '완료'; break;
+            }
+            
+            if (status) {
+                console.log('상태 업데이트:', status);
+                updateOrderStatus(status, step);
+                
+                if (step === 4) {
+                    if (timerInterval) {
+                        clearInterval(timerInterval);
+                        timerInterval = null;
+                        console.log('⏹️ 타이머 정지됨');
+                    }
+                }
+            }
+            
+            console.log('✅ goToStep 완료');
+        }
+
+        function updateOrderStatus(status, step = currentStep) {
+            const orderIndex = allOrders.findIndex(o => o.id === currentOrderId);
+            if (orderIndex === -1) return;
+            
+            allOrders[orderIndex] = {
+                ...allOrders[orderIndex],
+                status: status,
+                step: step,
+                updated: new Date().toISOString()
+            };
+            
+            dataManager.saveOrders(allOrders);
+            
+            updateOrdersList();
+        }
+
+        // ==================== 데이터 동기화 ====================
+        function checkDataSync() {
+            if (dataManager.needsSync()) {
+                showSyncStatus();
+                
+                const updatedOrders = dataManager.getOrders();
+                const updatedWallets = dataManager.getWallets();
+                
+                if (JSON.stringify(updatedOrders) !== JSON.stringify(allOrders)) {
+                    console.log('📊 주문 데이터 업데이트됨');
+                    allOrders = updatedOrders;
+                    updateOrdersList();
+                    
+                    if (currentOrderId) {
+                        const currentOrder = allOrders.find(o => o.id === currentOrderId);
+                        if (currentOrder && currentOrder.status) {
+                            const status = currentOrder.status;
+                            const step = currentOrder.step || 1;
+                            
+                            const modal = document.getElementById('qrModal');
+                            if (!modal.classList.contains('hidden')) {
+                                console.log('✅ 모달 열려있음, 단계 체크');
+                                
+                                if (currentStep !== step) {
+                                    console.log('🚀 단계 변경 실행:', currentStep, '->', step);
+                                    goToStep(step);
+                                }
+                                
+                                if (timeLeft <= 0) {
+                                    startTimer();
+                                }
+                                
+                                document.getElementById('modalTotal').textContent = 
+                                    currentOrder.usdt.toFixed(4) + ' USDT';
+                            }
+                        }
+                    }
+                }
+                
+                if (JSON.stringify(updatedWallets) !== JSON.stringify(allWallets)) {
+                    console.log('👛 지갑 데이터 업데이트됨');
+                    allWallets = updatedWallets;
+                    activeWallet = dataManager.getActiveWallet();
+                    
+                    updateWalletDisplay();
+                    
+                    const modal = document.getElementById('qrModal');
+                    if (!modal.classList.contains('hidden')) {
+                        updateQRCodeDisplay();
+                    }
+                }
+                
+                dataManager.updateUserSync();
+                
+                setTimeout(hideSyncStatus, 2000);
+            }
+        }
+
+        function checkCurrentOrderStatus() {
+            if (!currentOrderId) {
+                return;
+            }
+            
+            const currentOrder = allOrders.find(o => o.id === currentOrderId);
+            if (!currentOrder) return;
+            
+            const modal = document.getElementById('qrModal');
+            if (modal.classList.contains('hidden')) return;
+            
+            const step = currentOrder.step || 1;
+            
+            if (currentStep !== step) {
+                console.log('🎯 단계 변경 필요!', currentStep, '->', step);
+                goToStep(step);
+            }
+        }
+
+        function startSyncCheck() {
+            if (syncCheckInterval) clearInterval(syncCheckInterval);
+            
+            console.log('🔄 동기화 체크 시작 (1초 간격)');
+            syncCheckInterval = setInterval(() => {
+                checkDataSync();
+                checkCurrentOrderStatus();
+            }, 1000);
+        }
+
+        function showSyncStatus() {
+            const syncElement = document.getElementById('syncStatus');
+            syncElement.classList.add('visible');
+        }
+
+        function hideSyncStatus() {
+            const syncElement = document.getElementById('syncStatus');
+            syncElement.classList.remove('visible');
+        }
+
+        // ==================== 관리자 페이지 통신 함수 ====================
+        window.updateOrderStatusFromAdmin = function(orderId, newStatus) {
+            console.log('관리자로부터 상태 업데이트:', orderId, newStatus);
+            
+            const orderIndex = allOrders.findIndex(o => o.id === orderId);
+            if (orderIndex === -1) return;
+            
+            const step = getStepFromStatus(newStatus);
+            allOrders[orderIndex] = {
+                ...allOrders[orderIndex],
+                status: newStatus,
+                step: step,
+                updated: new Date().toISOString()
+            };
+            
+            dataManager.saveOrders(allOrders);
+            
+            if (currentOrderId === orderId && currentStep !== step) {
+                goToStep(step);
+            }
+            
+            updateOrdersList();
+        };
+
+        window.updateWalletsFromAdmin = function(wallets) {
+            console.log('👛 사용자 페이지: 관리자로부터 지갑 업데이트 받음', wallets.length, '개');
+            
+            localStorage.setItem('payment_wallets', JSON.stringify(wallets));
+            
+            allWallets = wallets;
+            activeWallet = dataManager.getActiveWallet();
+            
+            updateWalletDisplay();
+            
+            if (!document.getElementById('qrModal').classList.contains('hidden')) {
+                updateQRCodeDisplay();
+            }
+        };
+
+        function getStepFromStatus(status) {
+            switch(status) {
+                case '입금대기': return 1;
+                case '입금확인': return 2;
+                case '처리중': return 3;
+                case '완료': return 4;
+                case '취소': return 1;
+                default: return 1;
+            }
+        }
+
+        // ==================== 테스트 함수 ====================
+        window.createTestOrder = function() {
+            const testOrder = {
+                id: dataManager.generateOrderId(),
+                amount: Math.floor(Math.random() * 10000) + 1000,
+                usdt: Math.random() * 100 + 10,
+                status: '입금대기',
+                step: 1,
+                time: new Date().toISOString(),
+                wallet: activeWallet ? {
+                    id: activeWallet.id,
+                    name: activeWallet.name,
+                    address: activeWallet.address,
+                    network: activeWallet.network
+                } : null,
+                proof: {
+                    name: 'test.png',
+                    type: 'image/png',
+                    size: 1024,
+                    data: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg=='
+                }
+            };
+            
+            saveOrder(testOrder);
+            updateOrdersList();
+            
+            alert(`테스트 주문 ${testOrder.id} 생성됨`);
+        };
+        
+        // ==================== QR 코드 이미지 에러 처리 ====================
+        window.handleQRCodeError = function(imgElement) {
+            console.log('QR 코드 이미지 로드 실패');
+            imgElement.style.display = 'none';
+            
+            const container = imgElement.parentElement;
+            if (container) {
+                const errorDiv = document.createElement('div');
+                errorDiv.style.color = '#999';
+                errorDiv.style.fontSize = '12px';
+                errorDiv.style.textAlign = 'center';
+                errorDiv.style.padding = '20px';
+                errorDiv.textContent = 'QR 코드 로드 실패';
+                container.appendChild(errorDiv);
+            }
+        };
+        
+        console.log('유저 페이지 스크립트 로드 완료');
+    </script>
+</body>
+</html>
