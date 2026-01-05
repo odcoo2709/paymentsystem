@@ -794,18 +794,23 @@
                 <div class="stat-value" id="activeWallets">0</div>
                 <div class="stat-change" id="walletsChange">사용 가능</div>
             </div>
-            <div class="stat-card">
-                <h3 id="statTodayRevenue">오늘 수익</h3>
-                <div class="stat-value" id="todayRevenue">0 THB</div>
-                <div class="stat-change" id="revenueChange">수수료 3%</div>
-            </div>
-            <div class="stat-card">
-                <h3 id="statTodayAmount">오늘 거래액</h3>
-                <div class="stat-value" id="todayAmount">0 THB</div>
-                <div class="stat-change" id="amountChange">총 거래액</div>
-            </div>
-        </div>
+            <!-- 기존 오늘 수익 카드 -->
+<div class="stat-card">
+    <h3 id="statTodayRevenue">오늘 수익</h3>
+    <div class="stat-value" id="todayRevenue">0 THB</div>
+    <div class="stat-change" id="revenueChange">수수료 3%</div>
+    <!-- ✅ 이 줄 추가 -->
+    <div class="stat-value" style="font-size: 16px; color: #7f8c8d; margin-top: 5px;" id="todayRevenueUSDT">(0 USDT)</div>
+</div>
 
+<!-- 기존 오늘 거래액 카드 -->
+<div class="stat-card">
+    <h3 id="statTodayAmount">오늘 거래액</h3>
+    <div class="stat-value" id="todayAmount">0 THB</div>
+    <div class="stat-change" id="amountChange">총 거래액</div>
+    <!-- ✅ 이 줄 추가 -->
+    <div class="stat-value" style="font-size: 16px; color: #7f8c8d; margin-top: 5px;" id="todayAmountUSDT">(0 USDT)</div>
+</div>
         <!-- 주문 관리 탭 -->
         <div id="ordersTab" class="tab-content active">
             <div class="orders-section">
@@ -1163,62 +1168,94 @@
             }
 
             // 테스트 알림 전송
-            async sendTestNotification() {
-                if (!this.settings.botToken || !this.settings.chatId) {
-                    return { success: false, message: '텔레그램 설정이 필요합니다' };
-                }
+            // ==== sendTestNotification 함수 수정 ====
+async sendTestNotification() {
+    if (!this.settings.botToken || !this.settings.chatId) {
+        return { success: false, message: '텔레그램 설정이 필요합니다' };
+    }
 
-                const testMessage = {
-                    text: `✅ 테스트 알림\n\n관리자 시스템이 정상적으로 작동 중입니다!\n시간: ${new Date().toLocaleString('ko-KR')}`
-                };
+    try {
+        // ✅ HTML 형식으로 메시지 작성
+        const message = `
+<b>✅ 테스트 알림</b>
 
-                return await this.sendMessage(testMessage);
-            }
+관리자 시스템이 정상적으로 작동 중입니다!
+시간: ${new Date().toLocaleString('ko-KR')}
+        `.trim();
+        
+        const result = await this.sendMessage(message);
+        
+        if (result.success) {
+            return { success: true, message: '텔레그램 테스트 알림이 성공적으로 전송되었습니다!' };
+        } else {
+            return { success: false, error: result.error || '알 수 없는 오류가 발생했습니다.' };
+        }
+    } catch (error) {
+        console.error('테스트 알림 전송 중 예외 발생:', error);
+        return { success: false, error: `연결 오류: ${error.message}` };
+    }
+}
 
             // 새 주문 알림
-            async sendNewOrderNotification(order) {
-                if (!this.settings.botToken || !this.settings.chatId) {
-                    console.warn('텔레그램 설정이 필요합니다');
-                    return;
-                }
+            // ==== sendNewOrderNotification 함수 수정 ====
+async sendNewOrderNotification(order) {
+    if (!this.settings.botToken || !this.settings.chatId) {
+        console.warn('텔레그램 설정이 필요합니다');
+        return;
+    }
 
-                // 주문 정보 포맷팅
-                const statusText = {
-                    '입금대기': '입금 대기',
-                    '입금확인': '입금 확인',
-                    '처리중': '처리 중',
-                    '완료': '완료',
-                    '취소': '취소'
-                }[order.status] || order.status;
+    try {
+        // 상태 텍스트
+        const statusText = {
+            '입금대기': '입금 대기',
+            '입금확인': '입금 확인',
+            '처리중': '처리 중',
+            '완료': '완료',
+            '취소': '취소'
+        }[order.status] || order.status;
 
-                // 수수료 계산 (3%)
-                const fee = order.usdt * 0.03;
-                const usdtAmount = order.usdt - fee;
+        // 수수료 계산 (3%)
+        const fee = order.usdt * 0.03;
+        const netAmount = order.usdt - fee;
+        
+        // ✅ HTML 형식으로 메시지 작성 (특수문자 이스케이프 필요 없음)
+        const message = `
+<b>🚨 새로운 주문이 접수되었습니다!</b>
 
-                const message = {
-                    text: `🚨 *새로운 주문이 접수되었습니다!*\n\n` +
-                         `📋 *주문 ID:* ${order.id}\n` +
-                         `💰 *결제 금액:* ${order.amount.toLocaleString()} THB\n` +
-                         `💵 *USDT 금액:* ${usdtAmount.toFixed(4)} USDT\n` +
-                         `📊 *수수료 (3%):* ${fee.toFixed(4)} USDT\n` +
-                         `⏰ *요청 시간:* ${new Date(order.time).toLocaleString('ko-KR')}\n` +
-                         `📈 *상태:* ${statusText}\n\n` +
-                         `👛 *입금 지갑:* ${order.wallet ? order.wallet.name : '지정되지 않음'}\n` +
-                         `🔗 *주소:* ${order.wallet ? order.wallet.address.substring(0, 20) + '...' : '없음'}\n\n` +
-                         `📎 *결제 증명서:* ${order.proof ? '첨부됨' : '없음'}\n\n` +
-                         `✅ *빠른 처리 요망*`
-                };
+📋 <b>주문 ID:</b> ${order.id}
+💰 <b>결제 금액:</b> ${order.amount.toLocaleString()} THB
+💵 <b>USDT 금액:</b> ${netAmount.toFixed(4)} USDT
+📊 <b>수수료 (3%):</b> ${fee.toFixed(4)} USDT
+⏰ <b>요청 시간:</b> ${new Date(order.time).toLocaleString('ko-KR')}
+📈 <b>상태:</b> ${statusText}
 
-                const result = await this.sendMessage(message);
-                
-                // 이미지가 있으면 전송
-                if (order.proof && order.proof.data && order.proof.type.startsWith('image/')) {
-                    await this.sendImage(order.id, order.proof.data, order.proof.type);
-                }
+👛 <b>입금 지갑:</b> ${order.wallet ? order.wallet.name : '지정되지 않음'}
+🔗 <b>주소:</b> ${order.wallet ? (order.wallet.address.length > 30 ? 
+    order.wallet.address.substring(0, 15) + '...' + order.wallet.address.substring(order.wallet.address.length - 15) : 
+    order.wallet.address) : '없음'}
 
-                return result;
+📎 <b>결제 증명서:</b> ${order.proof ? '첨부됨' : '없음'}
+
+✅ <b>빠른 처리 요망</b>
+        `.trim();
+
+        const result = await this.sendMessage(message);
+        
+        // 이미지가 있으면 전송
+        if (order.proof && order.proof.data && order.proof.type.startsWith('image/')) {
+            try {
+                await this.sendImage(order.id, order.proof.data, order.proof.type);
+            } catch (imgError) {
+                console.warn('이미지 전송 실패:', imgError.message);
             }
+        }
 
+        return result;
+    } catch (error) {
+        console.error('주문 알림 전송 중 오류:', error);
+        return { success: false, error: error.message };
+    }
+}
             // 주문 상태 변경 알림
             async sendStatusChangeNotification(orderId, oldStatus, newStatus) {
                 if (!this.settings.botToken || !this.settings.chatId) {
@@ -1255,33 +1292,51 @@
 
             // 메시지 전송
             async sendMessage(message) {
-                try {
-                    const url = `https://api.telegram.org/bot${this.settings.botToken}/sendMessage`;
-                    
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            chat_id: this.settings.chatId,
-                            text: message.text,
-                            parse_mode: 'Markdown'
-                        })
-                    });
+    try {
+        const url = `https://api.telegram.org/bot${this.settings.botToken}/sendMessage`;
+        
+        console.log('📱 텔레그램 메시지 전송 시도');
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                chat_id: this.settings.chatId,
+                text: message,  // ✅ .text 제거
+                parse_mode: 'HTML'  // ✅ HTML로 변경 (Markdown 문제 해결)
+            })
+        });
 
-                    const data = await response.json();
-                    
-                    if (response.ok) {
-                        return { success: true, data: data };
-                    } else {
-                        console.error('텔레그램 전송 실패:', data);
-                        return { success: false, error: data.description || '알 수 없는 오류' };
-                    }
-                } catch (error) {
-                    console.error('텔레그램 API 호출 실패:', error);
-                    return { success: false, error: error.message };
-                }
+        const data = await response.json();
+        
+        if (response.ok && data.ok) {
+            console.log('✅ 텔레그램 메시지 전송 성공');
+            return { success: true, data: data };
+        } else {
+            console.error('❌ 텔레그램 API 오류:', data);
+            let errorMessage = data.description || '알 수 없는 오류';
+            
+            // 에러 메시지 한국어 변환
+            if (errorMessage.includes('Forbidden')) {
+                errorMessage = '봇이 채팅에 접근할 수 없습니다. 봇을 먼저 채팅에 초대해주세요.';
+            } else if (errorMessage.includes('chat not found')) {
+                errorMessage = '채팅을 찾을 수 없습니다. 채팅 ID를 확인해주세요.';
+            } else if (errorMessage.includes('Bad Request')) {
+                errorMessage = '잘못된 요청입니다. 봇 토큰을 확인해주세요.';
+            }
+            
+            return { success: false, error: errorMessage };
+        }
+    } catch (error) {
+        console.error('🌐 텔레그램 네트워크 오류:', error);
+        return { 
+            success: false, 
+            error: `네트워크 연결 오류: ${error.message}` 
+        };
+    }
+}
             }
 
             // 이미지 전송
@@ -1723,61 +1778,110 @@
         }
 
         // ==================== 통계 업데이트 (수정됨) ====================
-        function updateStats() {
-            const totalOrders = allOrders.length;
-            const waitingOrders = allOrders.filter(o => o.status === '입금대기').length;
-            const activeWallets = allWallets.filter(w => w.isActive).length;
-            
-            // 오늘 날짜
-            const today = new Date().toISOString().split('T')[0];
-            
-            // 오늘 완료된 주문들
-            const todayOrders = allOrders.filter(o => {
-                const orderDate = o.time.split('T')[0];
-                return orderDate === today && o.status === '완료';
-            });
-            
-            // 오늘 거래액 (총액)
-            const todayAmount = todayOrders.reduce((sum, order) => sum + order.amount, 0);
-            
-            // 오늘 수익 (수수료 3%)
-            const todayRevenue = todayOrders.reduce((sum, order) => {
-                // USDT 금액의 3%를 수수료로 계산
-                const fee = order.usdt * 0.03;
-                // 환율 가정: 1 USDT = 35 THB (실제 환율 적용 필요)
-                const exchangeRate = 35;
-                return sum + (fee * exchangeRate);
-            }, 0);
-            
-            // DOM 요소 안전하게 업데이트
-            const updateIfExists = (id, value) => {
-                const element = document.getElementById(id);
-                if (element) element.textContent = value;
-            };
-            
-            updateIfExists('totalOrders', totalOrders);
-            updateIfExists('waitingOrders', waitingOrders);
-            updateIfExists('activeWallets', activeWallets);
-            updateIfExists('todayRevenue', Math.round(todayRevenue).toLocaleString() + ' THB');
-            updateIfExists('todayAmount', todayAmount.toLocaleString() + ' THB');
-            
-            const trans = translations[currentLang];
-            const waitingChangeEl = document.getElementById('waitingChange');
-            const walletsChangeEl = document.getElementById('walletsChange');
-            
-            if (waitingChangeEl) {
-                waitingChangeEl.textContent = `${waitingOrders} ${trans.waitingChange}`;
-                if (waitingOrders > 0) {
-                    waitingChangeEl.classList.remove('negative');
-                } else {
-                    waitingChangeEl.classList.add('negative');
-                }
-            }
-            
-            if (walletsChangeEl) {
-                walletsChangeEl.textContent = `${activeWallets} ${trans.walletsChange}`;
-            }
+        // ==== updateStats 함수 전체 교체 ====
+function updateStats() {
+    const totalOrders = allOrders.length;
+    const waitingOrders = allOrders.filter(o => o.status === '입금대기').length;
+    const activeWallets = allWallets.filter(w => w.isActive).length;
+    
+    // 오늘 날짜
+    const today = new Date().toISOString().split('T')[0];
+    
+    // 오늘 완료된 주문들
+    const todayOrders = allOrders.filter(o => {
+        const orderDate = o.time.split('T')[0];
+        return orderDate === today && o.status === '완료';
+    });
+    
+    // 계산 변수 초기화
+    let todayAmountTHB = 0;      // 오늘 총 거래액 (THB)
+    let todayAmountUSDT = 0;     // 오늘 총 거래액 (USDT)
+    let todayRevenueUSDT = 0;    // 오늘 총 수익 (USDT)
+    
+    todayOrders.forEach(order => {
+        // THB 거래액 합계
+        todayAmountTHB += order.amount;
+        
+        // 여기가 중요! order.usdt는 이미 총액(수수료 포함)입니다
+        // 예: 1000 THB ÷ 35(환율) = 28.57 USDT (총액)
+        todayAmountUSDT += order.usdt;
+        
+        // 수수료 계산: 총액 × 3%
+        // 예: 28.57 USDT × 0.03 = 0.8571 USDT (수수료)
+        const feeUSDT = order.usdt * 0.03;
+        todayRevenueUSDT += feeUSDT;
+    });
+    
+    // 환율 (기본값 35, 실제로는 사용자 페이지와 동일한 환율 사용해야 함)
+    const exchangeRate = 35;
+    
+    // USDT 수익을 THB로 변환
+    const todayRevenueTHB = Math.round(todayRevenueUSDT * exchangeRate);
+    
+    // DOM 업데이트
+    document.getElementById('totalOrders').textContent = totalOrders;
+    document.getElementById('waitingOrders').textContent = waitingOrders;
+    document.getElementById('activeWallets').textContent = activeWallets;
+    
+    // 수익 표시
+    const revenueElement = document.getElementById('todayRevenue');
+    if (revenueElement) {
+        revenueElement.textContent = todayRevenueTHB.toLocaleString() + ' THB';
+    }
+    
+    // USDT 수익 표시 (추가해야 할 요소)
+    const revenueUSDTElement = document.getElementById('todayRevenueUSDT');
+    if (!revenueUSDTElement) {
+        // 요소가 없으면 생성
+        const statCard = document.querySelector('.stat-card:nth-child(4)');
+        if (statCard) {
+            const usdtElement = document.createElement('div');
+            usdtElement.id = 'todayRevenueUSDT';
+            usdtElement.style.fontSize = '16px';
+            usdtElement.style.color = '#7f8c8d';
+            usdtElement.style.marginTop = '5px';
+            statCard.appendChild(usdtElement);
         }
+    }
+    
+    // USDT 표시 업데이트
+    document.getElementById('todayRevenueUSDT').textContent = '(' + todayRevenueUSDT.toFixed(2) + ' USDT)';
+    
+    // 거래액 표시
+    const amountElement = document.getElementById('todayAmount');
+    if (amountElement) {
+        amountElement.textContent = todayAmountTHB.toLocaleString() + ' THB';
+    }
+    
+    // USDT 거래액 표시 (추가해야 할 요소)
+    const amountUSDTElement = document.getElementById('todayAmountUSDT');
+    if (!amountUSDTElement) {
+        // 요소가 없으면 생성
+        const statCard = document.querySelector('.stat-card:nth-child(5)');
+        if (statCard) {
+            const usdtElement = document.createElement('div');
+            usdtElement.id = 'todayAmountUSDT';
+            usdtElement.style.fontSize = '16px';
+            usdtElement.style.color = '#7f8c8d';
+            usdtElement.style.marginTop = '5px';
+            statCard.appendChild(usdtElement);
+        }
+    }
+    
+    // USDT 거래액 표시 업데이트
+    document.getElementById('todayAmountUSDT').textContent = '(' + todayAmountUSDT.toFixed(2) + ' USDT)';
+    
+    // 나머지 코드...
+    const trans = translations[currentLang];
+    document.getElementById('waitingChange').textContent = `${waitingOrders} ${trans.waitingChange}`;
+    document.getElementById('walletsChange').textContent = `${activeWallets} ${trans.walletsChange}`;
+    
+    if (waitingOrders > 0) {
+        document.getElementById('waitingChange').classList.remove('negative');
+    } else {
+        document.getElementById('waitingChange').classList.add('negative');
+    }
+}
 
         // ==================== 주문 테이블 업데이트 ====================
         function updateOrders() {
