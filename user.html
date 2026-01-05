@@ -1157,7 +1157,7 @@
         // ==================== 데이터 로드 ====================
         function loadInitialData() {
             // 주문 데이터 로드
-            allOrders = dataManager.getOrders();
+            allOrders = sharedDataManager.getUserOrders();
             console.log('주문 데이터 로드:', allOrders.length, '개');
             
             // 지갑 데이터 로드
@@ -1609,7 +1609,7 @@
             }
             
             // 저장
-            dataManager.saveOrders(orders);
+            sharedDataManager.saveUserOrder(order);
             
             // 로컬 변수 업데이트
             allOrders = orders;
