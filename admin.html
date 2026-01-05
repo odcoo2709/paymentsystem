@@ -1663,17 +1663,34 @@ class TelegramMultiNotifier {
         this.initializeSentOrders();
     }
 
-    // localStorage에서 이미 보낸 알림 로드
-    initializeSentOrders() {
-        try {
-            const saved = JSON.parse(localStorage.getItem(this.localStorageKey) || '[]');
-            this.lastSentOrders = new Set(saved);
-            console.log(`📋 로드된 알림 기록: ${this.lastSentOrders.size}개 주문`);
-        } catch (error) {
-            console.error('알림 기록 로드 오류:', error);
-            this.lastSentOrders = new Set();
+    // localStorage에서 이미 보낸 알림을 영구적으로 관리
+initializeSentOrders() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(this.localStorageKey) || '[]');
+        this.lastSentOrders = new Set(saved);
+        console.log(`📋 로드된 알림 기록: ${this.lastSentOrders.size}개 주문`);
+        
+        // 24시간 이상 지난 기록 자동 삭제
+        const twentyFourHoursAgo = Date.now() - 24 * 60 * 60 * 1000;
+        const cleanOrders = saved.filter(orderId => {
+            // 주문 ID에서 타임스탬프 추출 (ORD-1645678901234-ABC 형식)
+            const match = orderId.match(/ORD-(\d+)/);
+            if (match) {
+                const orderTime = parseInt(match[1]);
+                return orderTime > twentyFourHoursAgo;
+            }
+            return true;
+        });
+        
+        if (cleanOrders.length !== saved.length) {
+            localStorage.setItem(this.localStorageKey, JSON.stringify(cleanOrders));
+            this.lastSentOrders = new Set(cleanOrders);
         }
+    } catch (error) {
+        console.error('알림 기록 로드 오류:', error);
+        this.lastSentOrders = new Set();
     }
+}
 
     // localStorage에 알림 기록 저장
     saveSentOrders() {
@@ -1997,7 +2014,7 @@ class TelegramMultiNotifier {
         }
     }
 
-    async sendNewOrderNotification(order) {
+    async function sendDepositConfirmedNotification(order) {
         // 이미 알림 보낸 주문인지 확인
         if (this.hasOrderBeenSent(order.id)) {
             console.log(`⏭️ 이미 알림 보낸 주문: ${order.id}`);
@@ -3270,35 +3287,33 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             const oldStatus = allOrders[orderIndex].status;
-            
-            const newStep = getStepFromStatus(newStatus);
-            allOrders[orderIndex] = {
-                ...allOrders[orderIndex],
-                status: newStatus,
-                step: newStep,
-                updated: new Date().toISOString()
-            };
-            
-            dataManager.saveOrders(allOrders);
-            
-            await telegramNotifier.sendStatusChangeNotification(orderId, oldStatus, newStatus);
-            
-            dataManager.notifyUserPage(orderId, newStatus);
-            
-            updateStats();
-            updateOrders();
-            
-            const successMessage = currentLang === 'en' ?
-                `Order status changed to "${statusText}"` :
-                `주문 상태가 "${statusText}"로 변경되었습니다`;
-            alert(successMessage);
-            
-            if (selectedOrder && selectedOrder.id === orderId) {
-                selectedOrder = allOrders[orderIndex];
-                showOrderDetail(orderId);
-            }
+    const newStep = getStepFromStatus(newStatus);
+    
+    // ✅ 주문 상태 업데이트
+    allOrders[orderIndex] = {
+        ...allOrders[orderIndex],
+        status: newStatus,
+        step: newStep,
+        updated: new Date().toISOString()
+    };
+    
+    dataManager.saveOrders(allOrders);
+    
+    // ✅ 입금확인 상태로 변경될 때만 텔레그램 알림
+    if (newStatus === '입금확인') {
+        console.log(`📨 주문 ${orderId} 입금확인 - 텔레그램 알림 전송`);
+        
+        try {
+            await telegramNotifier.sendNewOrderNotification(allOrders[orderIndex]);
+        } catch (error) {
+            console.error('텔레그램 알림 전송 실패:', error);
         }
-
+    }
+    
+    // ✅ 상태 변경 알림 (입금확인 외의 상태 변경시)
+    if (oldStatus !== newStatus) {
+        await telegramNotifier.sendStatusChangeNotification(orderId, oldStatus, newStatus);
+    }
         function getStepFromStatus(status) {
             switch(status) {
                 case '입금대기': return 1;
@@ -3869,53 +3884,25 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         function checkDataSync() {
-            const syncKey = localStorage.getItem('payment_sync_flag');
-            const lastCheck = localStorage.getItem('admin_last_check') || '0';
-            
-            if (syncKey !== lastCheck) {
-                console.log('🔔 관리자: 데이터 변경 감지!', {
-                    syncKey,
-                    lastCheck,
-                    time: new Date().toLocaleString()
-                });
-                
-                allOrders = dataManager.getOrders();
-                allWallets = dataManager.getWallets();
-                
-                updateStats();
-                updateOrders();
-                updateWallets();
-                
-                localStorage.setItem('admin_last_check', syncKey || '0');
-                
-                const newOrders = allOrders.filter(order => {
-                    const orderTime = new Date(order.time).getTime();
-                    const lastSyncTime = parseInt(lastCheck) || 0;
-                    return orderTime > lastSyncTime;
-                });
-                
-                if (newOrders.length > 0) {
-                    console.log(`🎉 ${newOrders.length}개의 새 주문 발견!`);
-                    
-                    if (newOrders.length === 1) {
-                        showNotification(`새로운 주문: ${newOrders[0].id}`);
-                    } else {
-                        showNotification(`${newOrders.length}개의 새로운 주문이 접수되었습니다`);
-                    }
-                    
-                    newOrders.forEach(async (order) => {
-                        if (order.status === '입금대기') {
-                            try {
-                                await telegramNotifier.sendNewOrderNotification(order);
-                            } catch (error) {
-                                console.error('텔레그램 알림 전송 실패:', error);
-                            }
-                        }
-                    });
-                }
-            }
-        }
-
+    const syncKey = localStorage.getItem('payment_sync_flag');
+    const lastCheck = localStorage.getItem('admin_last_check') || '0';
+    
+    if (syncKey !== lastCheck) {
+        console.log('🔔 관리자: 데이터 변경 감지!');
+        
+        allOrders = dataManager.getOrders();
+        allWallets = dataManager.getWallets();
+        
+        updateStats();
+        updateOrders();
+        updateWallets();
+        
+        localStorage.setItem('admin_last_check', syncKey || '0');
+        
+        // ✨ 여기서 알림 전송 코드 제거
+        // 새 주문 알림은 checkNewOrders()에서만 처리
+    }
+}
         // ==================== 새로운 주문 알림 체크 ====================
         function startNotificationCheck() {
             if (notificationCheckInterval) clearInterval(notificationCheckInterval);
@@ -3937,87 +3924,25 @@ async function checkNewOrders() {
         if (newOrders.length > 0) {
             console.log(`📢 ${newOrders.length}개의 새로운 주문 발견!`);
             
-            let notifiedCount = 0;
+            // ❌ 여기서 알림을 보내지 않음
+            // 그냥 마지막 알림 시간만 업데이트
             
-            for (const order of newOrders) {
-                // '입금대기' 상태인 주문만 알림
-                if (order.status !== '입금대기') {
-                    console.log(`⏭️ 입금대기 상태가 아닌 주문: ${order.id} (${order.status})`);
-                    continue;
-                }
-                
-                console.log(`📨 주문 ${order.id} 알림 전송 중...`);
-                
-                try {
-                    const result = await telegramNotifier.sendNewOrderNotification(order);
-                    
-                    if (result.alreadySent) {
-                        console.log(`⏭️ 이미 알림 보낸 주문: ${order.id}`);
-                        continue;
-                    }
-                    
-                    if (result.textResults && result.textResults.length > 0) {
-                        console.log(`✅ 주문 ${order.id} 알림 전송 완료`);
-                        notifiedCount++;
-                        
-                        if (result.hasImage && result.imageResults) {
-                            const successfulImageBots = result.imageResults.filter(r => r.imageSuccess).length;
-                            console.log(`🖼️ ${successfulImageBots}개의 봇에 이미지 전송 완료`);
-                        }
-                    } else {
-                        console.warn(`⚠️ 주문 ${order.id} 알림 전송 실패`);
-                    }
-                } catch (error) {
-                    console.error(`❌ 주문 ${order.id} 알림 전송 오류:`, error);
-                }
-                
-                // 너무 빠르게 연속 전송 방지
-                await new Promise(resolve => setTimeout(resolve, 2000));
-            }
-            
-            // 마지막 알림 시간 저장
             dataManager.saveLastNotificationTime();
+            
+            // UI 알림만 표시
+            if (newOrders.length === 1) {
+                showNotification(`새로운 주문이 접수되었습니다: ${newOrders[0].id}`);
+            } else {
+                showNotification(`${newOrders.length}개의 새로운 주문이 접수되었습니다`);
+            }
             
             updateStats();
             updateOrders();
-            
-            // UI 알림
-            if (notifiedCount > 0) {
-                showNotification(`${notifiedCount}개의 새로운 입금대기 주문 알림을 보냈습니다`);
-            }
         }
     } catch (error) {
         console.error('새로운 주문 체크 오류:', error);
     }
 }
-
-        function showNotification(message) {
-            console.log('알림:', message);
-            
-            const notification = document.createElement('div');
-            notification.style.cssText = `
-                position: fixed;
-                top: 60px;
-                right: 20px;
-                background: #3498db;
-                color: white;
-                padding: 10px 20px;
-                border-radius: 8px;
-                box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-                z-index: 9999;
-                animation: slideIn 0.3s ease;
-            `;
-            notification.textContent = message;
-            notification.id = 'temp-notification';
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
-                }
-            }, 3000);
-        }
 
         // ==================== 내보내기 ====================
         function exportOrdersToExcel() {
