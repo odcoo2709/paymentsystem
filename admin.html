@@ -2262,22 +2262,59 @@ class LoginManager {
             }
         };
 
-        // ==================== 페이지 초기화 ====================
+       // ==================== 페이지 초기화 ====================
 document.addEventListener('DOMContentLoaded', function() {
     console.log('관리자 페이지 로드됨');
     
-    setTimeout(function() {
-        if (!loginManager.isLoggedIn()) {
-            // 로그인 화면 표시
-            document.getElementById('loginContainer').classList.remove('hidden');
-            document.getElementById('adminDashboard').style.display = 'none';
-        } else {
-            // 대시보드 표시
-            document.getElementById('loginContainer').classList.add('hidden');
-            document.getElementById('adminDashboard').style.display = 'block';
-            initializeAdminDashboard();
-        }
-    }, 100);
+    // 로그인 관리자 생성
+    const loginManager = new LoginManager();
+    
+    // 현재 로그인 상태 확인
+    const isLoggedIn = loginManager.isLoggedIn();
+    console.log('로그인 상태:', isLoggedIn);
+    
+    // 세션스토리지 확인
+    console.log('sessionStorage current_admin:', sessionStorage.getItem('current_admin'));
+    
+    if (!isLoggedIn) {
+        console.log('로그인 필요 - 로그인 화면 표시');
+        // 로그인 화면 표시
+        document.getElementById('loginContainer').classList.remove('hidden');
+        document.getElementById('adminDashboard').style.display = 'none';
+        
+        // 로그인 폼 이벤트 리스너 설정
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            console.log('로그인 시도:', username, password);
+            
+            const result = loginManager.login(username, password);
+            console.log('로그인 결과:', result);
+            
+            if (result.success) {
+                console.log('로그인 성공 - 대시보드 표시');
+                document.getElementById('loginContainer').classList.add('hidden');
+                document.getElementById('adminDashboard').style.display = 'block';
+                initializeAdminDashboard();
+            } else {
+                const errorElement = document.getElementById('loginError');
+                errorElement.textContent = result.message;
+                errorElement.style.display = 'block';
+                
+                setTimeout(() => {
+                    errorElement.style.display = 'none';
+                }, 3000);
+            }
+        });
+    } else {
+        console.log('이미 로그인됨 - 대시보드 표시');
+        // 대시보드 표시
+        document.getElementById('loginContainer').classList.add('hidden');
+        document.getElementById('adminDashboard').style.display = 'block';
+        initializeAdminDashboard();
+    }
 });
 
         // 로그인 화면 표시
