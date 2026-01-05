@@ -2266,24 +2266,19 @@
 document.addEventListener('DOMContentLoaded', function() {
     console.log('관리자 페이지 로드됨');
     
-    // DOM이 완전히 로드될 때까지 대기
     setTimeout(function() {
-        // 로그인 체크
         if (!loginManager.isLoggedIn()) {
-            showLoginScreen();
-            return;
+            // 로그인 화면 표시
+            document.getElementById('loginContainer').classList.remove('hidden');
+            document.getElementById('adminDashboard').style.display = 'none';
+        } else {
+            // 대시보드 표시
+            document.getElementById('loginContainer').classList.add('hidden');
+            document.getElementById('adminDashboard').style.display = 'block';
+            initializeAdminDashboard();
         }
-        
-        // 로그인된 경우
-        const loginContainer = document.getElementById('loginContainer');
-        const adminDashboard = document.getElementById('adminDashboard');
-        
-        if (loginContainer) loginContainer.classList.add('hidden');
-        if (adminDashboard) adminDashboard.style.display = 'block';
-        
-        // 대시보드 초기화
-        initializeAdminDashboard();
-    }, 50);
+    }, 100);
+});
 
         // 로그인 화면 표시
         function showLoginScreen() {
