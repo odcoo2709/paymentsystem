@@ -698,7 +698,7 @@
             }
         }
 
-        /* 텔레그램 설정 스타일 수정 */
+        /* 텔레그램 설정 스타일 */
         .telegram-settings {
             background: white;
             padding: 25px;
@@ -788,6 +788,118 @@
             border: 1px solid #f5c6cb;
             display: block;
         }
+
+        /* 다중 텔레그램 봇 관리 */
+        .telegram-bots-list {
+            margin: 20px 0;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .telegram-bot-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #e2e8f0;
+            background: #f8f9fa;
+        }
+
+        .telegram-bot-item:last-child {
+            border-bottom: none;
+        }
+
+        .telegram-bot-info {
+            flex: 1;
+        }
+
+        .telegram-bot-name {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .telegram-bot-details {
+            font-size: 12px;
+            color: #718096;
+        }
+
+        .telegram-bot-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .bot-action-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .bot-test-btn {
+            background: #3498db;
+            color: white;
+        }
+
+        .bot-edit-btn {
+            background: #f39c12;
+            color: white;
+        }
+
+        .bot-delete-btn {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .bot-action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .add-bot-btn {
+            background: #2ecc71;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .add-bot-btn:hover {
+            background: #27ae60;
+        }
+
+        /* 텔레그램 봇 모달 */
+        .bot-form-group {
+            margin-bottom: 15px;
+        }
+
+        .bot-checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .bot-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .bot-checkbox input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+        }
     </style>
 </head>
 <body>
@@ -812,31 +924,23 @@
 
         <!-- 텔레그램 설정 -->
         <div class="telegram-settings">
-            <h3>텔레그램 알림 설정</h3>
-            <div class="form-row">
-                <div class="form-group">
-                    <label class="form-label">봇 토큰 (Bot Token)</label>
-                    <input type="text" class="form-input" id="telegramBotToken" 
-                           placeholder="예: 1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZ">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">채팅 ID (Chat ID)</label>
-                    <input type="text" class="form-input" id="telegramChatId" 
-                           placeholder="예: 1234567890">
-                </div>
+            <h3>텔레그램 알림 설정 (다중 봇 지원)</h3>
+            
+            <!-- 텔레그램 봇 목록 -->
+            <div class="telegram-bots-list" id="telegramBotsList">
+                <!-- 봇 목록 동적 생성 -->
             </div>
             
-            <!-- ✅ 저장 버튼 추가 -->
-            <button class="save-telegram-btn" id="saveTelegramBtn">텔레그램 설정 저장</button>
-            
-            <button class="test-telegram-btn" id="testTelegramBtn">테스트 알림 전송</button>
+            <button class="add-bot-btn" id="addTelegramBot">
+                <span>➕</span> 새 텔레그램 봇 추가
+            </button>
             
             <div class="telegram-status" id="telegramStatus"></div>
             
             <small>
+                * 여러 개의 텔레그램 봇을 추가하여 여러 채팅방에 알림을 전송할 수 있습니다.<br>
                 * 봇 생성 방법: @BotFather 검색 → /newbot → 토큰 발급<br>
-                * 채팅 ID 확인: @getidsbot 또는 @RawDataBot 검색<br>
-                * 저장 버튼을 꼭 눌러야 설정이 저장됩니다
+                * 채팅 ID 확인: @getidsbot 또는 @RawDataBot 검색
             </small>
         </div>
 
@@ -1078,6 +1182,72 @@
         </div>
     </div>
 
+    <!-- 텔레그램 봇 추가/수정 모달 -->
+    <div class="modal-overlay hidden" id="telegramBotModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="telegramBotModalTitle">🤖 텔레그램 봇 추가</h3>
+                <button class="modal-close" id="closeTelegramBotModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <form id="telegramBotForm">
+                    <div class="bot-form-group">
+                        <label class="form-label">봇 이름 *</label>
+                        <input type="text" class="form-input" id="botName" 
+                               placeholder="예: 메인 관리 알림봇" required>
+                    </div>
+
+                    <div class="bot-form-group">
+                        <label class="form-label">봇 토큰 (Bot Token) *</label>
+                        <input type="text" class="form-input" id="botToken" 
+                               placeholder="예: 1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZ" required>
+                    </div>
+
+                    <div class="bot-form-group">
+                        <label class="form-label">채팅 ID (Chat ID) *</label>
+                        <input type="text" class="form-input" id="botChatId" 
+                               placeholder="예: 1234567890" required>
+                        <small style="color: #718096; font-size: 12px;">
+                            * 여러 채팅 ID를 쉼표로 구분하여 입력할 수 있습니다 (예: 123456,789012,345678)
+                        </small>
+                    </div>
+
+                    <div class="bot-form-group">
+                        <label class="form-label">알림 유형</label>
+                        <div class="bot-checkbox-group">
+                            <label class="bot-checkbox">
+                                <input type="checkbox" id="notifyNewOrders" checked>
+                                <span>새 주문 알림</span>
+                            </label>
+                            <label class="bot-checkbox">
+                                <input type="checkbox" id="notifyStatusChanges" checked>
+                                <span>주문 상태 변경 알림</span>
+                            </label>
+                            <label class="bot-checkbox">
+                                <input type="checkbox" id="notifyTestMessages" checked>
+                                <span>테스트 메시지 알림</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="bot-form-group">
+                        <label class="form-label">활성화</label>
+                        <label class="bot-checkbox">
+                            <input type="checkbox" id="botEnabled" checked>
+                            <span>이 봇을 활성화합니다</span>
+                        </label>
+                    </div>
+
+                    <input type="hidden" id="botId">
+                </form>
+            </div>
+            <div class="modal-actions">
+                <button class="modal-button secondary" id="cancelTelegramBotModal">취소</button>
+                <button class="modal-button primary" id="saveTelegramBot">저장</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // ==================== 데이터 관리자 클래스 ====================
         class DataManager {
@@ -1086,7 +1256,7 @@
                 this.WALLETS_KEY = 'payment_wallets';
                 this.SYNC_KEY = 'payment_sync_flag';
                 this.ADMIN_SYNC_KEY = 'admin_sync_check';
-                this.TELEGRAM_KEY = 'telegram_settings';
+                this.TELEGRAM_BOTS_KEY = 'telegram_bots';
             }
 
             // 주문 데이터 가져오기
@@ -1154,23 +1324,46 @@
                 };
             }
 
-            // 텔레그램 설정 저장/로드
-            saveTelegramSettings(settings) {
+            // 텔레그램 봇 데이터 저장/로드
+            saveTelegramBots(bots) {
                 try {
-                    localStorage.setItem(this.TELEGRAM_KEY, JSON.stringify(settings));
+                    localStorage.setItem(this.TELEGRAM_BOTS_KEY, JSON.stringify(bots));
                     return true;
                 } catch (error) {
-                    console.error('Error saving telegram settings:', error);
+                    console.error('Error saving telegram bots:', error);
                     return false;
                 }
             }
 
-            getTelegramSettings() {
+            getTelegramBots() {
                 try {
-                    return JSON.parse(localStorage.getItem(this.TELEGRAM_KEY) || '{}');
+                    const bots = JSON.parse(localStorage.getItem(this.TELEGRAM_BOTS_KEY) || '[]');
+                    
+                    // 기존 단일 설정 호환성 유지
+                    if (bots.length === 0) {
+                        // 이전 방식의 설정이 있는지 확인
+                        const oldSettings = JSON.parse(localStorage.getItem('telegram_settings') || '{}');
+                        if (oldSettings.botToken && oldSettings.chatId) {
+                            const newBot = {
+                                id: 'bot_1',
+                                name: '기본 알림봇',
+                                token: oldSettings.botToken,
+                                chatIds: [oldSettings.chatId],
+                                notifyNewOrders: true,
+                                notifyStatusChanges: true,
+                                notifyTestMessages: true,
+                                enabled: oldSettings.enabled !== false,
+                                createdAt: new Date().toISOString()
+                            };
+                            this.saveTelegramBots([newBot]);
+                            return [newBot];
+                        }
+                    }
+                    
+                    return bots;
                 } catch (error) {
-                    console.error('Error loading telegram settings:', error);
-                    return {};
+                    console.error('Error loading telegram bots:', error);
+                    return [];
                 }
             }
 
@@ -1216,70 +1409,227 @@
             }
         }
 
-        // ==================== 텔레그램 알림 클래스 ====================
-        class TelegramNotifier {
+        // ==================== 텔레그램 알림 클래스 (다중 봇 지원) ====================
+        class TelegramMultiNotifier {
             constructor() {
                 this.dataManager = new DataManager();
-                this.settings = this.dataManager.getTelegramSettings();
+                this.bots = this.dataManager.getTelegramBots();
             }
 
-            // 설정 업데이트
-            updateSettings(botToken, chatId) {
-                this.settings = {
-                    botToken: botToken,
-                    chatId: chatId,
-                    enabled: true
+            // 모든 활성화된 봇에 메시지 전송
+            async sendToAllBots(message, options = {}) {
+                const results = [];
+                const activeBots = this.bots.filter(bot => bot.enabled);
+                
+                if (activeBots.length === 0) {
+                    console.warn('활성화된 텔레그램 봇이 없습니다');
+                    return [];
+                }
+
+                for (const bot of activeBots) {
+                    // 알림 유형 필터링
+                    if (options.notificationType === 'newOrder' && !bot.notifyNewOrders) {
+                        continue;
+                    }
+                    if (options.notificationType === 'statusChange' && !bot.notifyStatusChanges) {
+                        continue;
+                    }
+                    if (options.notificationType === 'test' && !bot.notifyTestMessages) {
+                        continue;
+                    }
+
+                    const result = await this.sendMessage(bot, message, options.imageData);
+                    results.push({
+                        botName: bot.name,
+                        success: result.success,
+                        error: result.error,
+                        data: result.data
+                    });
+                }
+
+                return results;
+            }
+
+            // 단일 봇에 메시지 전송
+            async sendMessage(bot, message, imageData = null) {
+                if (!bot.token || !bot.chatIds || bot.chatIds.length === 0) {
+                    return { success: false, error: '봇 설정이 올바르지 않습니다' };
+                }
+
+                const results = [];
+                
+                for (const chatId of bot.chatIds) {
+                    try {
+                        let result;
+                        
+                        if (imageData) {
+                            result = await this.sendImage(bot.token, chatId, imageData, message);
+                        } else {
+                            result = await this.sendTextMessage(bot.token, chatId, message);
+                        }
+                        
+                        results.push({
+                            chatId: chatId,
+                            success: result.success,
+                            error: result.error
+                        });
+                        
+                        // 각 메시지 사이에 약간의 지연
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    } catch (error) {
+                        results.push({
+                            chatId: chatId,
+                            success: false,
+                            error: error.message
+                        });
+                    }
+                }
+
+                const allSuccess = results.every(r => r.success);
+                const errors = results.filter(r => !r.success).map(r => `채팅 ${r.chatId}: ${r.error}`);
+
+                return {
+                    success: allSuccess,
+                    error: errors.length > 0 ? errors.join(' | ') : null,
+                    details: results
                 };
-                return this.dataManager.saveTelegramSettings(this.settings);
+            }
+
+            // 텍스트 메시지 전송
+            async sendTextMessage(botToken, chatId, message) {
+                try {
+                    const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+                    
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            chat_id: chatId,
+                            text: message,
+                            parse_mode: 'HTML'
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (response.ok && data.ok) {
+                        return { success: true, data: data };
+                    } else {
+                        let errorMessage = data.description || '알 수 없는 오류';
+                        
+                        if (errorMessage.includes('Forbidden')) {
+                            errorMessage = '봇이 채팅에 접근할 수 없습니다. 봇을 먼저 채팅에 초대해주세요.';
+                        } else if (errorMessage.includes('chat not found')) {
+                            errorMessage = '채팅을 찾을 수 없습니다. 채팅 ID를 확인해주세요.';
+                        } else if (errorMessage.includes('Bad Request')) {
+                            errorMessage = '잘못된 요청입니다. 봇 토큰을 확인해주세요.';
+                        }
+                        
+                        return { success: false, error: errorMessage };
+                    }
+                } catch (error) {
+                    return { 
+                        success: false, 
+                        error: `네트워크 연결 오류: ${error.message}` 
+                    };
+                }
+            }
+
+            // 이미지 전송
+            async sendImage(botToken, chatId, imageData, caption = '') {
+                try {
+                    const base64Data = imageData.split(',')[1];
+                    const byteCharacters = atob(base64Data);
+                    const byteNumbers = new Array(byteCharacters.length);
+                    
+                    for (let i = 0; i < byteCharacters.length; i++) {
+                        byteNumbers[i] = byteCharacters.charCodeAt(i);
+                    }
+                    
+                    const byteArray = new Uint8Array(byteNumbers);
+                    const blob = new Blob([byteArray], { type: 'image/png' });
+                    
+                    const formData = new FormData();
+                    formData.append('chat_id', chatId);
+                    formData.append('photo', blob, 'proof.png');
+                    if (caption) {
+                        formData.append('caption', caption);
+                    }
+                    
+                    const url = `https://api.telegram.org/bot${botToken}/sendPhoto`;
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        return { success: true, data: data };
+                    } else {
+                        return { success: false, error: data.description || '이미지 전송 실패' };
+                    }
+                } catch (error) {
+                    return { success: false, error: error.message };
+                }
             }
 
             // 테스트 알림 전송
-            async sendTestNotification() {
-                if (!this.settings.botToken || !this.settings.chatId) {
-                    return { success: false, message: '텔레그램 설정이 필요합니다' };
-                }
-
-                try {
-                    const message = `
-<b>✅ 테스트 알림</b>
+            async sendTestNotification(botId = null) {
+                const message = `
+<b>✅ 텔레그램 테스트 알림</b>
 
 관리자 시스템이 정상적으로 작동 중입니다!
 시간: ${new Date().toLocaleString('ko-KR')}
-                    `.trim();
-                    
-                    const result = await this.sendMessage(message);
-                    
-                    if (result.success) {
-                        return { success: true, message: '텔레그램 테스트 알림이 성공적으로 전송되었습니다!' };
-                    } else {
-                        return { success: false, error: result.error || '알 수 없는 오류가 발생했습니다.' };
+
+이 메시지가 정상적으로 수신되었다면
+텔레그램 알림 설정이 올바르게 구성된 것입니다.
+                `.trim();
+                
+                if (botId) {
+                    // 특정 봇에만 전송
+                    const bot = this.bots.find(b => b.id === botId);
+                    if (!bot) {
+                        return { success: false, error: '봇을 찾을 수 없습니다' };
                     }
-                } catch (error) {
-                    console.error('테스트 알림 전송 중 예외 발생:', error);
-                    return { success: false, error: `연결 오류: ${error.message}` };
+                    
+                    const result = await this.sendMessage(bot, message);
+                    return {
+                        success: result.success,
+                        error: result.error,
+                        botName: bot.name
+                    };
+                } else {
+                    // 모든 봇에 전송
+                    const results = await this.sendToAllBots(message, { notificationType: 'test' });
+                    const successCount = results.filter(r => r.success).length;
+                    const totalCount = results.length;
+                    
+                    return {
+                        success: successCount > 0,
+                        successCount: successCount,
+                        totalCount: totalCount,
+                        results: results
+                    };
                 }
             }
 
             // 새 주문 알림
             async sendNewOrderNotification(order) {
-                if (!this.settings.botToken || !this.settings.chatId) {
-                    console.warn('텔레그램 설정이 필요합니다');
-                    return;
-                }
+                const statusText = {
+                    '입금대기': '입금 대기',
+                    '입금확인': '입금 확인',
+                    '처리중': '처리 중',
+                    '완료': '완료',
+                    '취소': '취소'
+                }[order.status] || order.status;
 
-                try {
-                    const statusText = {
-                        '입금대기': '입금 대기',
-                        '입금확인': '입금 확인',
-                        '처리중': '처리 중',
-                        '완료': '완료',
-                        '취소': '취소'
-                    }[order.status] || order.status;
-
-                    const fee = order.usdt * 0.03;
-                    const netAmount = order.usdt - fee;
-                    
-                    const message = `
+                const fee = order.usdt * 0.03;
+                const netAmount = order.usdt - fee;
+                
+                const message = `
 <b>🚨 새로운 주문이 접수되었습니다!</b>
 
 📋 <b>주문 ID:</b> ${order.id}
@@ -1297,31 +1647,29 @@
 📎 <b>결제 증명서:</b> ${order.proof ? '첨부됨' : '없음'}
 
 ✅ <b>빠른 처리 요망</b>
-                    `.trim();
+                `.trim();
 
-                    const result = await this.sendMessage(message);
-                    
-                    if (order.proof && order.proof.data && order.proof.type.startsWith('image/')) {
-                        try {
-                            await this.sendImage(order.id, order.proof.data, order.proof.type);
-                        } catch (imgError) {
-                            console.warn('이미지 전송 실패:', imgError.message);
+                const results = await this.sendToAllBots(message, { notificationType: 'newOrder' });
+                
+                // 이미지가 있으면 전송
+                if (order.proof && order.proof.data && order.proof.type.startsWith('image/')) {
+                    const imageCaption = `📸 ${order.id} 결제 증명서`;
+                    for (const bot of this.bots.filter(b => b.enabled && b.notifyNewOrders)) {
+                        for (const chatId of bot.chatIds) {
+                            try {
+                                await this.sendImage(bot.token, chatId, order.proof.data, imageCaption);
+                            } catch (error) {
+                                console.warn('이미지 전송 실패:', error.message);
+                            }
                         }
                     }
-
-                    return result;
-                } catch (error) {
-                    console.error('주문 알림 전송 중 오류:', error);
-                    return { success: false, error: error.message };
                 }
+
+                return results;
             }
 
             // 주문 상태 변경 알림
             async sendStatusChangeNotification(orderId, oldStatus, newStatus) {
-                if (!this.settings.botToken || !this.settings.chatId) {
-                    return;
-                }
-
                 const oldStatusText = {
                     '입금대기': '입금 대기',
                     '입금확인': '입금 확인',
@@ -1349,106 +1697,48 @@
 🔄 <b>변경이 완료되었습니다</b>
                 `.trim();
 
-                return await this.sendMessage(message);
+                return await this.sendToAllBots(message, { notificationType: 'statusChange' });
             }
 
-            // 메시지 전송
-            async sendMessage(message) {
-                try {
-                    const url = `https://api.telegram.org/bot${this.settings.botToken}/sendMessage`;
-                    
-                    console.log('📱 텔레그램 메시지 전송 시도');
-                    
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            chat_id: this.settings.chatId,
-                            text: message,
-                            parse_mode: 'HTML'
-                        })
-                    });
-
-                    const data = await response.json();
-                    
-                    if (response.ok && data.ok) {
-                        console.log('✅ 텔레그램 메시지 전송 성공');
-                        return { success: true, data: data };
-                    } else {
-                        console.error('❌ 텔레그램 API 오류:', data);
-                        let errorMessage = data.description || '알 수 없는 오류';
-                        
-                        if (errorMessage.includes('Forbidden')) {
-                            errorMessage = '봇이 채팅에 접근할 수 없습니다. 봇을 먼저 채팅에 초대해주세요.';
-                        } else if (errorMessage.includes('chat not found')) {
-                            errorMessage = '채팅을 찾을 수 없습니다. 채팅 ID를 확인해주세요.';
-                        } else if (errorMessage.includes('Bad Request')) {
-                            errorMessage = '잘못된 요청입니다. 봇 토큰을 확인해주세요.';
-                        }
-                        
-                        return { success: false, error: errorMessage };
-                    }
-                } catch (error) {
-                    console.error('🌐 텔레그램 네트워크 오류:', error);
-                    return { 
-                        success: false, 
-                        error: `네트워크 연결 오류: ${error.message}` 
-                    };
-                }
+            // 봇 목록 업데이트
+            updateBots(bots) {
+                this.bots = bots;
+                return this.dataManager.saveTelegramBots(bots);
             }
 
-            // 이미지 전송
-            async sendImage(orderId, base64Image, imageType) {
-                try {
-                    const base64Data = base64Image.split(',')[1];
-                    const byteCharacters = atob(base64Data);
-                    const byteNumbers = new Array(byteCharacters.length);
-                    
-                    for (let i = 0; i < byteCharacters.length; i++) {
-                        byteNumbers[i] = byteCharacters.charCodeAt(i);
-                    }
-                    
-                    const byteArray = new Uint8Array(byteNumbers);
-                    const blob = new Blob([byteArray], { type: imageType });
-                    
-                    const formData = new FormData();
-                    formData.append('chat_id', this.settings.chatId);
-                    formData.append('photo', blob, `proof_${orderId}.png`);
-                    formData.append('caption', `📸 ${orderId} 결제 증명서`);
-                    
-                    const url = `https://api.telegram.org/bot${this.settings.botToken}/sendPhoto`;
-                    const response = await fetch(url, {
-                        method: 'POST',
-                        body: formData
-                    });
+            // 봇 추가
+            addBot(bot) {
+                this.bots.push(bot);
+                return this.dataManager.saveTelegramBots(this.bots);
+            }
 
-                    const data = await response.json();
-                    
-                    if (response.ok) {
-                        console.log('이미지 전송 성공');
-                        return { success: true, data: data };
-                    } else {
-                        console.error('이미지 전송 실패:', data);
-                        return { success: false, error: data.description };
-                    }
-                } catch (error) {
-                    console.error('이미지 전송 API 호출 실패:', error);
-                    return { success: false, error: error.message };
+            // 봇 수정
+            updateBot(botId, updatedBot) {
+                const index = this.bots.findIndex(b => b.id === botId);
+                if (index !== -1) {
+                    this.bots[index] = updatedBot;
+                    return this.dataManager.saveTelegramBots(this.bots);
                 }
+                return false;
+            }
+
+            // 봇 삭제
+            deleteBot(botId) {
+                this.bots = this.bots.filter(b => b.id !== botId);
+                return this.dataManager.saveTelegramBots(this.bots);
             }
         }
 
         // ==================== 전역 변수 ====================
         const dataManager = new DataManager();
-        const telegramNotifier = new TelegramNotifier();
+        const telegramNotifier = new TelegramMultiNotifier();
         
         let allOrders = [];
         let allWallets = [];
         let currentFilter = 'all';
         let selectedOrder = null;
         let selectedWallet = null;
+        let selectedBot = null;
         let currentTab = 'orders';
         let qrCodeFile = null;
         let currentLang = 'ko';
@@ -1519,7 +1809,23 @@
                 walletsChange: "available",
                 revenueChange: "Fee 3%",
                 amountChange: "Total amount",
-                syncStatusText: "Real-time Sync"
+                syncStatusText: "Real-time Sync",
+                telegramBotModalTitle: "🤖 Add Telegram Bot",
+                botNameLabel: "Bot Name *",
+                botTokenLabel: "Bot Token *",
+                botChatIdLabel: "Chat ID *",
+                botNotificationTypes: "Notification Types",
+                botNotifyNewOrders: "New order notifications",
+                botNotifyStatusChanges: "Order status change notifications",
+                botNotifyTestMessages: "Test message notifications",
+                botEnabledLabel: "Enable",
+                botEnabledText: "Enable this bot",
+                botTestButton: "Test",
+                botEditButton: "Edit",
+                botDeleteButton: "Delete",
+                botActiveStatus: "Active",
+                botInactiveStatus: "Inactive",
+                noBotsText: "No Telegram bots added. Add a new bot to receive notifications."
             },
             ko: {
                 adminTitle: "📊 주문 및 지갑 관리 시스템",
@@ -1584,7 +1890,23 @@
                 walletsChange: "사용 가능",
                 revenueChange: "수수료 3%",
                 amountChange: "총 거래액",
-                syncStatusText: "실시간 동기화"
+                syncStatusText: "실시간 동기화",
+                telegramBotModalTitle: "🤖 텔레그램 봇 추가",
+                botNameLabel: "봇 이름 *",
+                botTokenLabel: "봇 토큰 *",
+                botChatIdLabel: "채팅 ID *",
+                botNotificationTypes: "알림 유형",
+                botNotifyNewOrders: "새 주문 알림",
+                botNotifyStatusChanges: "주문 상태 변경 알림",
+                botNotifyTestMessages: "테스트 메시지 알림",
+                botEnabledLabel: "활성화",
+                botEnabledText: "이 봇을 활성화합니다",
+                botTestButton: "테스트",
+                botEditButton: "수정",
+                botDeleteButton: "삭제",
+                botActiveStatus: "활성",
+                botInactiveStatus: "비활성",
+                noBotsText: "텔레그램 봇이 없습니다. 알림을 받으려면 새 봇을 추가하세요."
             }
         };
 
@@ -1600,8 +1922,8 @@
             // 언어 초기화
             currentLang = 'ko';
             
-            // 텔레그램 설정 로드
-            loadTelegramSettings();
+            // 텔레그램 봇 목록 로드
+            updateTelegramBotsList();
             
             // 이벤트 리스너 설정
             setupEventListeners();
@@ -1651,19 +1973,29 @@
             document.getElementById('closeDetailModal').addEventListener('click', closeOrderDetail);
             document.getElementById('closeWalletModal').addEventListener('click', closeWalletModal);
             document.getElementById('cancelWalletModal').addEventListener('click', closeWalletModal);
+            document.getElementById('closeTelegramBotModal').addEventListener('click', closeTelegramBotModal);
+            document.getElementById('cancelTelegramBotModal').addEventListener('click', closeTelegramBotModal);
             
             // 지갑 모달 저장
             document.getElementById('saveWallet').addEventListener('click', saveWallet);
             document.getElementById('walletQRCode').addEventListener('change', handleQRCodeUpload);
             
-            // ✅ 텔레그램 설정 저장 버튼 추가
-            document.getElementById('saveTelegramBtn').addEventListener('click', saveTelegramConfig);
-            document.getElementById('testTelegramBtn').addEventListener('click', testTelegramNotification);
+            // 텔레그램 봇 모달 저장
+            document.getElementById('saveTelegramBot').addEventListener('click', saveTelegramBot);
+            
+            // 텔레그램 봇 추가 버튼
+            document.getElementById('addTelegramBot').addEventListener('click', openAddTelegramBotModal);
             
             // 지갑 폼 제출 방지
             document.getElementById('walletForm').addEventListener('submit', function(e) {
                 e.preventDefault();
                 saveWallet();
+            });
+            
+            // 텔레그램 봇 폼 제출 방지
+            document.getElementById('telegramBotForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                saveTelegramBot();
             });
         }
 
@@ -1711,7 +2043,8 @@
                 { id: 'waitingChange', prop: 'textContent', value: trans.waitingChange },
                 { id: 'walletsChange', prop: 'textContent', value: trans.walletsChange },
                 { id: 'revenueChange', prop: 'textContent', value: trans.revenueChange },
-                { id: 'amountChange', prop: 'textContent', value: trans.amountChange }
+                { id: 'amountChange', prop: 'textContent', value: trans.amountChange },
+                { id: 'telegramBotModalTitle', prop: 'textContent', value: trans.telegramBotModalTitle }
             ];
             
             elements.forEach(element => {
@@ -1777,42 +2110,243 @@
                 if (el) el.textContent = header.value;
             });
             
+            // 텔레그램 봇 모달 라벨
+            const botModalLabels = [
+                { selector: '#telegramBotModalTitle', value: trans.telegramBotModalTitle },
+                { selector: '#telegramBotForm label[for="botName"]', value: trans.botNameLabel },
+                { selector: '#telegramBotForm label[for="botToken"]', value: trans.botTokenLabel },
+                { selector: '#telegramBotForm label[for="botChatId"]', value: trans.botChatIdLabel },
+                { selector: '#telegramBotForm label[for="notifyNewOrders"]', value: trans.botNotifyNewOrders },
+                { selector: '#telegramBotForm label[for="notifyStatusChanges"]', value: trans.botNotifyStatusChanges },
+                { selector: '#telegramBotForm label[for="notifyTestMessages"]', value: trans.botNotifyTestMessages },
+                { selector: '#telegramBotForm label[for="botEnabled"]', value: trans.botEnabledText }
+            ];
+            
+            botModalLabels.forEach(label => {
+                const el = document.querySelector(label.selector);
+                if (el) {
+                    if (el.tagName === 'LABEL') {
+                        el.textContent = label.value;
+                    } else {
+                        el.textContent = label.value;
+                    }
+                }
+            });
+            
             // 주문 목록의 액션 버튼들도 업데이트
             updateOrders();
             updateWallets();
+            updateTelegramBotsList();
         }
 
-        // ==================== 텔레그램 설정 ====================
-        function loadTelegramSettings() {
-            const settings = dataManager.getTelegramSettings();
-            const tokenInput = document.getElementById('telegramBotToken');
-            const chatIdInput = document.getElementById('telegramChatId');
+        // ==================== 텔레그램 봇 관리 ====================
+        function updateTelegramBotsList() {
+            const botsList = document.getElementById('telegramBotsList');
+            if (!botsList) return;
             
-            if (tokenInput && settings.botToken) {
-                tokenInput.value = settings.botToken;
-            }
+            const bots = telegramNotifier.bots;
+            const trans = translations[currentLang];
             
-            if (chatIdInput && settings.chatId) {
-                chatIdInput.value = settings.chatId;
-            }
-        }
-
-        function saveTelegramConfig() {
-            const botToken = document.getElementById('telegramBotToken').value.trim();
-            const chatId = document.getElementById('telegramChatId').value.trim();
-            
-            if (!botToken || !chatId) {
-                showTelegramStatus('봇 토큰과 채팅 ID를 모두 입력해주세요.', 'error');
+            if (bots.length === 0) {
+                botsList.innerHTML = `
+                    <div class="telegram-bot-item">
+                        <div class="telegram-bot-info">
+                            <div class="telegram-bot-name">${trans.noBotsText}</div>
+                        </div>
+                    </div>
+                `;
                 return;
             }
             
-            const success = telegramNotifier.updateSettings(botToken, chatId);
+            let html = '';
+            bots.forEach(bot => {
+                const statusText = bot.enabled ? trans.botActiveStatus : trans.botInactiveStatus;
+                const statusClass = bot.enabled ? 'bot-active' : 'bot-inactive';
+                const chatCount = Array.isArray(bot.chatIds) ? bot.chatIds.length : 1;
+                
+                // 알림 유형 표시
+                const notificationTypes = [];
+                if (bot.notifyNewOrders) notificationTypes.push(trans.botNotifyNewOrders);
+                if (bot.notifyStatusChanges) notificationTypes.push(trans.botNotifyStatusChanges);
+                if (bot.notifyTestMessages) notificationTypes.push(trans.botNotifyTestMessages);
+                
+                html += `
+                    <div class="telegram-bot-item">
+                        <div class="telegram-bot-info">
+                            <div class="telegram-bot-name">
+                                ${bot.name}
+                                <span style="font-size: 12px; color: ${bot.enabled ? '#27ae60' : '#95a5a6'}; margin-left: 10px;">
+                                    ${statusText}
+                                </span>
+                            </div>
+                            <div class="telegram-bot-details">
+                                채팅방: ${chatCount}개 | 알림: ${notificationTypes.join(', ')}
+                            </div>
+                        </div>
+                        <div class="telegram-bot-actions">
+                            <button class="bot-action-btn bot-test-btn" onclick="testTelegramBot('${bot.id}')">
+                                ${trans.botTestButton}
+                            </button>
+                            <button class="bot-action-btn bot-edit-btn" onclick="editTelegramBot('${bot.id}')">
+                                ${trans.botEditButton}
+                            </button>
+                            <button class="bot-action-btn bot-delete-btn" onclick="deleteTelegramBot('${bot.id}')">
+                                ${trans.botDeleteButton}
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            botsList.innerHTML = html;
+        }
+
+        function openAddTelegramBotModal() {
+            const trans = translations[currentLang];
+            const title = document.getElementById('telegramBotModalTitle');
+            if (title) title.textContent = trans.telegramBotModalTitle;
+            
+            const form = document.getElementById('telegramBotForm');
+            if (form) form.reset();
+            
+            const botId = document.getElementById('botId');
+            if (botId) botId.value = '';
+            
+            selectedBot = null;
+            
+            // 기본값 설정
+            document.getElementById('notifyNewOrders').checked = true;
+            document.getElementById('notifyStatusChanges').checked = true;
+            document.getElementById('notifyTestMessages').checked = true;
+            document.getElementById('botEnabled').checked = true;
+            
+            const modal = document.getElementById('telegramBotModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function editTelegramBot(botId) {
+            const bot = telegramNotifier.bots.find(b => b.id === botId);
+            if (!bot) return;
+            
+            selectedBot = bot;
+            
+            const trans = translations[currentLang];
+            const title = document.getElementById('telegramBotModalTitle');
+            if (title) title.textContent = trans.telegramBotModalTitle + ' 수정';
+            
+            const botIdInput = document.getElementById('botId');
+            if (botIdInput) botIdInput.value = bot.id;
+            
+            document.getElementById('botName').value = bot.name;
+            document.getElementById('botToken').value = bot.token;
+            document.getElementById('botChatId').value = Array.isArray(bot.chatIds) ? bot.chatIds.join(', ') : bot.chatIds;
+            document.getElementById('notifyNewOrders').checked = bot.notifyNewOrders !== false;
+            document.getElementById('notifyStatusChanges').checked = bot.notifyStatusChanges !== false;
+            document.getElementById('notifyTestMessages').checked = bot.notifyTestMessages !== false;
+            document.getElementById('botEnabled').checked = bot.enabled !== false;
+            
+            const modal = document.getElementById('telegramBotModal');
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        async function saveTelegramBot() {
+            const botName = document.getElementById('botName').value.trim();
+            const botToken = document.getElementById('botToken').value.trim();
+            const botChatId = document.getElementById('botChatId').value.trim();
+            const notifyNewOrders = document.getElementById('notifyNewOrders').checked;
+            const notifyStatusChanges = document.getElementById('notifyStatusChanges').checked;
+            const notifyTestMessages = document.getElementById('notifyTestMessages').checked;
+            const botEnabled = document.getElementById('botEnabled').checked;
+            
+            if (!botName || !botToken || !botChatId) {
+                showTelegramStatus('모든 필수 항목을 입력해주세요.', 'error');
+                return;
+            }
+            
+            // 채팅 ID 처리 (쉼표로 구분된 여러 ID 지원)
+            const chatIds = botChatId.split(',').map(id => id.trim()).filter(id => id);
+            
+            const botData = {
+                id: selectedBot ? selectedBot.id : 'bot_' + Date.now(),
+                name: botName,
+                token: botToken,
+                chatIds: chatIds,
+                notifyNewOrders: notifyNewOrders,
+                notifyStatusChanges: notifyStatusChanges,
+                notifyTestMessages: notifyTestMessages,
+                enabled: botEnabled,
+                createdAt: selectedBot ? selectedBot.createdAt : new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            let success;
+            if (selectedBot) {
+                success = telegramNotifier.updateBot(selectedBot.id, botData);
+            } else {
+                success = telegramNotifier.addBot(botData);
+            }
             
             if (success) {
-                showTelegramStatus('텔레그램 설정이 저장되었습니다!', 'success');
+                updateTelegramBotsList();
+                closeTelegramBotModal();
+                
+                const message = selectedBot ? 
+                    '텔레그램 봇이 수정되었습니다.' : 
+                    '텔레그램 봇이 추가되었습니다.';
+                showTelegramStatus(message, 'success');
             } else {
-                showTelegramStatus('설정 저장에 실패했습니다.', 'error');
+                showTelegramStatus('텔레그램 봇 저장에 실패했습니다.', 'error');
             }
+        }
+
+        async function testTelegramBot(botId) {
+            const result = await telegramNotifier.sendTestNotification(botId);
+            
+            if (result.success) {
+                showTelegramStatus(`✅ ${result.botName} 테스트 알림이 성공적으로 전송되었습니다!`, 'success');
+            } else {
+                showTelegramStatus(`❌ ${result.botName} 테스트 알림 전송 실패: ${result.error}`, 'error');
+            }
+        }
+
+        async function testAllTelegramBots() {
+            const result = await telegramNotifier.sendTestNotification();
+            
+            if (result.success) {
+                showTelegramStatus(`✅ ${result.successCount}/${result.totalCount} 개의 봇에서 테스트 알림이 성공적으로 전송되었습니다!`, 'success');
+            } else if (result.successCount > 0) {
+                showTelegramStatus(`⚠️ ${result.successCount}/${result.totalCount} 개의 봇에서 테스트 알림이 전송되었습니다. 일부 실패했습니다.`, 'error');
+            } else {
+                showTelegramStatus('❌ 모든 봇에서 테스트 알림 전송에 실패했습니다.', 'error');
+            }
+        }
+
+        function deleteTelegramBot(botId) {
+            const bot = telegramNotifier.bots.find(b => b.id === botId);
+            if (!bot) return;
+            
+            const confirmMessage = currentLang === 'en' ?
+                `Delete this Telegram bot?\n\nBot: ${bot.name}` :
+                `이 텔레그램 봇을 삭제하시겠습니까?\n\n봇: ${bot.name}`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            const success = telegramNotifier.deleteBot(botId);
+            
+            if (success) {
+                updateTelegramBotsList();
+                showTelegramStatus('텔레그램 봇이 삭제되었습니다.', 'success');
+            } else {
+                showTelegramStatus('텔레그램 봇 삭제에 실패했습니다.', 'error');
+            }
+        }
+
+        function closeTelegramBotModal() {
+            const modal = document.getElementById('telegramBotModal');
+            if (modal) modal.classList.add('hidden');
+            selectedBot = null;
         }
 
         function showTelegramStatus(message, type) {
@@ -1824,16 +2358,6 @@
                 statusElement.className = 'telegram-status';
                 statusElement.textContent = '';
             }, 3000);
-        }
-
-        async function testTelegramNotification() {
-            const result = await telegramNotifier.sendTestNotification();
-            
-            if (result.success) {
-                showTelegramStatus('✅ 텔레그램 테스트 알림이 성공적으로 전송되었습니다!', 'success');
-            } else {
-                showTelegramStatus(`❌ 텔레그램 알림 전송 실패:\n${result.error || '알 수 없는 오류'}`, 'error');
-            }
         }
 
         // ==================== 데이터 로드 ====================
@@ -1943,7 +2467,7 @@
             }
         }
 
-        // ==================== 주문 테이블 업데이트 (수정됨) ====================
+        // ==================== 주문 테이블 업데이트 ====================
         function updateOrders() {
             currentFilter = document.getElementById('statusFilter').value;
             const searchTerm = document.getElementById('searchOrder').value.toLowerCase();
@@ -3019,7 +3543,7 @@
         }
 
         // ==================== 테스트 함수 ====================
-        window.createTestOrder = function() {
+        window.createTestOrder = async function() {
             const activeWallet = allWallets.find(w => w.isActive) || allWallets[0];
             const testOrder = {
                 id: 'ORD-' + Date.now().toString().slice(-6) + Math.random().toString(36).substr(2, 3).toUpperCase(),
@@ -3045,8 +3569,8 @@
             allOrders.unshift(testOrder);
             dataManager.saveOrders(allOrders);
             
-            // 텔레그램 알림 전송
-            telegramNotifier.sendNewOrderNotification(testOrder);
+            // 텔레그램 알림 전송 (다중 봇 지원)
+            await telegramNotifier.sendNewOrderNotification(testOrder);
             
             loadAllData();
             
@@ -3102,7 +3626,7 @@
             updateStats();
             updateOrders();
             
-            // 텔레그램 알림 전송
+            // 텔레그램 알림 전송 (다중 봇 지원)
             await telegramNotifier.sendNewOrderNotification(order);
             
             // 알림 표시
@@ -3110,6 +3634,9 @@
             
             return { success: true, message: '주문이 접수되었습니다' };
         };
+
+        // ==================== 텔레그램 테스트 버튼 글로벌 함수 ====================
+        window.testAllTelegramBots = testAllTelegramBots;
 
         // ==================== 초기화 완료 ====================
         console.log('관리자 페이지 스크립트 로드 완료');
