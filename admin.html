@@ -55,6 +55,9 @@
             position: absolute;
             top: 20px;
             right: 25px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
         }
 
         .lang-switch-btn {
@@ -75,6 +78,10 @@
         .lang-switch-btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .logout-btn {
+            background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
         }
 
         .lang-icon {
@@ -900,6 +907,96 @@
             width: 16px;
             height: 16px;
         }
+        
+        /* 로그인 화면 스타일 */
+        #loginContainer {
+            width: 100%;
+            max-width: 400px;
+            margin: 100px auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .login-title {
+            color: #2c3e50;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .login-subtitle {
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        
+        .login-form-group {
+            margin-bottom: 20px;
+        }
+        
+        .login-label {
+            display: block;
+            color: #2c3e50;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .login-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+        
+        .login-input:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+        
+        .login-help {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #718096;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .login-button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #3498db, #2ecc71);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .login-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+        
+        .login-error {
+            margin-top: 15px;
+            padding: 10px;
+            background: #fed7d7;
+            color: #c53030;
+            border-radius: 8px;
+            display: none;
+            font-size: 14px;
+            border: 1px solid #fc8181;
+        }
     </style>
 </head>
 <body>
@@ -909,13 +1006,56 @@
         <span id="syncStatusText">실시간 동기화</span>
     </div>
     
-    <div class="admin-container">
+    <!-- 로그인 화면 (초기에는 숨김) -->
+    <div id="loginContainer" class="hidden">
+        <div class="login-header">
+            <h2 class="login-title">🔐 관리자 로그인</h2>
+            <p class="login-subtitle">주문 및 지갑 관리 시스템에 로그인하세요</p>
+        </div>
+        
+        <form id="loginForm">
+            <div class="login-form-group">
+                <label class="login-label">아이디</label>
+                <input type="text" 
+                       id="loginUsername" 
+                       class="login-input" 
+                       placeholder="아이디를 입력하세요"
+                       required>
+            </div>
+            
+            <div class="login-form-group">
+                <label class="login-label">비밀번호</label>
+                <input type="password" 
+                       id="loginPassword" 
+                       class="login-input" 
+                       placeholder="비밀번호를 입력하세요"
+                       required>
+            </div>
+            
+            <div class="login-help">
+                <strong>기본 로그인 정보:</strong><br>
+                아이디: <code>admin</code><br>
+                비밀번호: <code>1234</code>
+            </div>
+            
+            <button type="submit" class="login-button">로그인</button>
+        </form>
+        
+        <div id="loginError" class="login-error"></div>
+    </div>
+
+    <!-- 관리자 대시보드 (로그인 후 표시) -->
+    <div class="admin-container" id="adminDashboard" style="display: none;">
         <!-- 헤더 -->
         <div class="admin-header">
             <div class="language-switcher">
                 <button class="lang-switch-btn" id="langSwitchBtn">
                     <span class="lang-icon">🌐</span>
                     <span id="langSwitchText">English</span>
+                </button>
+                <button class="lang-switch-btn logout-btn" id="logoutBtn">
+                    <span class="lang-icon">🚪</span>
+                    <span id="logoutText">로그아웃</span>
                 </button>
             </div>
             <h1 class="admin-title" id="adminTitle">📊 주문 및 지갑 관리 시스템</h1>
@@ -1249,6 +1389,102 @@
     </div>
 
     <script>
+        // ==================== 로그인 관리 클래스 ====================
+        class LoginManager {
+            constructor() {
+                this.ADMIN_CREDENTIALS_KEY = 'admin_credentials';
+                this.CURRENT_ADMIN_KEY = 'current_admin';
+                this.DEFAULT_ADMIN = {
+                    username: 'admin',
+                    password: '1234',
+                    isDefault: true
+                };
+            }
+
+            saveAdminCredentials(credentials) {
+                try {
+                    const admins = this.getAdminCredentials();
+                    const index = admins.findIndex(a => a.username === credentials.username);
+                    
+                    if (index > -1) {
+                        admins[index] = credentials;
+                    } else {
+                        admins.push(credentials);
+                    }
+                    
+                    localStorage.setItem(this.ADMIN_CREDENTIALS_KEY, JSON.stringify(admins));
+                    return true;
+                } catch (error) {
+                    console.error('Error saving admin credentials:', error);
+                    return false;
+                }
+            }
+
+            getAdminCredentials() {
+                try {
+                    const admins = JSON.parse(localStorage.getItem(this.ADMIN_CREDENTIALS_KEY) || '[]');
+                    
+                    if (!admins.some(a => a.username === this.DEFAULT_ADMIN.username)) {
+                        admins.push(this.DEFAULT_ADMIN);
+                        this.saveAdminCredentials(this.DEFAULT_ADMIN);
+                    }
+                    
+                    return admins;
+                } catch (error) {
+                    console.error('Error loading admin credentials:', error);
+                    return [this.DEFAULT_ADMIN];
+                }
+            }
+
+            login(username, password) {
+                const admins = this.getAdminCredentials();
+                const admin = admins.find(a => a.username === username && a.password === password);
+                
+                if (admin) {
+                    sessionStorage.setItem(this.CURRENT_ADMIN_KEY, JSON.stringify(admin));
+                    return { success: true, admin: admin };
+                }
+                
+                return { success: false, message: '아이디 또는 비밀번호가 올바르지 않습니다' };
+            }
+
+            logout() {
+                sessionStorage.removeItem(this.CURRENT_ADMIN_KEY);
+            }
+
+            getCurrentAdmin() {
+                try {
+                    return JSON.parse(sessionStorage.getItem(this.CURRENT_ADMIN_KEY));
+                } catch (error) {
+                    return null;
+                }
+            }
+
+            isLoggedIn() {
+                return this.getCurrentAdmin() !== null;
+            }
+
+            changePassword(username, oldPassword, newPassword) {
+                const admins = this.getAdminCredentials();
+                const adminIndex = admins.findIndex(a => a.username === username && a.password === oldPassword);
+                
+                if (adminIndex > -1) {
+                    admins[adminIndex].password = newPassword;
+                    localStorage.setItem(this.ADMIN_CREDENTIALS_KEY, JSON.stringify(admins));
+                    
+                    const currentAdmin = this.getCurrentAdmin();
+                    if (currentAdmin && currentAdmin.username === username) {
+                        currentAdmin.password = newPassword;
+                        sessionStorage.setItem(this.CURRENT_ADMIN_KEY, JSON.stringify(currentAdmin));
+                    }
+                    
+                    return { success: true };
+                }
+                
+                return { success: false, message: '현재 비밀번호가 올바르지 않습니다' };
+            }
+        }
+
         // ==================== 데이터 관리자 클래스 ====================
         class DataManager {
             constructor() {
@@ -1260,7 +1496,6 @@
                 this.LAST_NOTIFICATION_KEY = 'last_notification_time';
             }
 
-            // 주문 데이터 가져오기
             getOrders() {
                 try {
                     return JSON.parse(localStorage.getItem(this.ORDERS_KEY) || '[]');
@@ -1270,7 +1505,6 @@
                 }
             }
 
-            // 주문 데이터 저장하기
             saveOrders(orders) {
                 try {
                     localStorage.setItem(this.ORDERS_KEY, JSON.stringify(orders));
@@ -1282,7 +1516,6 @@
                 }
             }
 
-            // 지갑 데이터 가져오기
             getWallets() {
                 try {
                     let wallets = JSON.parse(localStorage.getItem(this.WALLETS_KEY) || '[]');
@@ -1299,7 +1532,6 @@
                 }
             }
 
-            // 지갑 데이터 저장하기
             saveWallets(wallets) {
                 try {
                     localStorage.setItem(this.WALLETS_KEY, JSON.stringify(wallets));
@@ -1311,7 +1543,6 @@
                 }
             }
 
-            // 기본 지갑 생성
             createDefaultWallet() {
                 return {
                     id: 'wallet_1',
@@ -1325,7 +1556,6 @@
                 };
             }
 
-            // 텔레그램 봇 데이터 저장/로드
             saveTelegramBots(bots) {
                 try {
                     localStorage.setItem(this.TELEGRAM_BOTS_KEY, JSON.stringify(bots));
@@ -1340,9 +1570,7 @@
                 try {
                     const bots = JSON.parse(localStorage.getItem(this.TELEGRAM_BOTS_KEY) || '[]');
                     
-                    // 기존 단일 설정 호환성 유지
                     if (bots.length === 0) {
-                        // 이전 방식의 설정이 있는지 확인
                         const oldSettings = JSON.parse(localStorage.getItem('telegram_settings') || '{}');
                         if (oldSettings.botToken && oldSettings.chatId) {
                             const newBot = {
@@ -1368,22 +1596,18 @@
                 }
             }
 
-            // 마지막 알림 시간 저장
             saveLastNotificationTime() {
                 localStorage.setItem(this.LAST_NOTIFICATION_KEY, Date.now().toString());
             }
 
-            // 마지막 알림 시간 가져오기
             getLastNotificationTime() {
                 return parseInt(localStorage.getItem(this.LAST_NOTIFICATION_KEY) || '0');
             }
 
-            // 새로운 주문이 있는지 확인 (마지막 알림 이후)
             getNewOrdersSinceLastNotification() {
                 const lastNotificationTime = this.getLastNotificationTime();
                 const allOrders = this.getOrders();
                 
-                // 마지막 알림 이후 생성된 주문 필터링
                 const newOrders = allOrders.filter(order => {
                     const orderTime = new Date(order.time).getTime();
                     return orderTime > lastNotificationTime;
@@ -1392,26 +1616,22 @@
                 return newOrders;
             }
 
-            // 동기화 체크
             checkSync() {
                 return localStorage.getItem(this.SYNC_KEY);
             }
 
-            // 관리자 동기화 시간 업데이트
             updateAdminSync() {
                 const syncTime = this.checkSync();
                 localStorage.setItem(this.ADMIN_SYNC_KEY, syncTime || '0');
                 return syncTime;
             }
 
-            // 동기화 필요 여부 체크
             needsSync() {
                 const lastSync = this.checkSync();
                 const lastAdminSync = localStorage.getItem(this.ADMIN_SYNC_KEY) || '0';
                 return lastSync !== lastAdminSync;
             }
 
-            // 사용자 페이지에 상태 업데이트 알림
             notifyUserPage(orderId, newStatus) {
                 try {
                     if (window.updateOrderStatusFromAdmin) {
@@ -1422,7 +1642,6 @@
                 }
             }
 
-            // 사용자 페이지에 지갑 업데이트 알림
             notifyUserPageWallets(wallets) {
                 try {
                     if (window.updateWalletsFromAdmin) {
@@ -1434,14 +1653,13 @@
             }
         }
 
-        // ==================== 텔레그램 알림 클래스 (다중 봇 + 이미지 지원) ====================
+        // ==================== 텔레그램 알림 클래스 ====================
         class TelegramMultiNotifier {
             constructor() {
                 this.dataManager = new DataManager();
                 this.bots = this.dataManager.getTelegramBots();
             }
 
-            // 모든 활성화된 봇에 메시지 전송 (이미지 포함)
             async sendToAllBots(message, options = {}) {
                 const results = [];
                 const activeBots = this.bots.filter(bot => bot.enabled);
@@ -1452,7 +1670,6 @@
                 }
 
                 for (const bot of activeBots) {
-                    // 알림 유형 필터링
                     if (options.notificationType === 'newOrder' && !bot.notifyNewOrders) {
                         continue;
                     }
@@ -1464,7 +1681,6 @@
                     }
 
                     try {
-                        // 이미지가 있으면 이미지 전송
                         let imageResult = null;
                         if (options.imageData) {
                             console.log(`📤 ${bot.name}에 이미지 전송 시도...`);
@@ -1472,7 +1688,6 @@
                             console.log(`🖼️ ${bot.name} 이미지 전송 결과:`, imageResult.success ? '성공' : '실패');
                         }
                         
-                        // 텍스트 메시지 전송 (이미지 전송 실패해도 텍스트는 전송)
                         const textResult = await this.sendMessageToBot(bot, message);
                         console.log(`💬 ${bot.name} 텍스트 전송 결과:`, textResult.success ? '성공' : '실패');
                         
@@ -1497,7 +1712,6 @@
                 return results;
             }
 
-            // 단일 봇에 메시지 전송
             async sendMessageToBot(bot, message) {
                 if (!bot.token || !bot.chatIds || bot.chatIds.length === 0) {
                     return { success: false, error: '봇 설정이 올바르지 않습니다' };
@@ -1515,7 +1729,6 @@
                             error: result.error
                         });
                         
-                        // 각 메시지 사이에 약간의 지연
                         await new Promise(resolve => setTimeout(resolve, 100));
                     } catch (error) {
                         console.error(`❌ ${bot.name} → 채팅 ${chatId} 메시지 전송 실패:`, error);
@@ -1537,7 +1750,6 @@
                 };
             }
 
-            // 단일 봇에 이미지 전송
             async sendImageToBot(bot, imageData, caption = '') {
                 if (!bot.token || !bot.chatIds || bot.chatIds.length === 0) {
                     return { success: false, error: '봇 설정이 올바르지 않습니다' };
@@ -1555,7 +1767,6 @@
                             error: result.error
                         });
                         
-                        // 각 이미지 사이에 약간의 지연
                         await new Promise(resolve => setTimeout(resolve, 500));
                     } catch (error) {
                         console.error(`❌ ${bot.name} → 채팅 ${chatId} 이미지 전송 실패:`, error);
@@ -1577,7 +1788,6 @@
                 };
             }
 
-            // 텍스트 메시지 전송
             async sendTextMessage(botToken, chatId, message) {
                 try {
                     const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
@@ -1624,26 +1834,21 @@
                 }
             }
 
-            // 이미지 전송 함수 (수정됨)
             async sendImage(botToken, chatId, imageData, caption = '') {
                 try {
                     console.log('🖼️ 이미지 전송 시작:', botToken.substring(0, 10) + '...', '채팅 ID:', chatId);
                     
-                    // 이미지 데이터가 이미 Base64 문자열인지 확인
                     let base64Data;
                     if (typeof imageData === 'string') {
                         if (imageData.includes('data:image/')) {
-                            // data:image/...;base64, 형식
                             base64Data = imageData.split(',')[1];
                         } else {
-                            // 순수 Base64 문자열
                             base64Data = imageData;
                         }
                     } else {
                         throw new Error('이미지 데이터가 문자열 형식이 아닙니다');
                     }
                     
-                    // Base64를 ArrayBuffer로 변환
                     const byteCharacters = atob(base64Data);
                     const byteNumbers = new Array(byteCharacters.length);
                     
@@ -1653,7 +1858,6 @@
                     
                     const byteArray = new Uint8Array(byteNumbers);
                     
-                    // MIME 타입 추측
                     let mimeType = 'image/jpeg';
                     if (typeof imageData === 'string' && imageData.includes('data:image/')) {
                         mimeType = 'image/' + imageData.split('data:image/')[1].split(';')[0];
@@ -1661,11 +1865,9 @@
                     
                     console.log('📁 이미지 정보:', 'MIME:', mimeType, '크기:', byteArray.length, '바이트');
                     
-                    // Blob 생성
                     const blob = new Blob([byteArray], { type: mimeType });
                     const fileExtension = mimeType.split('/')[1] || 'jpg';
                     
-                    // FormData 생성
                     const formData = new FormData();
                     formData.append('chat_id', chatId);
                     formData.append('photo', blob, `payment_proof.${fileExtension}`);
@@ -1708,7 +1910,6 @@
                 }
             }
 
-            // 테스트 알림 전송 (이미지 포함 테스트)
             async sendTestNotification(botId = null) {
                 const message = `
 <b>✅ 텔레그램 테스트 알림 (이미지 포함)</b>
@@ -1720,11 +1921,9 @@
 📸 이미지 전송 기능 확인
                 `.trim();
                 
-                // 테스트 이미지 (작은 빈 이미지)
                 const testImage = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
                 
                 if (botId) {
-                    // 특정 봇에만 전송
                     const bot = this.bots.find(b => b.id === botId);
                     if (!bot) {
                         return { success: false, error: '봇을 찾을 수 없습니다' };
@@ -1741,7 +1940,6 @@
                         botName: bot.name
                     };
                 } else {
-                    // 모든 봇에 전송
                     const textResults = await this.sendToAllBots(message, { notificationType: 'test' });
                     const imageResults = await this.sendToAllBots('테스트 이미지', { 
                         notificationType: 'test',
@@ -1756,7 +1954,6 @@
                 }
             }
 
-            // 새 주문 알림 (이미지 포함) - 개선된 버전
             async sendNewOrderNotification(order) {
                 const statusText = {
                     '입금대기': '입금 대기',
@@ -1793,7 +1990,6 @@
                 
                 const results = await this.sendToAllBots(message, { notificationType: 'newOrder' });
                 
-                // 결제 증명서 이미지가 있으면 별도로 전송
                 if (order.proof && order.proof.data && order.proof.type.startsWith('image/')) {
                     const imageCaption = `
 <b>📸 결제 증명서</b>
@@ -1812,7 +2008,6 @@
                         imageCaption: imageCaption
                     });
                     
-                    // 결과 병합
                     return {
                         textResults: results,
                         imageResults: imageResults,
@@ -1826,7 +2021,6 @@
                 };
             }
 
-            // 주문 상태 변경 알림
             async sendStatusChangeNotification(orderId, oldStatus, newStatus) {
                 const oldStatusText = {
                     '입금대기': '입금 대기',
@@ -1858,19 +2052,16 @@
                 return await this.sendToAllBots(message, { notificationType: 'statusChange' });
             }
 
-            // 봇 목록 업데이트
             updateBots(bots) {
                 this.bots = bots;
                 return this.dataManager.saveTelegramBots(bots);
             }
 
-            // 봇 추가
             addBot(bot) {
                 this.bots.push(bot);
                 return this.dataManager.saveTelegramBots(this.bots);
             }
 
-            // 봇 수정
             updateBot(botId, updatedBot) {
                 const index = this.bots.findIndex(b => b.id === botId);
                 if (index !== -1) {
@@ -1880,7 +2071,6 @@
                 return false;
             }
 
-            // 봇 삭제
             deleteBot(botId) {
                 this.bots = this.bots.filter(b => b.id !== botId);
                 return this.dataManager.saveTelegramBots(this.bots);
@@ -1890,6 +2080,7 @@
         // ==================== 전역 변수 ====================
         const dataManager = new DataManager();
         const telegramNotifier = new TelegramMultiNotifier();
+        const loginManager = new LoginManager();
         
         let allOrders = [];
         let allWallets = [];
@@ -1909,6 +2100,7 @@
                 adminTitle: "📊 Order & Wallet Management System",
                 adminSubtitle: "Manage user orders and wallet settings in one place",
                 langSwitchText: "한국어",
+                logoutText: "Logout",
                 statTotalOrders: "Total Orders",
                 statWaiting: "Waiting Deposit",
                 statActiveWallets: "Active Wallets",
@@ -1990,6 +2182,7 @@
                 adminTitle: "📊 주문 및 지갑 관리 시스템",
                 adminSubtitle: "한 곳에서 사용자 주문과 지갑 설정을 관리하세요",
                 langSwitchText: "English",
+                logoutText: "로그아웃",
                 statTotalOrders: "총 주문",
                 statWaiting: "입금 대기",
                 statActiveWallets: "활성 지갑",
@@ -2073,24 +2266,60 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('관리자 페이지 로드됨');
             
-            // 오늘 날짜 설정
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('dateFrom').value = today;
-            document.getElementById('dateTo').value = today;
+            // 로그인 체크
+            if (!loginManager.isLoggedIn()) {
+                showLoginScreen();
+            } else {
+                initializeAdminDashboard();
+            }
+        });
+
+        // 로그인 화면 표시
+        function showLoginScreen() {
+            document.getElementById('loginContainer').classList.remove('hidden');
+            document.getElementById('adminDashboard').style.display = 'none';
             
-            // 언어 초기화
+            document.getElementById('loginForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const username = document.getElementById('loginUsername').value.trim();
+                const password = document.getElementById('loginPassword').value.trim();
+                const result = loginManager.login(username, password);
+                
+                if (result.success) {
+                    document.getElementById('loginContainer').classList.add('hidden');
+                    document.getElementById('adminDashboard').style.display = 'block';
+                    initializeAdminDashboard();
+                } else {
+                    const errorElement = document.getElementById('loginError');
+                    errorElement.textContent = result.message;
+                    errorElement.style.display = 'block';
+                    
+                    setTimeout(() => {
+                        errorElement.style.display = 'none';
+                    }, 3000);
+                }
+            });
+        }
+
+        // 관리자 대시보드 초기화
+        function initializeAdminDashboard() {
+            console.log('관리자 대시보드 초기화');
+            
+            const today = new Date().toISOString().split('T')[0];
+            const dateFrom = document.getElementById('dateFrom');
+            const dateTo = document.getElementById('dateTo');
+            if (dateFrom) dateFrom.value = today;
+            if (dateTo) dateTo.value = today;
+            
             currentLang = 'ko';
             
-            // 텔레그램 봇 목록 로드
             updateTelegramBotsList();
             
-            // 이벤트 리스너 설정
             setupEventListeners();
             
-            // 데이터 로드
             loadAllData();
             
-            // 텍스트 업데이트
             try {
                 updateAllText();
             } catch (error) {
@@ -2098,19 +2327,28 @@
                 setTimeout(updateAllText, 100);
             }
             
-            // 동기화 체크 시작
             startSyncCheck();
-            
-            // 새로운 주문 알림 체크 시작
             startNotificationCheck();
             
             console.log('관리자 페이지 초기화 완료');
-        });
+        }
 
         // ==================== 이벤트 리스너 ====================
         function setupEventListeners() {
             // 언어 전환 버튼
             document.getElementById('langSwitchBtn').addEventListener('click', toggleLanguage);
+            
+            // 로그아웃 버튼
+            document.getElementById('logoutBtn').addEventListener('click', function() {
+                const confirmMessage = currentLang === 'en' ? 
+                    'Are you sure you want to logout?' : 
+                    '로그아웃 하시겠습니까?';
+                
+                if (confirm(confirmMessage)) {
+                    loginManager.logout();
+                    showLoginScreen();
+                }
+            });
             
             // 탭 전환
             document.querySelectorAll('.tab-button').forEach(button => {
@@ -2148,13 +2386,12 @@
             // 텔레그램 봇 추가 버튼
             document.getElementById('addTelegramBot').addEventListener('click', openAddTelegramBotModal);
             
-            // 지갑 폼 제출 방지
+            // 폼 제출 방지
             document.getElementById('walletForm').addEventListener('submit', function(e) {
                 e.preventDefault();
                 saveWallet();
             });
             
-            // 텔레그램 봇 폼 제출 방지
             document.getElementById('telegramBotForm').addEventListener('submit', function(e) {
                 e.preventDefault();
                 saveTelegramBot();
@@ -2170,11 +2407,11 @@
         function updateAllText() {
             const trans = translations[currentLang];
             
-            // 요소가 존재하는지 확인하고 업데이트
             const elements = [
                 { id: 'adminTitle', prop: 'textContent', value: trans.adminTitle },
                 { id: 'adminSubtitle', prop: 'textContent', value: trans.adminSubtitle },
                 { id: 'langSwitchText', prop: 'textContent', value: trans.langSwitchText },
+                { id: 'logoutText', prop: 'textContent', value: trans.logoutText },
                 { id: 'statTotalOrders', prop: 'textContent', value: trans.statTotalOrders },
                 { id: 'statWaiting', prop: 'textContent', value: trans.statWaiting },
                 { id: 'statActiveWallets', prop: 'textContent', value: trans.statActiveWallets },
@@ -2326,7 +2563,6 @@
                 const statusClass = bot.enabled ? 'bot-active' : 'bot-inactive';
                 const chatCount = Array.isArray(bot.chatIds) ? bot.chatIds.length : 1;
                 
-                // 알림 유형 표시
                 const notificationTypes = [];
                 if (bot.notifyNewOrders) notificationTypes.push(trans.botNotifyNewOrders);
                 if (bot.notifyStatusChanges) notificationTypes.push(trans.botNotifyStatusChanges);
@@ -2376,7 +2612,6 @@
             
             selectedBot = null;
             
-            // 기본값 설정
             document.getElementById('notifyNewOrders').checked = true;
             document.getElementById('notifyStatusChanges').checked = true;
             document.getElementById('notifyTestMessages').checked = true;
@@ -2425,7 +2660,6 @@
                 return;
             }
             
-            // 채팅 ID 처리 (쉼표로 구분된 여러 ID 지원)
             const chatIds = botChatId.split(',').map(id => id.trim()).filter(id => id);
             
             const botData = {
@@ -2524,25 +2758,17 @@
 
         // ==================== 데이터 로드 ====================
         function loadAllData() {
-            // 주문 데이터 로드
             allOrders = dataManager.getOrders();
             console.log('관리자: 주문 데이터 로드', allOrders.length, '개');
             
-            // 지갑 데이터 로드
             allWallets = dataManager.getWallets();
             console.log('관리자: 지갑 데이터 로드', allWallets.length, '개');
             
-            // 통계 업데이트
             updateStats();
-            
-            // 테이블 업데이트
             updateOrders();
             updateWallets();
             
-            // 동기화 시간 업데이트
             dataManager.updateAdminSync();
-            
-            // 마지막 알림 시간 업데이트 (현재 시간으로 설정하여 과거 주문들은 알림 안보내게)
             dataManager.saveLastNotificationTime();
         }
 
@@ -2573,7 +2799,6 @@
             const exchangeRate = 35;
             const todayRevenueTHB = Math.round(todayRevenueUSDT * exchangeRate);
             
-            // DOM 업데이트
             document.getElementById('totalOrders').textContent = totalOrders;
             document.getElementById('waitingOrders').textContent = waitingOrders;
             document.getElementById('activeWallets').textContent = activeWallets;
@@ -2587,7 +2812,6 @@
             if (revenueUSDTElement) {
                 revenueUSDTElement.textContent = '(' + todayRevenueUSDT.toFixed(2) + ' USDT)';
             } else {
-                // 요소가 없으면 생성
                 const statCard = document.querySelector('.stat-card:nth-child(4)');
                 if (statCard) {
                     const usdtElement = document.createElement('div');
@@ -2641,19 +2865,16 @@
             
             let filteredOrders = [...allOrders];
             
-            // 상태 필터링
             if (currentFilter !== 'all') {
                 filteredOrders = filteredOrders.filter(o => o.status === currentFilter);
             }
             
-            // 검색어 필터링
             if (searchTerm) {
                 filteredOrders = filteredOrders.filter(o => 
                     o.id.toLowerCase().includes(searchTerm)
                 );
             }
             
-            // 날짜 필터링
             if (dateFrom && dateTo) {
                 filteredOrders = filteredOrders.filter(o => {
                     const orderDate = o.time.split('T')[0];
@@ -2661,7 +2882,6 @@
                 });
             }
             
-            // 시간순 정렬 (최신순)
             filteredOrders.sort((a, b) => new Date(b.time) - new Date(a.time));
             
             const ordersTableBody = document.getElementById('ordersTableBody');
@@ -2695,7 +2915,6 @@
                     '취소': 'status-cancelled'
                 }[order.status] || 'status-waiting';
                 
-                // 상태 텍스트 번역
                 const statusText = {
                     '입금대기': currentLang === 'en' ? 'Waiting Deposit' : '입금대기',
                     '입금확인': currentLang === 'en' ? 'Deposit Confirmed' : '입금확인',
@@ -2706,22 +2925,18 @@
                 
                 const stepProgress = Math.min(100, (order.step || 1) * 25);
                 
-                // 증명서 여부 확인
                 const hasProof = order.proof && order.proof.data;
                 const proofText = currentLang === 'en' ? 'View' : '보기';
                 const proofButton = hasProof ? 
                     `<button class="action-button action-view" onclick="event.stopPropagation(); viewProof('${order.id}')">${proofText}</button>` :
                     currentLang === 'en' ? 'None' : '없음';
                 
-                // 지갑 정보
                 const walletInfo = order.wallet ? 
                     `${order.wallet.name} (${order.wallet.network})` : 
                     currentLang === 'en' ? 'Not specified' : '지정되지 않음';
                 
-                // 단계 텍스트
                 const stepText = getStepText(order.step || 1);
                 
-                // 액션 버튼 텍스트
                 const confirmText = currentLang === 'en' ? 'Confirm Deposit' : '입금 확인';
                 const cancelText = currentLang === 'en' ? 'Cancel' : '취소';
                 const processText = currentLang === 'en' ? 'Start Process' : '처리 시작';
@@ -2779,7 +2994,6 @@
             ordersTableBody.innerHTML = html;
         }
 
-        // 단계 텍스트 변환
         function getStepText(step) {
             if (currentLang === 'en') {
                 switch(step) {
@@ -2807,19 +3021,16 @@
             
             let filteredWallets = [...allWallets];
             
-            // 상태 필터링
             if (statusFilter !== 'all') {
                 filteredWallets = filteredWallets.filter(w => 
                     statusFilter === 'active' ? w.isActive : !w.isActive
                 );
             }
             
-            // 네트워크 필터링
             if (networkFilter !== 'all') {
                 filteredWallets = filteredWallets.filter(w => w.network === networkFilter);
             }
             
-            // 생성일 기준 정렬
             filteredWallets.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             
             const walletsTableBody = document.getElementById('walletsTableBody');
@@ -2840,17 +3051,14 @@
                 const networkClass = `network-${wallet.network.toLowerCase()}`;
                 const createdDate = new Date(wallet.createdAt).toLocaleDateString('ko-KR');
                 
-                // 상태 표시
                 const statusText = wallet.isActive ? 
                     (currentLang === 'en' ? 'Active' : '활성') : 
                     (currentLang === 'en' ? 'Inactive' : '비활성');
                 const statusClass = wallet.isActive ? 'wallet-active' : 'wallet-inactive';
                 
-                // 기본 지갑 배지
                 const defaultBadgeText = currentLang === 'en' ? 'Default' : '기본';
                 const defaultBadge = wallet.isDefault ? `<span class="default-wallet-badge">${defaultBadgeText}</span>` : '';
                 
-                // QR 코드 표시
                 let qrDisplay = '';
                 if (wallet.qrCode && 
                     wallet.qrCode !== 'null' && 
@@ -2862,21 +3070,19 @@
                     qrDisplay = `
                         <div class="qr-code-small">
                             <img src="${wallet.qrCode}" 
-                                 alt="Wallet Image" 
+                                 alt="Wallet QR Code" 
                                  style="max-width: 80px; max-height: 80px;"
-                                 onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\'color:#999;font-size:12px;\'>이미지 로드 오류</div>'">
+                                 onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\"color:#999;font-size:12px;\">이미지 로드 오류</div>'">
                         </div>
                     `;
                 } else {
                     qrDisplay = '<div style="text-align: center; color: #999; font-size: 12px;">없음</div>';
                 }
                 
-                // 주소 단축
                 const shortAddress = wallet.address.length > 20 ? 
                     wallet.address.substring(0, 10) + '...' + wallet.address.substring(wallet.address.length - 10) : 
                     wallet.address;
                 
-                // 액션 버튼 텍스트
                 const editText = currentLang === 'en' ? 'Edit' : '수정';
                 const deleteText = currentLang === 'en' ? 'Delete' : '삭제';
                 const deactivateText = currentLang === 'en' ? 'Deactivate' : '비활성화';
@@ -2933,7 +3139,6 @@
 
         // ==================== 주문 상태 업데이트 ====================
         async function updateOrderStatus(orderId, newStatus) {
-            // 상태 텍스트 번역
             const statusText = {
                 '입금대기': currentLang === 'en' ? 'Waiting Deposit' : '입금대기',
                 '입금확인': currentLang === 'en' ? 'Deposit Confirmed' : '입금확인',
@@ -2950,7 +3155,6 @@
                 return;
             }
             
-            // 주문 찾기
             let orderIndex = allOrders.findIndex(o => o.id === orderId);
             
             if (orderIndex === -1) {
@@ -2958,10 +3162,8 @@
                 return;
             }
             
-            // 이전 상태 저장
             const oldStatus = allOrders[orderIndex].status;
             
-            // 상태 업데이트
             const newStep = getStepFromStatus(newStatus);
             allOrders[orderIndex] = {
                 ...allOrders[orderIndex],
@@ -2970,16 +3172,12 @@
                 updated: new Date().toISOString()
             };
             
-            // 저장
             dataManager.saveOrders(allOrders);
             
-            // 텔레그램 알림 전송 (상태 변경 시)
             await telegramNotifier.sendStatusChangeNotification(orderId, oldStatus, newStatus);
             
-            // 사용자 페이지에 알림
             dataManager.notifyUserPage(orderId, newStatus);
             
-            // 관리자 페이지 업데이트
             updateStats();
             updateOrders();
             
@@ -2988,7 +3186,6 @@
                 `주문 상태가 "${statusText}"로 변경되었습니다`;
             alert(successMessage);
             
-            // 상세 모달이 열려있으면 업데이트
             if (selectedOrder && selectedOrder.id === orderId) {
                 selectedOrder = allOrders[orderIndex];
                 showOrderDetail(orderId);
@@ -3051,13 +3248,11 @@
             const tabId = e.target.dataset.tab;
             currentTab = tabId;
             
-            // 탭 버튼 업데이트
             document.querySelectorAll('.tab-button').forEach(button => {
                 button.classList.remove('active');
             });
             e.target.classList.add('active');
             
-            // 탭 내용 업데이트
             document.getElementById('ordersTab').classList.remove('active');
             document.getElementById('walletsTab').classList.remove('active');
             
@@ -3082,7 +3277,6 @@
             const updatedTime = order.updated ? new Date(order.updated).toLocaleString('ko-KR') : 
                 (currentLang === 'en' ? 'None' : '없음');
             
-            // 증명서 정보
             let proofInfo = currentLang === 'en' ? 'None' : '없음';
             if (order.proof && order.proof.data) {
                 proofInfo = order.proof.type.startsWith('image/') ? 
@@ -3090,7 +3284,6 @@
                     order.proof.name;
             }
             
-            // 상태 텍스트
             const statusText = {
                 '입금대기': currentLang === 'en' ? 'Waiting Deposit' : '입금대기',
                 '입금확인': currentLang === 'en' ? 'Deposit Confirmed' : '입금확인',
@@ -3099,7 +3292,6 @@
                 '취소': currentLang === 'en' ? 'Cancelled' : '취소'
             }[order.status] || order.status;
             
-            // 레이블 텍스트
             const orderIdLabel = currentLang === 'en' ? 'Order ID:' : '주문 ID:';
             const createdLabel = currentLang === 'en' ? 'Created Time:' : '생성 시간:';
             const updatedLabel = currentLang === 'en' ? 'Last Updated:' : '마지막 업데이트:';
@@ -3111,7 +3303,6 @@
             const proofLabel = currentLang === 'en' ? 'Payment Proof:' : '결제 증명서:';
             const viewProofText = currentLang === 'en' ? 'View' : '보기';
             
-            // 상세 내용 생성
             let detailHtml = `
                 <div class="form-group">
                     <label class="form-label">${orderIdLabel}</label>
@@ -3187,7 +3378,6 @@
             
             document.getElementById('orderDetailContent').innerHTML = detailHtml;
             
-            // 액션 버튼 생성
             let actionsHtml = '';
             
             if (order.status === '입금대기') {
@@ -3218,7 +3408,6 @@
             
             document.getElementById('orderDetailActions').innerHTML = actionsHtml;
             
-            // 모달 열기
             document.getElementById('orderDetailModal').classList.remove('hidden');
         }
 
@@ -3241,7 +3430,6 @@
             
             qrCodeFile = null;
             
-            // 기본값 설정
             const statusSelect = document.getElementById('walletStatus');
             if (statusSelect) statusSelect.value = 'active';
             
@@ -3310,7 +3498,6 @@
         function saveWallet() {
             console.log('지갑 저장 시작');
             
-            // 폼 검증
             const nameInput = document.getElementById('walletName');
             const networkSelect = document.getElementById('walletNetwork');
             const addressInput = document.getElementById('walletAddress');
@@ -3344,7 +3531,6 @@
             const walletId = document.getElementById('walletId').value;
             const isEdit = !!walletId;
             
-            // QR 코드 파일 처리
             if (qrCodeFile) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
@@ -3367,7 +3553,6 @@
                 
                 reader.readAsDataURL(qrCodeFile);
             } else {
-                // 기존 QR 코드 유지 (수정 시)
                 if (isEdit && selectedWallet && selectedWallet.qrCode) {
                     saveWalletData(selectedWallet.qrCode);
                 } else {
@@ -3391,7 +3576,6 @@
                 
                 console.log('지갑 데이터 준비 완료:', walletData);
                 
-                // 지갑 목록 업데이트
                 let updatedWallets = [...allWallets];
                 
                 if (isEdit) {
@@ -3405,25 +3589,20 @@
                     console.log('새 지갑 추가 완료:', walletData.id);
                 }
                 
-                // 활성화된 지갑이 여러 개인지 확인
                 const activeWallets = updatedWallets.filter(w => w.isActive);
                 if (activeWallets.length === 0 && updatedWallets.length > 0) {
                     updatedWallets[0].isActive = true;
                 }
                 
-                // 저장
                 const saveSuccess = dataManager.saveWallets(updatedWallets);
                 
                 if (saveSuccess) {
-                    // 사용자 페이지에 알림
                     dataManager.notifyUserPageWallets(updatedWallets);
                     
-                    // 페이지 업데이트
                     allWallets = updatedWallets;
                     updateStats();
                     updateWallets();
                     
-                    // 모달 닫기
                     closeWalletModal();
                     
                     const successMessage = currentLang === 'en' ?
@@ -3462,7 +3641,6 @@
                 return;
             }
             
-            // 지갑 상태 업데이트
             const updatedWallets = allWallets.map(w => {
                 if (w.id === walletId) {
                     return { ...w, isActive: activate };
@@ -3470,13 +3648,10 @@
                 return w;
             });
             
-            // 저장
             dataManager.saveWallets(updatedWallets);
             
-            // 사용자 페이지에 알림
             dataManager.notifyUserPageWallets(updatedWallets);
             
-            // 페이지 업데이트
             allWallets = updatedWallets;
             updateStats();
             updateWallets();
@@ -3499,7 +3674,6 @@
                 return;
             }
             
-            // 모든 지갑의 기본 설정 해제 후 선택한 지갑만 기본 설정
             const updatedWallets = allWallets.map(w => {
                 if (w.id === walletId) {
                     return { ...w, isDefault: true, isActive: true };
@@ -3508,13 +3682,10 @@
                 }
             });
             
-            // 저장
             dataManager.saveWallets(updatedWallets);
             
-            // 사용자 페이지에 알림
             dataManager.notifyUserPageWallets(updatedWallets);
             
-            // 페이지 업데이트
             allWallets = updatedWallets;
             updateStats();
             updateWallets();
@@ -3533,7 +3704,6 @@
                 return;
             }
             
-            // 이 지갑을 사용하는 주문이 있는지 확인
             const ordersUsingWallet = allOrders.filter(o => 
                 o.wallet && o.wallet.id === walletId && o.status !== '완료' && o.status !== '취소'
             );
@@ -3553,22 +3723,17 @@
                 return;
             }
             
-            // 지갑 삭제
             const updatedWallets = allWallets.filter(w => w.id !== walletId);
             
-            // 활성화된 지갑이 없으면 첫 번째 지갑 활성화
             const activeWallets = updatedWallets.filter(w => w.isActive);
             if (activeWallets.length === 0 && updatedWallets.length > 0) {
                 updatedWallets[0].isActive = true;
             }
             
-            // 저장
             dataManager.saveWallets(updatedWallets);
             
-            // 사용자 페이지에 알림
             dataManager.notifyUserPageWallets(updatedWallets);
             
-            // 페이지 업데이트
             allWallets = updatedWallets;
             updateStats();
             updateWallets();
@@ -3601,7 +3766,11 @@
             const lastCheck = localStorage.getItem('admin_last_check') || '0';
             
             if (syncKey !== lastCheck) {
-                console.log('🔔 관리자: 데이터 변경 감지!');
+                console.log('🔔 관리자: 데이터 변경 감지!', {
+                    syncKey,
+                    lastCheck,
+                    time: new Date().toLocaleString()
+                });
                 
                 allOrders = dataManager.getOrders();
                 allWallets = dataManager.getWallets();
@@ -3612,8 +3781,30 @@
                 
                 localStorage.setItem('admin_last_check', syncKey || '0');
                 
-                if (allOrders.length > 0) {
-                    showNotification(`새로운 주문 ${allOrders.length}개`);
+                const newOrders = allOrders.filter(order => {
+                    const orderTime = new Date(order.time).getTime();
+                    const lastSyncTime = parseInt(lastCheck) || 0;
+                    return orderTime > lastSyncTime;
+                });
+                
+                if (newOrders.length > 0) {
+                    console.log(`🎉 ${newOrders.length}개의 새 주문 발견!`);
+                    
+                    if (newOrders.length === 1) {
+                        showNotification(`새로운 주문: ${newOrders[0].id}`);
+                    } else {
+                        showNotification(`${newOrders.length}개의 새로운 주문이 접수되었습니다`);
+                    }
+                    
+                    newOrders.forEach(async (order) => {
+                        if (order.status === '입금대기') {
+                            try {
+                                await telegramNotifier.sendNewOrderNotification(order);
+                            } catch (error) {
+                                console.error('텔레그램 알림 전송 실패:', error);
+                            }
+                        }
+                    });
                 }
             }
         }
@@ -3628,29 +3819,25 @@
             
             notificationCheckInterval = setInterval(() => {
                 checkNewOrders();
-            }, 5000); // 5초마다 체크
+            }, 5000);
         }
 
         async function checkNewOrders() {
             try {
-                // 마지막 알림 이후의 새로운 주문 가져오기
                 const newOrders = dataManager.getNewOrdersSinceLastNotification();
                 
                 if (newOrders.length > 0) {
                     console.log(`📢 ${newOrders.length}개의 새로운 주문 발견!`);
                     
-                    // 각 새로운 주문에 대해 알림 전송
                     for (const order of newOrders) {
                         console.log(`📨 주문 ${order.id} 알림 전송 중...`);
                         
                         try {
-                            // 텔레그램 알림 전송
                             const result = await telegramNotifier.sendNewOrderNotification(order);
                             
                             if (result.textResults && result.textResults.length > 0) {
                                 console.log(`✅ 주문 ${order.id} 알림 전송 완료`);
                                 
-                                // 이미지가 전송되었는지 확인
                                 if (result.hasImage && result.imageResults) {
                                     const successfulImageBots = result.imageResults.filter(r => r.imageSuccess).length;
                                     console.log(`🖼️ ${successfulImageBots}개의 봇에 이미지 전송 완료`);
@@ -3662,18 +3849,14 @@
                             console.error(`❌ 주문 ${order.id} 알림 전송 오류:`, error);
                         }
                         
-                        // 각 주문 사이에 약간의 지연
                         await new Promise(resolve => setTimeout(resolve, 1000));
                     }
                     
-                    // 마지막 알림 시간 업데이트
                     dataManager.saveLastNotificationTime();
                     
-                    // 페이지 업데이트
                     updateStats();
                     updateOrders();
                     
-                    // 사용자에게 알림
                     if (newOrders.length === 1) {
                         showNotification(`새로운 주문이 접수되었습니다: ${newOrders[0].id}`);
                     } else {
@@ -3801,9 +3984,6 @@
             allOrders.unshift(testOrder);
             dataManager.saveOrders(allOrders);
             
-            // 마지막 알림 시간을 업데이트하지 않아서 checkNewOrders에서 감지하도록 함
-            // dataManager.saveLastNotificationTime(); // 주석 처리
-            
             loadAllData();
             
             alert(currentLang === 'en' ?
@@ -3850,17 +4030,12 @@
         window.newOrderFromUser = async function(order) {
             console.log('사용자로부터 새 주문 받음:', order.id);
             
-            // 주문 추가
             allOrders.unshift(order);
             dataManager.saveOrders(allOrders);
             
-            // 통계 업데이트
             updateStats();
             updateOrders();
             
-            // 마지막 알림 시간을 업데이트하지 않음 (checkNewOrders에서 감지하도록)
-            
-            // 알림 표시
             showNotification(`새 주문이 접수되었습니다: ${order.id}`);
             
             return { success: true, message: '주문이 접수되었습니다' };
@@ -3869,7 +4044,6 @@
         // ==================== 텔레그램 테스트 버튼 글로벌 함수 ====================
         window.testAllTelegramBots = testAllTelegramBots;
 
-        // ==================== 초기화 완료 ====================
         console.log('관리자 페이지 스크립트 로드 완료');
     </script>
 </body>
