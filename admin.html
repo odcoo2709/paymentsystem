@@ -1437,16 +1437,16 @@ class LoginManager {
             }
 
             login(username, password) {
-                const admins = this.getAdminCredentials();
-                const admin = admins.find(a => a.username === username && a.password === password);
-                
-                if (admin) {
-                    sessionStorage.setItem(this.CURRENT_ADMIN_KEY, JSON.stringify(admin));
-                    return { success: true, admin: admin };
-                }
-                
-                return { success: false, message: '아이디 또는 비밀번호가 올바르지 않습니다' };
-            }
+    const admins = this.getAdminCredentials();
+    const admin = admins.find(a => a.username === username && a.password === password);
+    
+    if (admin) {
+        sessionStorage.setItem(this.CURRENT_ADMIN_KEY, JSON.stringify(admin));
+        return { success: true, admin: admin };
+    }
+    
+    return { success: false, message: '아이디 또는 비밀번호가 올바르지 않습니다' };
+}
 
             logout() {
                 sessionStorage.removeItem(this.CURRENT_ADMIN_KEY);
