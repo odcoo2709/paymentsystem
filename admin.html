@@ -3014,128 +3014,136 @@
             }
         }
 
-        // ==================== 지갑 테이블 업데이트 ====================
-        function updateWallets() {
-            const statusFilter = document.getElementById('walletStatusFilter').value;
-            const networkFilter = document.getElementById('walletNetworkFilter').value;
+        // ==================== 지갑 테이블 업데이트 (수정된 버전) ====================
+function updateWallets() {
+    const statusFilter = document.getElementById('walletStatusFilter').value;
+    const networkFilter = document.getElementById('walletNetworkFilter').value;
+    
+    let filteredWallets = [...allWallets];
+    
+    if (statusFilter !== 'all') {
+        filteredWallets = filteredWallets.filter(w => 
+            statusFilter === 'active' ? w.isActive : !w.isActive
+        );
+    }
+    
+    if (networkFilter !== 'all') {
+        filteredWallets = filteredWallets.filter(w => w.network === networkFilter);
+    }
+    
+    filteredWallets.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    
+    const walletsTableBody = document.getElementById('walletsTableBody');
+    if (!walletsTableBody) return;
+    
+    if (filteredWallets.length === 0) {
+        const trans = translations[currentLang];
+        walletsTableBody.innerHTML = `
+            <tr>
+                <td colspan="7" class="no-wallets">${trans.noWalletsText}</td>
+            </tr>
+        `;
+        return;
+    }
+    
+    let html = '';
+    filteredWallets.forEach(wallet => {
+        const networkClass = `network-${wallet.network.toLowerCase()}`;
+        const createdDate = new Date(wallet.createdAt).toLocaleDateString('ko-KR');
+        
+        const statusText = wallet.isActive ? 
+            (currentLang === 'en' ? 'Active' : '활성') : 
+            (currentLang === 'en' ? 'Inactive' : '비활성');
+        const statusClass = wallet.isActive ? 'wallet-active' : 'wallet-inactive';
+        
+        const defaultBadgeText = currentLang === 'en' ? 'Default' : '기본';
+        const defaultBadge = wallet.isDefault ? `<span class="default-wallet-badge">${defaultBadgeText}</span>` : '';
+        
+        // ✅ 수정된 QR 코드 표시 부분
+        let qrDisplay = '';
+        if (wallet.qrCode && 
+            wallet.qrCode !== 'null' && 
+            wallet.qrCode !== '' && 
+            wallet.qrCode !== null &&
+            typeof wallet.qrCode === 'string' && 
+            wallet.qrCode.startsWith('data:image/')) {
             
-            let filteredWallets = [...allWallets];
-            
-            if (statusFilter !== 'all') {
-                filteredWallets = filteredWallets.filter(w => 
-                    statusFilter === 'active' ? w.isActive : !w.isActive
-                );
-            }
-            
-            if (networkFilter !== 'all') {
-                filteredWallets = filteredWallets.filter(w => w.network === networkFilter);
-            }
-            
-            filteredWallets.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            
-            const walletsTableBody = document.getElementById('walletsTableBody');
-            if (!walletsTableBody) return;
-            
-            if (filteredWallets.length === 0) {
-                const trans = translations[currentLang];
-                walletsTableBody.innerHTML = `
-                    <tr>
-                        <td colspan="7" class="no-wallets">${trans.noWalletsText}</td>
-                    </tr>
-                `;
-                return;
-            }
-            
-            let html = '';
-            filteredWallets.forEach(wallet => {
-                const networkClass = `network-${wallet.network.toLowerCase()}`;
-                const createdDate = new Date(wallet.createdAt).toLocaleDateString('ko-KR');
-                
-                const statusText = wallet.isActive ? 
-                    (currentLang === 'en' ? 'Active' : '활성') : 
-                    (currentLang === 'en' ? 'Inactive' : '비활성');
-                const statusClass = wallet.isActive ? 'wallet-active' : 'wallet-inactive';
-                
-                const defaultBadgeText = currentLang === 'en' ? 'Default' : '기본';
-                const defaultBadge = wallet.isDefault ? `<span class="default-wallet-badge">${defaultBadgeText}</span>` : '';
-                
-                let qrDisplay = '';
-                if (wallet.qrCode && 
-                    wallet.qrCode !== 'null' && 
-                    wallet.qrCode !== '' && 
-                    wallet.qrCode !== null &&
-                    typeof wallet.qrCode === 'string' && 
-                    wallet.qrCode.startsWith('data:image/')) {
-                    
-                    qrDisplay = `
-                        <div class="qr-code-small">
-                            <img src="${wallet.qrCode}" 
-                                 alt="Wallet QR Code" 
-                                 style="max-width: 80px; max-height: 80px;"
-                                 onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\"color:#999;font-size:12px;\">이미지 로드 오류</div>'">
-                        </div>
-                    `;
-                } else {
-                    qrDisplay = '<div style="text-align: center; color: #999; font-size: 12px;">없음</div>';
-                }
-                
-                const shortAddress = wallet.address.length > 20 ? 
-                    wallet.address.substring(0, 10) + '...' + wallet.address.substring(wallet.address.length - 10) : 
-                    wallet.address;
-                
-                const editText = currentLang === 'en' ? 'Edit' : '수정';
-                const deleteText = currentLang === 'en' ? 'Delete' : '삭제';
-                const deactivateText = currentLang === 'en' ? 'Deactivate' : '비활성화';
-                const activateText = currentLang === 'en' ? 'Activate' : '활성화';
-                const setDefaultText = currentLang === 'en' ? 'Set Default' : '기본 설정';
-                
-                html += `
-                    <tr>
-                        <td>
-                            <div style="font-weight: bold; color: #2c3e50;">
-                                ${wallet.name} ${defaultBadge}
-                            </div>
-                            ${wallet.memo ? `<div style="font-size: 12px; color: #718096; margin-top: 5px;">${wallet.memo}</div>` : ''}
-                        </td>
-                        <td>
-                            <span class="network-badge ${networkClass}">${wallet.network}</span>
-                        </td>
-                        <td>
-                            <div style="font-size: 12px; color: #2c3e50;">${shortAddress}</div>
-                            <div class="wallet-address" title="${wallet.address}">
-                                ${wallet.address}
-                            </div>
-                        </td>
-                        <td>${qrDisplay}</td>
-                        <td>
-                            <span class="wallet-status ${statusClass}">
-                                ${wallet.isActive ? '<span class="active-wallet-indicator"></span>' : ''}
-                                ${statusText}
-                            </span>
-                        </td>
-                        <td>${createdDate}</td>
-                        <td>
-                            <div class="wallet-actions">
-                                <button class="action-button action-edit" onclick="editWallet('${wallet.id}')">${editText}</button>
-                                ${!wallet.isDefault ? `
-                                    <button class="action-button action-delete" onclick="deleteWallet('${wallet.id}')">${deleteText}</button>
-                                ` : ''}
-                                ${wallet.isActive ? 
-                                    `<button class="action-button action-deactivate" onclick="toggleWalletStatus('${wallet.id}', false)">${deactivateText}</button>` :
-                                    `<button class="action-button action-activate" onclick="toggleWalletStatus('${wallet.id}', true)">${activateText}</button>`
-                                }
-                                ${!wallet.isDefault ? 
-                                    `<button class="action-button action-setdefault" onclick="setDefaultWallet('${wallet.id}')">${setDefaultText}</button>` : 
-                                    ''
-                                }
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            });
-            
-            walletsTableBody.innerHTML = html;
+            // 고유 ID 생성
+            const imgId = 'qr_' + Date.now() + Math.random().toString(36).substr(2, 9);
+            qrDisplay = `
+                <div class="qr-code-small" id="${imgId}">
+                    <img src="${wallet.qrCode}" 
+                         alt="Wallet QR Code" 
+                         style="max-width: 80px; max-height: 80px;"
+                         onerror="
+                             const container = document.getElementById('${imgId}');
+                             if (container) {
+                                 container.innerHTML = '<div style=\\"color:#999;font-size:12px;\\">이미지 로드 오류</div>';
+                             }
+                         ">
+                </div>
+            `;
+        } else {
+            qrDisplay = '<div style="text-align: center; color: #999; font-size: 12px;">없음</div>';
         }
+        
+        const shortAddress = wallet.address.length > 20 ? 
+            wallet.address.substring(0, 10) + '...' + wallet.address.substring(wallet.address.length - 10) : 
+            wallet.address;
+        
+        const editText = currentLang === 'en' ? 'Edit' : '수정';
+        const deleteText = currentLang === 'en' ? 'Delete' : '삭제';
+        const deactivateText = currentLang === 'en' ? 'Deactivate' : '비활성화';
+        const activateText = currentLang === 'en' ? 'Activate' : '활성화';
+        const setDefaultText = currentLang === 'en' ? 'Set Default' : '기본 설정';
+        
+        html += `
+            <tr>
+                <td>
+                    <div style="font-weight: bold; color: #2c3e50;">
+                        ${wallet.name} ${defaultBadge}
+                    </div>
+                    ${wallet.memo ? `<div style="font-size: 12px; color: #718096; margin-top: 5px;">${wallet.memo}</div>` : ''}
+                </td>
+                <td>
+                    <span class="network-badge ${networkClass}">${wallet.network}</span>
+                </td>
+                <td>
+                    <div style="font-size: 12px; color: #2c3e50;">${shortAddress}</div>
+                    <div class="wallet-address" title="${wallet.address}">
+                        ${wallet.address}
+                    </div>
+                </td>
+                <td>${qrDisplay}</td>
+                <td>
+                    <span class="wallet-status ${statusClass}">
+                        ${wallet.isActive ? '<span class="active-wallet-indicator"></span>' : ''}
+                        ${statusText}
+                    </span>
+                </td>
+                <td>${createdDate}</td>
+                <td>
+                    <div class="wallet-actions">
+                        <button class="action-button action-edit" onclick="editWallet('${wallet.id}')">${editText}</button>
+                        ${!wallet.isDefault ? `
+                            <button class="action-button action-delete" onclick="deleteWallet('${wallet.id}')">${deleteText}</button>
+                        ` : ''}
+                        ${wallet.isActive ? 
+                            `<button class="action-button action-deactivate" onclick="toggleWalletStatus('${wallet.id}', false)">${deactivateText}</button>` :
+                            `<button class="action-button action-activate" onclick="toggleWalletStatus('${wallet.id}', true)">${activateText}</button>`
+                        }
+                        ${!wallet.isDefault ? 
+                            `<button class="action-button action-setdefault" onclick="setDefaultWallet('${wallet.id}')">${setDefaultText}</button>` : 
+                            ''
+                        }
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    
+    walletsTableBody.innerHTML = html;
+}
 
         // ==================== 주문 상태 업데이트 ====================
         async function updateOrderStatus(orderId, newStatus) {
