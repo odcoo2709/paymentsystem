@@ -1287,52 +1287,124 @@
     const trans = translations[currentLang];
     console.log('관리자: 언어 업데이트 ->', currentLang);
     
-    // 헤더
-    document.getElementById('adminTitle').textContent = trans.adminTitle;
-    document.getElementById('adminSubtitle').textContent = trans.adminSubtitle;
-    document.getElementById('langSwitchText').textContent = trans.langSwitchText;
-    
-    // 통계
-    document.getElementById('statTotalOrders').textContent = trans.statTotalOrders;
-    document.getElementById('statWaiting').textContent = trans.statWaiting;
-    document.getElementById('statActiveWallets').textContent = trans.statActiveWallets;
-    document.getElementById('statTodayRevenue').textContent = trans.statTodayRevenue;
-    document.getElementById('statTotalChange').textContent = trans.statTotalChange;
-    document.getElementById('walletsChange').textContent = trans.walletsChange;
-    document.getElementById('revenueChange').textContent = trans.revenueChange;
-    
-    // 탭 버튼
-    document.querySelectorAll('.tab-button')[0].textContent = '📋 ' + (currentLang === 'en' ? 'Order Management' : '주문 관리');
-    document.querySelectorAll('.tab-button')[1].textContent = '👛 ' + (currentLang === 'en' ? 'Wallet Management' : '지갑 관리');
-    
-    // 주문 관리
-    document.getElementById('ordersTitle').textContent = trans.ordersTitle;
-    document.getElementById('searchOrder').placeholder = trans.searchPlaceholder;
-    document.getElementById('noOrdersText').textContent = trans.noOrdersText;
-    document.getElementById('exportOrders').textContent = trans.exportBtn;
-    document.getElementById('refreshOrders').textContent = trans.refreshBtn;
-    
-    // 테이블 헤더
-    document.getElementById('thOrderId').textContent = trans.thOrderId;
-    document.getElementById('thAmount').textContent = trans.thAmount;
-    document.getElementById('thWallet').textContent = trans.thWallet;
-    document.getElementById('thStatus').textContent = trans.thStatus;
-    document.getElementById('thStep').textContent = trans.thStep;
-    document.getElementById('thProof').textContent = trans.thProof;
-    document.getElementById('thAction').textContent = trans.thAction;
-    
-    // 상태 필터 옵션 - 완전히 재생성
-    const statusFilter = document.getElementById('statusFilter');
-    if (statusFilter) {
-        statusFilter.innerHTML = `
-            <option value="all">${trans.statusAll}</option>
-            <option value="입금대기">${trans.statusWaiting}</option>
-            <option value="입금확인">${trans.statusConfirmed}</option>
-            <option value="처리중">${trans.statusProcessing}</option>
-            <option value="완료">${trans.statusCompleted}</option>
-            <option value="취소">${trans.statusCancelled}</option>
-        `;
+    try {
+        // 헤더
+        safeSetText('adminTitle', trans.adminTitle);
+        safeSetText('adminSubtitle', trans.adminSubtitle);
+        safeSetText('langSwitchText', trans.langSwitchText);
+        
+        // 통계
+        safeSetText('statTotalOrders', trans.statTotalOrders);
+        safeSetText('statWaiting', trans.statWaiting);
+        safeSetText('statActiveWallets', trans.statActiveWallets);
+        safeSetText('statTodayRevenue', trans.statTodayRevenue);
+        safeSetText('statTotalChange', trans.statTotalChange);
+        safeSetText('walletsChange', trans.walletsChange);
+        safeSetText('revenueChange', trans.revenueChange);
+        
+        // 탭 버튼
+        const tabButtons = document.querySelectorAll('.tab-button');
+        if (tabButtons[0]) tabButtons[0].textContent = '📋 ' + (currentLang === 'en' ? 'Order Management' : '주문 관리');
+        if (tabButtons[1]) tabButtons[1].textContent = '👛 ' + (currentLang === 'en' ? 'Wallet Management' : '지갑 관리');
+        
+        // 주문 관리
+        safeSetText('ordersTitle', trans.ordersTitle);
+        safeSetText('noOrdersText', trans.noOrdersText);
+        safeSetPlaceholder('searchOrder', trans.searchPlaceholder);
+        safeSetText('exportOrders', trans.exportBtn);
+        safeSetText('refreshOrders', trans.refreshBtn);
+        
+        // 테이블 헤더
+        safeSetText('thOrderId', trans.thOrderId);
+        safeSetText('thAmount', trans.thAmount);
+        safeSetText('thWallet', trans.thWallet);
+        safeSetText('thStatus', trans.thStatus);
+        safeSetText('thStep', trans.thStep);
+        safeSetText('thProof', trans.thProof);
+        safeSetText('thAction', trans.thAction);
+        
+        // 상태 필터 옵션
+        const statusFilter = document.getElementById('statusFilter');
+        if (statusFilter) {
+            statusFilter.innerHTML = `
+                <option value="all">${trans.statusAll}</option>
+                <option value="입금대기">${trans.statusWaiting}</option>
+                <option value="입금확인">${trans.statusConfirmed}</option>
+                <option value="처리중">${trans.statusProcessing}</option>
+                <option value="완료">${trans.statusCompleted}</option>
+                <option value="취소">${trans.statusCancelled}</option>
+            `;
+        }
+        
+        // 지갑 관리
+        safeSetText('walletsTitle', trans.walletsTitle);
+        safeSetText('noWalletsText', trans.noWalletsText);
+        safeSetText('addWallet', trans.addWalletBtn);
+        safeSetText('refreshWallets', trans.refreshBtn);
+        safeSetText('walletGuideTitle', trans.walletGuideTitle);
+        
+        // 지갑 가이드 리스트
+        const walletGuideList = document.getElementById('walletGuideList');
+        if (walletGuideList) {
+            let guideListHtml = '';
+            trans.walletGuideList.forEach(item => {
+                guideListHtml += `<li>${item}</li>`;
+            });
+            walletGuideList.innerHTML = guideListHtml;
+        }
+        
+        // 지갑 테이블 헤더
+        safeSetText('thWalletName', trans.thWalletName);
+        safeSetText('thNetwork', trans.thNetwork);
+        safeSetText('thAddress', trans.thAddress);
+        safeSetText('thQRCode', trans.thQRCode);
+        safeSetText('thWalletStatus', trans.thWalletStatus);
+        safeSetText('thCreated', trans.thCreated);
+        safeSetText('thWalletAction', trans.thWalletAction);
+        
+        // 모달
+        safeSetText('orderDetailTitle', trans.orderDetailTitle);
+        safeSetText('walletModalTitle', trans.walletModalTitle);
+        safeSetText('labelWalletName', trans.labelWalletName);
+        safeSetText('labelNetwork', trans.labelNetwork);
+        safeSetText('labelStatus', trans.labelStatus);
+        safeSetText('labelAddress', trans.labelAddress);
+        safeSetText('addressHelp', trans.addressHelp);
+        safeSetText('labelQRCode', trans.labelQRCode);
+        safeSetText('qrCodeHelp', trans.qrCodeHelp);
+        safeSetText('labelMemo', trans.labelMemo);
+        safeSetText('saveWallet', trans.saveBtn);
+        safeSetText('cancelWalletModal', trans.cancelBtn);
+        
+        // 동기화 상태
+        safeSetText('syncStatusText', trans.syncStatusText);
+        
+        console.log('관리자: 언어 업데이트 완료');
+        
+    } catch (error) {
+        console.error('언어 업데이트 오류:', error);
     }
+}
+
+// ✅ 안전한 텍스트 설정 함수
+function safeSetText(elementId, text) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.textContent = text;
+    } else {
+        console.warn(`요소 찾을 수 없음: ${elementId}`);
+    }
+}
+
+// ✅ 안전한 placeholder 설정 함수
+function safeSetPlaceholder(elementId, placeholder) {
+    const element = document.getElementById(elementId);
+    if (element) {
+        element.placeholder = placeholder;
+    } else {
+        console.warn(`요소 찾을 수 없음: ${elementId}`);
+    }
+}
     
     // 지갑 관리
     document.getElementById('walletsTitle').textContent = trans.walletsTitle;
@@ -1650,15 +1722,26 @@
                 
                 // QR 코드 표시
                 let qrDisplay = '';
-                if (wallet.qrCode && wallet.qrCode !== 'null' && wallet.qrCode !== '') {
-                    qrDisplay = `
-                        <div class="qr-code-small">
-                            <img src="${wallet.qrCode}" alt="QR Code">
-                        </div>
-                    `;
-                } else {
-                    qrDisplay = '<div style="text-align: center;">-</div>';
-                }
+if (wallet.qrCode && 
+    wallet.qrCode !== 'null' && 
+    wallet.qrCode !== '' && 
+    wallet.qrCode !== null &&
+    wallet.qrCode.startsWith('data:image/')) {
+    
+    console.log('QR 코드 표시:', wallet.id, '길이:', wallet.qrCode.length);
+    
+    qrDisplay = `
+        <div class="qr-code-small">
+            <img src="${wallet.qrCode}" 
+                 alt="QR Code" 
+                 style="max-width: 80px; max-height: 80px;"
+                 onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\'color:#999;font-size:12px;\'>이미지 오류</div>'">
+        </div>
+    `;
+} else {
+    console.log('QR 코드 없음:', wallet.id);
+    qrDisplay = '<div style="text-align: center; color: #999; font-size: 12px;">없음</div>';
+}
                 
                 // 주소 단축
                 const shortAddress = wallet.address.length > 20 ? 
@@ -2096,15 +2179,33 @@
             const isEdit = !!walletId;
             
             // QR 코드 파일 처리
-            if (qrCodeFile) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    saveWalletData(e.target.result);
-                };
-                reader.readAsDataURL(qrCodeFile);
-            } else {
-                saveWalletData(isEdit ? (selectedWallet?.qrCode || null) : null);
-            }
+            // QR 코드 파일 처리 부분
+if (qrCodeFile) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        // ✅ base64 데이터가 올바른지 확인
+        const qrCodeData = e.target.result;
+        console.log('QR 코드 데이터 길이:', qrCodeData.length);
+        
+        if (!qrCodeData.startsWith('data:image/')) {
+            console.error('잘못된 QR 코드 형식');
+            alert('QR 코드 이미지 형식이 올바르지 않습니다.');
+            return;
+        }
+        
+        saveWalletData(qrCodeData);
+    };
+    
+    reader.onerror = function(e) {
+        console.error('QR 코드 읽기 오류:', e);
+        alert('QR 코드 파일을 읽을 수 없습니다.');
+    };
+    
+    reader.readAsDataURL(qrCodeFile);
+} else {
+    // 기존 QR 코드 유지
+    saveWalletData(isEdit ? (selectedWallet?.qrCode || null) : null);
+}
             
             function saveWalletData(qrCodeData) {
                 const walletData = {
@@ -2308,49 +2409,77 @@
     if (syncCheckInterval) clearInterval(syncCheckInterval);
     
     console.log('관리자: 실시간 동기화 시작 (1초 간격)');
+    
+    // ✅ 즉시 한번 실행
+    checkDataSync();
+    
     syncCheckInterval = setInterval(() => {
         checkDataSync();
-        // ✅ 30초마다 강제 새로고침 (안전장치)
-        if (Math.random() < 0.03) { // 약 30초에 한 번
-            console.log('관리자: 주기적 새로고침 실행');
-            loadAllData();
-        }
-    }, 1000); // 2초 → 1초로 변경 (더 빠르게)
+    }, 1000); // 1초마다 체크
 }
 
         function checkDataSync() {
-    if (dataManager.needsSync()) {
-        console.log('관리자: 데이터 변경 감지, 새로고침');
+    // 항상 데이터 체크 (강제 업데이트)
+    const syncKey = localStorage.getItem('payment_sync_flag');
+    const lastCheck = localStorage.getItem('admin_last_check') || '0';
+    
+    console.log('관리자: 동기화 체크', {
+        syncKey: syncKey,
+        lastCheck: lastCheck,
+        needsUpdate: syncKey !== lastCheck
+    });
+    
+    if (syncKey !== lastCheck) {
+        console.log('🔔 관리자: 데이터 변경 감지!');
         
-        // 데이터 다시 로드
-        const updatedOrders = dataManager.getOrders();
-        const updatedWallets = dataManager.getWallets();
+        // 데이터 강제 로드
+        allOrders = dataManager.getOrders();
+        allWallets = dataManager.getWallets();
         
-        // 주문 데이터가 변경되었는지 확인
-        if (JSON.stringify(updatedOrders) !== JSON.stringify(allOrders)) {
-            console.log('관리자: 주문 데이터 변경됨', 
-                allOrders.length, '->', updatedOrders.length, '개');
-            
-            // 1초 후에 UI 업데이트 (실시간 느낌을 위해)
-            setTimeout(() => {
-                allOrders = updatedOrders;
-                updateStats();
-                updateOrders();
-                console.log('관리자: 주문 목록 업데이트 완료');
-            }, 100);
+        // UI 즉시 업데이트
+        updateStats();
+        updateOrders();
+        updateWallets();
+        
+        // 체크 시간 업데이트
+        localStorage.setItem('admin_last_check', syncKey || '0');
+        
+        // 변경 알림
+        if (allOrders.length > 0) {
+            showNotification(`새로운 주문 ${allOrders.length}개`);
         }
-        
-        // 지갑 데이터가 변경되었는지 확인
-        if (JSON.stringify(updatedWallets) !== JSON.stringify(allWallets)) {
-            console.log('관리자: 지갑 데이터 변경됨');
-            allWallets = updatedWallets;
-            updateStats();
-            updateWallets();
-        }
-        
-        // 동기화 시간 업데이트
-        dataManager.updateAdminSync();
     }
+}
+
+// ✅ 변경 알림 표시 함수 추가
+function showNotification(message) {
+    console.log('알림:', message);
+    
+    // 간단한 알림 표시
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 60px;
+        right: 20px;
+        background: #3498db;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        z-index: 9999;
+        animation: slideIn 0.3s ease;
+    `;
+    notification.textContent = message;
+    notification.id = 'temp-notification';
+    
+    document.body.appendChild(notification);
+    
+    // 3초 후 제거
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 3000);
 }
 
         // ==================== 내보내기 ====================
