@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>USDT/THB Payment System - Anonymous Payment</title>
     <style>
+        /* 기존 CSS 유지 */
         * {
             margin: 0;
             padding: 0;
@@ -280,7 +281,7 @@
         .order-card.status-confirmed { border-color: #4299e1; }
         .order-card.status-processing { border-color: #9f7aea; }
         .order-card.status-completed { border-color: #38a169; }
-        .order-card.status-cancelled { border-color: #e53e3e; }
+        .order-card.status-cancelled { border-color: #e53e3c; }
 
         .order-header {
             display: flex;
@@ -313,7 +314,7 @@
         .status-confirmed { background: #4299e1; }
         .status-processing { background: #9f7aea; }
         .status-completed { background: #38a169; }
-        .status-cancelled { background: #e53e3e; }
+        .status-cancelled { background: #e53e3c; }
 
         .order-details {
             display: flex;
@@ -1157,7 +1158,7 @@
         // ==================== 데이터 로드 ====================
         function loadInitialData() {
             // 주문 데이터 로드
-            allOrders = sharedDataManager.getUserOrders();
+            allOrders = dataManager.getOrders();
             console.log('주문 데이터 로드:', allOrders.length, '개');
             
             // 지갑 데이터 로드
@@ -1220,9 +1221,16 @@
             document.getElementById('noCompletedOrders').textContent = trans.noCompletedOrders;
             document.getElementById('syncText').textContent = trans.syncText;
             
-            // 업로드 버튼 텍스트
-            if (!uploadedFile) {
-                document.getElementById('uploadButtonText').innerHTML = `📎 ${trans.uploadText}`;
+            // ✅ 업로드 버튼 텍스트 수정
+            const uploadButtonText = document.getElementById('uploadButtonText');
+            if (uploadButtonText) {
+                if (!uploadedFile) {
+                    uploadButtonText.textContent = `📎 ${trans.uploadText}`;
+                } else {
+                    const uploadText = currentLang === 'en' ? 'Upload completed' : '업로드 완료';
+                    uploadButtonText.innerHTML = 
+                        `✅ ${uploadText}<br><span style="font-size:12px;color:#718096;">${uploadedFile.name}</span>`;
+                }
             }
             
             // 환율 텍스트
@@ -1385,28 +1393,36 @@
 
         // ==================== 이벤트 리스너 설정 ====================
         function setupEventListeners() {
+            // 금액 입력 이벤트
             document.getElementById('thbAmount').addEventListener('input', updateCalculation);
             
+            // 파일 업로드 이벤트 수정
             const fileInput = document.getElementById('paymentProof');
-            const uploadButton = document.querySelector('.upload-button');
             
-            uploadButton.addEventListener('click', function(e) {
+            // 업로드 버튼 클릭 이벤트
+            document.querySelector('.upload-button').addEventListener('click', function(e) {
                 e.preventDefault();
                 e.stopPropagation();
                 fileInput.click();
             });
             
+            // 파일 선택 이벤트
             fileInput.addEventListener('change', function(e) {
                 if (this.files && this.files[0]) {
                     handleFileUpload(this.files[0]);
                 } else {
                     uploadedFile = null;
                     checkPaymentButton();
+                    const trans = translations[currentLang];
+                    document.getElementById('uploadButtonText').textContent = `📎 ${trans.uploadText}`;
+                    document.getElementById('uploadPreview').innerHTML = '';
                 }
             });
             
+            // 결제 버튼 이벤트
             document.getElementById('payButton').addEventListener('click', startPayment);
             
+            // 모달 닫기 이벤트
             document.getElementById('closeModal').addEventListener('click', function() {
                 if (confirm(currentLang === 'en' ? 
                     'Cancel payment?\n\nCurrent payment will be cancelled.' : 
@@ -1415,11 +1431,14 @@
                 }
             });
             
+            // 주소 복사 이벤트
             document.getElementById('copyAddress').addEventListener('click', copyWalletAddress);
             
+            // 결제 완료 버튼 이벤트
             document.getElementById('finishPayment').addEventListener('click', finishPayment);
             
             // 드래그 앤 드롭 이벤트
+            const uploadButton = document.querySelector('.upload-button');
             uploadButton.addEventListener('dragover', function(e) {
                 e.preventDefault();
                 this.style.borderColor = '#667eea';
@@ -1435,14 +1454,17 @@
                 this.style.borderColor = '#cbd5e0';
                 
                 if (e.dataTransfer.files.length) {
-                    handleFileUpload(e.dataTransfer.files[0]);
+                    const file = e.dataTransfer.files[0];
+                    handleFileUpload(file);
                     fileInput.files = e.dataTransfer.files;
                 }
             });
         }
 
-        // ==================== 파일 업로드 처리 ====================
+        // ==================== 파일 업로드 처리 (수정됨) ====================
         function handleFileUpload(file) {
+            console.log('파일 업로드 처리 시작:', file.name, file.type, file.size);
+            
             if (!file) {
                 uploadedFile = null;
                 checkPaymentButton();
@@ -1451,7 +1473,7 @@
             
             uploadedFile = file;
             
-            const maxSize = 5 * 1024 * 1024;
+            const maxSize = 5 * 1024 * 1024; // 5MB
             if (file.size > maxSize) {
                 alert(currentLang === 'en' ? 
                     'File size must be less than 5MB' : 
@@ -1461,42 +1483,56 @@
                 return;
             }
             
-            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
-            if (!allowedTypes.includes(file.type)) {
+            // 이미지 파일만 허용 (QR 코드 스크린샷)
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'image/webp'];
+            if (!allowedTypes.includes(file.type.toLowerCase())) {
                 alert(currentLang === 'en' ? 
-                    'Only images (JPEG, PNG, GIF) are allowed for QR code screenshot' : 
-                    'QR 코드 스크린샷은 이미지(JPEG, PNG, GIF) 파일만 허용됩니다.');
+                    'Only images (JPEG, PNG, GIF, WebP) are allowed for QR code screenshot' : 
+                    'QR 코드 스크린샷은 이미지(JPEG, PNG, GIF, WebP) 파일만 허용됩니다.');
                 uploadedFile = null;
                 checkPaymentButton();
                 return;
             }
             
-            const uploadText = currentLang === 'en' ? 'Upload completed' : '업로드 완료';
-            document.getElementById('uploadButtonText').innerHTML = 
-                `✅ ${uploadText}<br><span style="font-size:12px;color:#718096;">${file.name}</span>`;
-            
-            if (file.type.startsWith('image/')) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById('uploadPreview').innerHTML = `
+            // 파일 미리보기
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                console.log('파일 읽기 완료');
+                
+                const trans = translations[currentLang];
+                const uploadText = trans.uploadText;
+                const uploadButtonText = document.getElementById('uploadButtonText');
+                const uploadPreview = document.getElementById('uploadPreview');
+                
+                if (uploadButtonText) {
+                    uploadButtonText.innerHTML = 
+                        `✅ ${currentLang === 'en' ? 'Upload completed' : '업로드 완료'}<br>
+                        <span style="font-size:12px;color:#718096;">${file.name}</span>`;
+                }
+                
+                if (uploadPreview) {
+                    uploadPreview.innerHTML = `
                         <img src="${e.target.result}" alt="Payment proof" class="upload-preview-image">
                         <div class="file-info">
                             ${file.name} (${(file.size / 1024).toFixed(1)}KB)
                         </div>
                     `;
-                    checkPaymentButton();
-                };
-                reader.readAsDataURL(file);
-            } else {
-                document.getElementById('uploadPreview').innerHTML = `
-                    <div style="font-size: 40px; margin: 10px 0;">📄</div>
-                    <div class="file-info">
-                        ${file.name}<br>
-                        (${(file.size / 1024).toFixed(1)}KB)
-                    </div>
-                `;
+                }
+                
                 checkPaymentButton();
-            }
+                console.log('파일 업로드 처리 완료');
+            };
+            
+            reader.onerror = function(e) {
+                console.error('파일 읽기 오류:', e);
+                alert(currentLang === 'en' ? 
+                    'Failed to read file. Please try again.' : 
+                    '파일을 읽을 수 없습니다. 다시 시도해주세요.');
+                uploadedFile = null;
+                checkPaymentButton();
+            };
+            
+            reader.readAsDataURL(file);
         }
 
         // ==================== 결제 시작 ====================
@@ -1609,12 +1645,15 @@
             }
             
             // 저장
-            sharedDataManager.saveUserOrder(order);
+            const saved = dataManager.saveOrders(orders);
+            if (saved) {
+                console.log('주문 저장됨:', order.id);
+            } else {
+                console.error('주문 저장 실패:', order.id);
+            }
             
             // 로컬 변수 업데이트
             allOrders = orders;
-            
-            console.log('주문 저장됨:', order.id);
         }
 
         // ==================== 주문 목록 업데이트 ====================
@@ -1686,7 +1725,7 @@
                 '취소': trans.cancelled
             }[order.status] || order.status;
             
-            const time = new Date(order.time).toLocaleTimeString();
+            const time = new Date(order.time).toLocaleString('ko-KR');
             
             let proofHtml = '';
             if (order.proof && order.proof.data) {
@@ -1806,6 +1845,9 @@
                         const trans = translations[currentLang];
                         document.getElementById('copyButtonText').textContent = trans.copyButtonText;
                     }, 2000);
+                })
+                .catch(err => {
+                    console.error('복사 실패:', err);
                 });
         }
 
@@ -1881,7 +1923,10 @@
             document.getElementById('thbAmount').value = '';
             document.getElementById('paymentProof').value = '';
             const trans = translations[currentLang];
-            document.getElementById('uploadButtonText').innerHTML = `📎 ${trans.uploadText}`;
+            const uploadButtonText = document.getElementById('uploadButtonText');
+            if (uploadButtonText) {
+                uploadButtonText.textContent = `📎 ${trans.uploadText}`;
+            }
             document.getElementById('uploadPreview').innerHTML = '';
             uploadedFile = null;
             updateCalculation();
@@ -2113,7 +2158,7 @@
             syncCheckInterval = setInterval(() => {
                 checkDataSync();
                 checkCurrentOrderStatus(); // ✅ 이 줄 추가
-            }, 1000); // 2초 → 1초로 변경
+            }, 1000);
         }
 
         function showSyncStatus() {
@@ -2151,115 +2196,82 @@
             updateOrdersList();
         };
 
-       // ==================== 지갑 업데이트 관련 함수 수정 ====================
-
-// 사용자 페이지의 지갑 업데이트 함수 수정
-window.updateWalletsFromAdmin = function(wallets) {
-    console.log('👛 사용자 페이지: 관리자로부터 지갑 업데이트 받음', wallets.length, '개');
-    
-    // 로컬 스토리지에 저장
-    localStorage.setItem('payment_wallets', JSON.stringify(wallets));
-    
-    // 전역 변수 업데이트
-    allWallets = wallets;
-    activeWallet = dataManager.getActiveWallet();
-    
-    // 지갑 정보 업데이트
-    updateWalletDisplay();
-    
-    // 모달이 열려있으면 QR 코드 업데이트
-    if (!document.getElementById('qrModal').classList.contains('hidden')) {
-        updateQRCodeDisplay();
-    }
-};
-
-// QR 코드 표시 함수 추가
-function updateQRCodeDisplay() {
-    if (!activeWallet) return;
-    
-    const qrCodeContainer = document.getElementById('qrCodeContainer');
-    const qrPlaceholder = qrCodeContainer.querySelector('.qr-placeholder');
-    
-    if (activeWallet.qrCode && 
-        activeWallet.qrCode !== 'null' && 
-        activeWallet.qrCode !== '' && 
-        activeWallet.qrCode !== null &&
-        typeof activeWallet.qrCode === 'string' && 
-        activeWallet.qrCode.startsWith('data:image/')) {
-        
-        console.log('QR 코드 표시:', activeWallet.id, '타입:', activeWallet.qrCode.substring(5, 15));
-        
-        // 기존 이미지 제거
-        const existingImg = qrCodeContainer.querySelector('img');
-        if (existingImg) {
-            existingImg.remove();
-        }
-        
-        // 새 이미지 추가
-        const img = document.createElement('img');
-        img.src = activeWallet.qrCode;
-        img.alt = 'QR Code';
-        img.style.maxWidth = '100%';
-        img.style.maxHeight = '100%';
-        img.onerror = function() {
-            this.style.display = 'none';
-            if (!qrPlaceholder) {
-                const newPlaceholder = document.createElement('div');
-                newPlaceholder.className = 'qr-placeholder';
-                newPlaceholder.textContent = '🔳';
-                qrCodeContainer.appendChild(newPlaceholder);
+        // ==================== 지갑 업데이트 관련 함수 수정 ====================
+        window.updateWalletsFromAdmin = function(wallets) {
+            console.log('👛 사용자 페이지: 관리자로부터 지갑 업데이트 받음', wallets.length, '개');
+            
+            // 로컬 스토리지에 저장
+            localStorage.setItem('payment_wallets', JSON.stringify(wallets));
+            
+            // 전역 변수 업데이트
+            allWallets = wallets;
+            activeWallet = dataManager.getActiveWallet();
+            
+            // 지갑 정보 업데이트
+            updateWalletDisplay();
+            
+            // 모달이 열려있으면 QR 코드 업데이트
+            if (!document.getElementById('qrModal').classList.contains('hidden')) {
+                updateQRCodeDisplay();
             }
         };
-        
-        if (qrPlaceholder) {
-            qrPlaceholder.style.display = 'none';
-        }
-        
-        qrCodeContainer.appendChild(img);
-    } else {
-        console.log('QR 코드 없음, 플레이스홀더 표시');
-        if (qrPlaceholder) {
-            qrPlaceholder.style.display = 'block';
-        } else {
-            const placeholder = document.createElement('div');
-            placeholder.className = 'qr-placeholder';
-            placeholder.textContent = '🔳';
-            qrCodeContainer.appendChild(placeholder);
-        }
-    }
-}
 
-// 지갑 정보 업데이트 함수 수정
-function updateWalletDisplay() {
-    if (!activeWallet) return;
-    
-    // 주소 표시
-    document.getElementById('walletAddress').textContent = activeWallet.address;
-    
-    const networkClass = `network-${activeWallet.network.toLowerCase()}`;
-    
-    let networkText = '';
-    switch(activeWallet.network) {
-        case 'TRC20': networkText = 'TRC20 Network'; break;
-        case 'ERC20': networkText = 'ERC20 Network'; break;
-        case 'BEP20': networkText = 'BEP20 Network'; break;
-        default: networkText = activeWallet.network + ' Network';
-    }
-    
-    document.getElementById('selectedWalletInfo').innerHTML = `
-        <div class="wallet-icon">👛</div>
-        <div class="wallet-details">
-            <div class="wallet-name">${activeWallet.name}</div>
-            <div class="wallet-network">
-                ${networkText}
-                <span class="network-badge ${networkClass}">${activeWallet.network}</span>
-            </div>
-        </div>
-    `;
-    
-    // QR 코드 업데이트
-    updateQRCodeDisplay();
-}
+        // QR 코드 표시 함수 추가
+        function updateQRCodeDisplay() {
+            if (!activeWallet) return;
+            
+            const qrCodeContainer = document.getElementById('qrCodeContainer');
+            const qrPlaceholder = qrCodeContainer.querySelector('.qr-placeholder');
+            
+            if (activeWallet.qrCode && 
+                activeWallet.qrCode !== 'null' && 
+                activeWallet.qrCode !== '' && 
+                activeWallet.qrCode !== null &&
+                typeof activeWallet.qrCode === 'string' && 
+                activeWallet.qrCode.startsWith('data:image/')) {
+                
+                console.log('QR 코드 표시:', activeWallet.id, '타입:', activeWallet.qrCode.substring(5, 15));
+                
+                // 기존 이미지 제거
+                const existingImg = qrCodeContainer.querySelector('img');
+                if (existingImg) {
+                    existingImg.remove();
+                }
+                
+                // 새 이미지 추가
+                const img = document.createElement('img');
+                img.src = activeWallet.qrCode;
+                img.alt = 'QR Code';
+                img.style.maxWidth = '100%';
+                img.style.maxHeight = '100%';
+                img.onerror = function() {
+                    this.style.display = 'none';
+                    if (!qrPlaceholder) {
+                        const newPlaceholder = document.createElement('div');
+                        newPlaceholder.className = 'qr-placeholder';
+                        newPlaceholder.textContent = '🔳';
+                        qrCodeContainer.appendChild(newPlaceholder);
+                    }
+                };
+                
+                if (qrPlaceholder) {
+                    qrPlaceholder.style.display = 'none';
+                }
+                
+                qrCodeContainer.appendChild(img);
+            } else {
+                console.log('QR 코드 없음, 플레이스홀더 표시');
+                if (qrPlaceholder) {
+                    qrPlaceholder.style.display = 'block';
+                } else {
+                    const placeholder = document.createElement('div');
+                    placeholder.className = 'qr-placeholder';
+                    placeholder.textContent = '🔳';
+                    qrCodeContainer.appendChild(placeholder);
+                }
+            }
+        }
+
         function getStepFromStatus(status) {
             switch(status) {
                 case '입금대기': return 1;
