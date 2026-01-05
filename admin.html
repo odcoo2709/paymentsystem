@@ -1389,17 +1389,17 @@
     </div>
 
     <script>
-        // ==================== 로그인 관리 클래스 ====================
-        class LoginManager {
-            constructor() {
-                this.ADMIN_CREDENTIALS_KEY = 'admin_credentials';
-                this.CURRENT_ADMIN_KEY = 'current_admin';
-                this.DEFAULT_ADMIN = {
-                    username: 'admin',
-                    password: '1234!@#$',
-                    isDefault: true
-                };
-            }
+       // ==================== 로그인 관리 클래스 ====================
+class LoginManager {
+    constructor() {
+        this.ADMIN_CREDENTIALS_KEY = 'admin_credentials';
+        this.CURRENT_ADMIN_KEY = 'current_admin';
+        this.DEFAULT_ADMIN = {
+            username: 'admin',
+            password: '1234!@#$',  // ← 이렇게 변경
+            isDefault: true
+        };
+    }
 
             saveAdminCredentials(credentials) {
                 try {
