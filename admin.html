@@ -1409,7 +1409,7 @@
             }
         }
 
-        // ==================== 텔레그램 알림 클래스 (다중 봇 + 이미지 지원) ====================
+       // ==================== 텔레그램 알림 클래스 (다중 봇 + 이미지 지원) ====================
 class TelegramMultiNotifier {
     constructor() {
         this.dataManager = new DataManager();
@@ -1819,6 +1819,7 @@ class TelegramMultiNotifier {
         return this.dataManager.saveTelegramBots(this.bots);
     }
 }
+
         // ==================== 전역 변수 ====================
         const dataManager = new DataManager();
         const telegramNotifier = new TelegramMultiNotifier();
