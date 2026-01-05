@@ -429,6 +429,7 @@
         .qr-code-small img {
             max-width: 100%;
             max-height: 100%;
+            border-radius: 4px;
         }
 
         .modal-overlay {
@@ -696,6 +697,36 @@
                 text-align: center;
             }
         }
+
+        /* 텔레그램 설정 입력란 */
+        .telegram-settings {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 2px solid #e2e8f0;
+        }
+
+        .telegram-settings h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .test-telegram-btn {
+            background: #0088cc;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        .test-telegram-btn:hover {
+            background: #0077b3;
+        }
     </style>
 </head>
 <body>
@@ -716,6 +747,28 @@
             </div>
             <h1 class="admin-title" id="adminTitle">📊 주문 및 지갑 관리 시스템</h1>
             <p class="admin-subtitle" id="adminSubtitle">한 곳에서 사용자 주문과 지갑 설정을 관리하세요</p>
+        </div>
+
+        <!-- 텔레그램 설정 -->
+        <div class="telegram-settings">
+            <h3>🤖 텔레그램 알림 설정</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">봇 토큰 (Bot Token)</label>
+                    <input type="text" class="form-input" id="telegramBotToken" 
+                           placeholder="예: 1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZ">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">채팅 ID (Chat ID)</label>
+                    <input type="text" class="form-input" id="telegramChatId" 
+                           placeholder="예: 1234567890">
+                </div>
+            </div>
+            <button class="test-telegram-btn" id="testTelegramBtn">테스트 알림 전송</button>
+            <small style="color: #718096; display: block; margin-top: 10px;">
+                * 봇 생성 방법: @BotFather 검색 → /newbot → 토큰 발급<br>
+                * 채팅 ID 확인: @getidsbot 또는 @RawDataBot 검색
+            </small>
         </div>
 
         <!-- 탭 메뉴 -->
@@ -744,7 +797,12 @@
             <div class="stat-card">
                 <h3 id="statTodayRevenue">오늘 수익</h3>
                 <div class="stat-value" id="todayRevenue">0 THB</div>
-                <div class="stat-change" id="revenueChange">총 거래액</div>
+                <div class="stat-change" id="revenueChange">수수료 3%</div>
+            </div>
+            <div class="stat-card">
+                <h3 id="statTodayAmount">오늘 거래액</h3>
+                <div class="stat-value" id="todayAmount">0 THB</div>
+                <div class="stat-change" id="amountChange">총 거래액</div>
             </div>
         </div>
 
@@ -956,6 +1014,7 @@
                 this.WALLETS_KEY = 'payment_wallets';
                 this.SYNC_KEY = 'payment_sync_flag';
                 this.ADMIN_SYNC_KEY = 'admin_sync_check';
+                this.TELEGRAM_KEY = 'telegram_settings';
             }
 
             // 주문 데이터 가져오기
@@ -1023,6 +1082,26 @@
                 };
             }
 
+            // 텔레그램 설정 저장/로드
+            saveTelegramSettings(settings) {
+                try {
+                    localStorage.setItem(this.TELEGRAM_KEY, JSON.stringify(settings));
+                    return true;
+                } catch (error) {
+                    console.error('Error saving telegram settings:', error);
+                    return false;
+                }
+            }
+
+            getTelegramSettings() {
+                try {
+                    return JSON.parse(localStorage.getItem(this.TELEGRAM_KEY) || '{}');
+                } catch (error) {
+                    console.error('Error loading telegram settings:', error);
+                    return {};
+                }
+            }
+
             // 동기화 체크
             checkSync() {
                 return localStorage.getItem(this.SYNC_KEY);
@@ -1045,7 +1124,6 @@
             // 사용자 페이지에 상태 업데이트 알림
             notifyUserPage(orderId, newStatus) {
                 try {
-                    // 사용자 페이지가 열려있으면 window 객체를 통해 알림
                     if (window.updateOrderStatusFromAdmin) {
                         window.updateOrderStatusFromAdmin(orderId, newStatus);
                     }
@@ -1054,35 +1132,203 @@
                 }
             }
 
-            // 사용자 페이지에 지갑 업데이트 알림 (수정됨)
+            // 사용자 페이지에 지갑 업데이트 알림
             notifyUserPageWallets(wallets) {
                 try {
-                    // 1. 지갑 데이터를 localStorage에 저장
-                    localStorage.setItem(this.WALLETS_KEY, JSON.stringify(wallets));
-                    localStorage.setItem(this.SYNC_KEY, Date.now().toString());
-                    
-                    // 2. 사용자 페이지에 직접 알림
                     if (window.updateWalletsFromAdmin) {
-                        console.log('사용자 페이지에 지갑 업데이트 알림 보내기:', wallets.length, '개');
                         window.updateWalletsFromAdmin(wallets);
                     }
+                } catch (e) {
+                    console.log('사용자 페이지 지갑 알림 실패');
+                }
+            }
+        }
+
+        // ==================== 텔레그램 알림 클래스 ====================
+        class TelegramNotifier {
+            constructor() {
+                this.dataManager = new DataManager();
+                this.settings = this.dataManager.getTelegramSettings();
+            }
+
+            // 설정 업데이트
+            updateSettings(botToken, chatId) {
+                this.settings = {
+                    botToken: botToken,
+                    chatId: chatId,
+                    enabled: true
+                };
+                this.dataManager.saveTelegramSettings(this.settings);
+                return this.settings;
+            }
+
+            // 테스트 알림 전송
+            async sendTestNotification() {
+                if (!this.settings.botToken || !this.settings.chatId) {
+                    return { success: false, message: '텔레그램 설정이 필요합니다' };
+                }
+
+                const testMessage = {
+                    text: `✅ 테스트 알림\n\n관리자 시스템이 정상적으로 작동 중입니다!\n시간: ${new Date().toLocaleString('ko-KR')}`
+                };
+
+                return await this.sendMessage(testMessage);
+            }
+
+            // 새 주문 알림
+            async sendNewOrderNotification(order) {
+                if (!this.settings.botToken || !this.settings.chatId) {
+                    console.warn('텔레그램 설정이 필요합니다');
+                    return;
+                }
+
+                // 주문 정보 포맷팅
+                const statusText = {
+                    '입금대기': '입금 대기',
+                    '입금확인': '입금 확인',
+                    '처리중': '처리 중',
+                    '완료': '완료',
+                    '취소': '취소'
+                }[order.status] || order.status;
+
+                // 수수료 계산 (3%)
+                const fee = order.usdt * 0.03;
+                const usdtAmount = order.usdt - fee;
+
+                const message = {
+                    text: `🚨 *새로운 주문이 접수되었습니다!*\n\n` +
+                         `📋 *주문 ID:* ${order.id}\n` +
+                         `💰 *결제 금액:* ${order.amount.toLocaleString()} THB\n` +
+                         `💵 *USDT 금액:* ${usdtAmount.toFixed(4)} USDT\n` +
+                         `📊 *수수료 (3%):* ${fee.toFixed(4)} USDT\n` +
+                         `⏰ *요청 시간:* ${new Date(order.time).toLocaleString('ko-KR')}\n` +
+                         `📈 *상태:* ${statusText}\n\n` +
+                         `👛 *입금 지갑:* ${order.wallet ? order.wallet.name : '지정되지 않음'}\n` +
+                         `🔗 *주소:* ${order.wallet ? order.wallet.address.substring(0, 20) + '...' : '없음'}\n\n` +
+                         `📎 *결제 증명서:* ${order.proof ? '첨부됨' : '없음'}\n\n` +
+                         `✅ *빠른 처리 요망*`
+                };
+
+                const result = await this.sendMessage(message);
+                
+                // 이미지가 있으면 전송
+                if (order.proof && order.proof.data && order.proof.type.startsWith('image/')) {
+                    await this.sendImage(order.id, order.proof.data, order.proof.type);
+                }
+
+                return result;
+            }
+
+            // 주문 상태 변경 알림
+            async sendStatusChangeNotification(orderId, oldStatus, newStatus) {
+                if (!this.settings.botToken || !this.settings.chatId) {
+                    return;
+                }
+
+                const oldStatusText = {
+                    '입금대기': '입금 대기',
+                    '입금확인': '입금 확인',
+                    '처리중': '처리 중',
+                    '완료': '완료',
+                    '취소': '취소'
+                }[oldStatus] || oldStatus;
+
+                const newStatusText = {
+                    '입금대기': '입금 대기',
+                    '입금확인': '입금 확인',
+                    '처리중': '처리 중',
+                    '완료': '완료',
+                    '취소': '취소'
+                }[newStatus] || newStatus;
+
+                const message = {
+                    text: `📊 *주문 상태 변경 알림*\n\n` +
+                         `📋 *주문 ID:* ${orderId}\n` +
+                         `📈 *이전 상태:* ${oldStatusText}\n` +
+                         `✅ *새 상태:* ${newStatusText}\n` +
+                         `⏰ *변경 시간:* ${new Date().toLocaleString('ko-KR')}\n\n` +
+                         `🔄 *변경이 완료되었습니다*`
+                };
+
+                return await this.sendMessage(message);
+            }
+
+            // 메시지 전송
+            async sendMessage(message) {
+                try {
+                    const url = `https://api.telegram.org/bot${this.settings.botToken}/sendMessage`;
                     
-                    // 3. 이벤트 디스패치 (대체 방법)
-                    if (typeof window.dispatchEvent === 'function') {
-                        const event = new CustomEvent('walletDataUpdated', {
-                            detail: { wallets: wallets }
-                        });
-                        window.dispatchEvent(event);
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            chat_id: this.settings.chatId,
+                            text: message.text,
+                            parse_mode: 'Markdown'
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        return { success: true, data: data };
+                    } else {
+                        console.error('텔레그램 전송 실패:', data);
+                        return { success: false, error: data.description || '알 수 없는 오류' };
+                    }
+                } catch (error) {
+                    console.error('텔레그램 API 호출 실패:', error);
+                    return { success: false, error: error.message };
+                }
+            }
+
+            // 이미지 전송
+            async sendImage(orderId, base64Image, imageType) {
+                try {
+                    // base64 데이터를 blob으로 변환
+                    const base64Data = base64Image.split(',')[1];
+                    const byteCharacters = atob(base64Data);
+                    const byteNumbers = new Array(byteCharacters.length);
+                    
+                    for (let i = 0; i < byteCharacters.length; i++) {
+                        byteNumbers[i] = byteCharacters.charCodeAt(i);
                     }
                     
-                } catch (e) {
-                    console.error('사용자 페이지 지갑 알림 실패:', e);
+                    const byteArray = new Uint8Array(byteNumbers);
+                    const blob = new Blob([byteArray], { type: imageType });
+                    
+                    const formData = new FormData();
+                    formData.append('chat_id', this.settings.chatId);
+                    formData.append('photo', blob, `proof_${orderId}.png`);
+                    formData.append('caption', `📸 ${orderId} 결제 증명서`);
+                    
+                    const url = `https://api.telegram.org/bot${this.settings.botToken}/sendPhoto`;
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const data = await response.json();
+                    
+                    if (response.ok) {
+                        console.log('이미지 전송 성공');
+                        return { success: true, data: data };
+                    } else {
+                        console.error('이미지 전송 실패:', data);
+                        return { success: false, error: data.description };
+                    }
+                } catch (error) {
+                    console.error('이미지 전송 API 호출 실패:', error);
+                    return { success: false, error: error.message };
                 }
             }
         }
 
         // ==================== 전역 변수 ====================
         const dataManager = new DataManager();
+        const telegramNotifier = new TelegramNotifier();
         
         let allOrders = [];
         let allWallets = [];
@@ -1104,6 +1350,7 @@
                 statWaiting: "Waiting Deposit",
                 statActiveWallets: "Active Wallets",
                 statTodayRevenue: "Today's Revenue",
+                statTodayAmount: "Today's Transaction",
                 ordersTitle: "📋 Order List",
                 walletsTitle: "👛 Wallet List",
                 thOrderId: "Order ID",
@@ -1156,7 +1403,8 @@
                 statTotalChange: "All orders",
                 waitingChange: "waiting",
                 walletsChange: "available",
-                revenueChange: "Total transaction",
+                revenueChange: "Fee 3%",
+                amountChange: "Total amount",
                 syncStatusText: "Real-time Sync"
             },
             ko: {
@@ -1167,6 +1415,7 @@
                 statWaiting: "입금 대기",
                 statActiveWallets: "활성 지갑",
                 statTodayRevenue: "오늘 수익",
+                statTodayAmount: "오늘 거래액",
                 ordersTitle: "📋 주문 목록",
                 walletsTitle: "👛 지갑 목록",
                 thOrderId: "주문 ID",
@@ -1219,7 +1468,8 @@
                 statTotalChange: "전체 주문",
                 waitingChange: "대기중",
                 walletsChange: "사용 가능",
-                revenueChange: "총 거래액",
+                revenueChange: "수수료 3%",
+                amountChange: "총 거래액",
                 syncStatusText: "실시간 동기화"
             }
         };
@@ -1236,14 +1486,22 @@
             // 언어 초기화
             currentLang = 'ko';
             
+            // 텔레그램 설정 로드
+            loadTelegramSettings();
+            
             // 이벤트 리스너 설정
             setupEventListeners();
             
             // 데이터 로드
             loadAllData();
             
-            // 텍스트 업데이트
-            updateAllText();
+            // 텍스트 업데이트 (에러 방지)
+            try {
+                updateAllText();
+            } catch (error) {
+                console.error('텍스트 업데이트 중 에러:', error);
+                setTimeout(updateAllText, 100); // 100ms 후 재시도
+            }
             
             // 동기화 체크 시작
             startSyncCheck();
@@ -1284,6 +1542,11 @@
             document.getElementById('saveWallet').addEventListener('click', saveWallet);
             document.getElementById('walletQRCode').addEventListener('change', handleQRCodeUpload);
             
+            // 텔레그램 설정 저장
+            document.getElementById('testTelegramBtn').addEventListener('click', testTelegramNotification);
+            document.getElementById('telegramBotToken').addEventListener('change', saveTelegramConfig);
+            document.getElementById('telegramChatId').addEventListener('change', saveTelegramConfig);
+            
             // 지갑 폼 제출 방지
             document.getElementById('walletForm').addEventListener('submit', function(e) {
                 e.preventDefault();
@@ -1300,40 +1563,59 @@
         function updateAllText() {
             const trans = translations[currentLang];
             
-            // 헤더
-            document.getElementById('adminTitle').textContent = trans.adminTitle;
-            document.getElementById('adminSubtitle').textContent = trans.adminSubtitle;
-            document.getElementById('langSwitchText').textContent = trans.langSwitchText;
+            // 요소가 존재하는지 확인하고 업데이트
+            const elements = [
+                { id: 'adminTitle', prop: 'textContent', value: trans.adminTitle },
+                { id: 'adminSubtitle', prop: 'textContent', value: trans.adminSubtitle },
+                { id: 'langSwitchText', prop: 'textContent', value: trans.langSwitchText },
+                { id: 'statTotalOrders', prop: 'textContent', value: trans.statTotalOrders },
+                { id: 'statWaiting', prop: 'textContent', value: trans.statWaiting },
+                { id: 'statActiveWallets', prop: 'textContent', value: trans.statActiveWallets },
+                { id: 'statTodayRevenue', prop: 'textContent', value: trans.statTodayRevenue },
+                { id: 'statTodayAmount', prop: 'textContent', value: trans.statTodayAmount },
+                { id: 'ordersTitle', prop: 'textContent', value: trans.ordersTitle },
+                { id: 'walletsTitle', prop: 'textContent', value: trans.walletsTitle },
+                { id: 'noOrdersText', prop: 'textContent', value: trans.noOrdersText },
+                { id: 'noWalletsText', prop: 'textContent', value: trans.noWalletsText },
+                { id: 'exportOrders', prop: 'textContent', value: trans.exportBtn },
+                { id: 'refreshOrders', prop: 'textContent', value: trans.refreshBtn },
+                { id: 'addWallet', prop: 'textContent', value: trans.addWalletBtn },
+                { id: 'walletGuideTitle', prop: 'textContent', value: trans.walletGuideTitle },
+                { id: 'orderDetailTitle', prop: 'textContent', value: trans.orderDetailTitle },
+                { id: 'walletModalTitle', prop: 'textContent', value: trans.walletModalTitle },
+                { id: 'labelWalletName', prop: 'textContent', value: trans.labelWalletName },
+                { id: 'labelNetwork', prop: 'textContent', value: trans.labelNetwork },
+                { id: 'labelStatus', prop: 'textContent', value: trans.labelStatus },
+                { id: 'labelAddress', prop: 'textContent', value: trans.labelAddress },
+                { id: 'addressHelp', prop: 'textContent', value: trans.addressHelp },
+                { id: 'labelQRCode', prop: 'textContent', value: trans.labelQRCode },
+                { id: 'qrCodeHelp', prop: 'textContent', value: trans.qrCodeHelp },
+                { id: 'labelMemo', prop: 'textContent', value: trans.labelMemo },
+                { id: 'saveWallet', prop: 'textContent', value: trans.saveBtn },
+                { id: 'cancelWalletModal', prop: 'textContent', value: trans.cancelBtn },
+                { id: 'syncStatusText', prop: 'textContent', value: trans.syncStatusText },
+                { id: 'statTotalChange', prop: 'textContent', value: trans.statTotalChange },
+                { id: 'waitingChange', prop: 'textContent', value: trans.waitingChange },
+                { id: 'walletsChange', prop: 'textContent', value: trans.walletsChange },
+                { id: 'revenueChange', prop: 'textContent', value: trans.revenueChange },
+                { id: 'amountChange', prop: 'textContent', value: trans.amountChange }
+            ];
             
-            // 통계
-            document.getElementById('statTotalOrders').textContent = trans.statTotalOrders;
-            document.getElementById('statWaiting').textContent = trans.statWaiting;
-            document.getElementById('statActiveWallets').textContent = trans.statActiveWallets;
-            document.getElementById('statTodayRevenue').textContent = trans.statTodayRevenue;
-            document.getElementById('statTotalChange').textContent = trans.statTotalChange;
-            document.getElementById('walletsChange').textContent = trans.walletsChange;
-            document.getElementById('revenueChange').textContent = trans.revenueChange;
+            elements.forEach(element => {
+                const el = document.getElementById(element.id);
+                if (el) {
+                    el[element.prop] = element.value;
+                }
+            });
             
             // 탭 버튼
             const tabButtons = document.querySelectorAll('.tab-button');
             if (tabButtons[0]) tabButtons[0].textContent = '📋 ' + (currentLang === 'en' ? 'Order Management' : '주문 관리');
             if (tabButtons[1]) tabButtons[1].textContent = '👛 ' + (currentLang === 'en' ? 'Wallet Management' : '지갑 관리');
             
-            // 주문 관리
-            document.getElementById('ordersTitle').textContent = trans.ordersTitle;
-            document.getElementById('noOrdersText').textContent = trans.noOrdersText;
-            document.getElementById('searchOrder').placeholder = trans.searchPlaceholder;
-            document.getElementById('exportOrders').textContent = trans.exportBtn;
-            document.getElementById('refreshOrders').textContent = trans.refreshBtn;
-            
-            // 테이블 헤더
-            document.getElementById('thOrderId').textContent = trans.thOrderId;
-            document.getElementById('thAmount').textContent = trans.thAmount;
-            document.getElementById('thWallet').textContent = trans.thWallet;
-            document.getElementById('thStatus').textContent = trans.thStatus;
-            document.getElementById('thStep').textContent = trans.thStep;
-            document.getElementById('thProof').textContent = trans.thProof;
-            document.getElementById('thAction').textContent = trans.thAction;
+            // 검색창 placeholder
+            const searchOrder = document.getElementById('searchOrder');
+            if (searchOrder) searchOrder.placeholder = trans.searchPlaceholder;
             
             // 상태 필터 옵션
             const statusFilter = document.getElementById('statusFilter');
@@ -1348,13 +1630,6 @@
                 `;
             }
             
-            // 지갑 관리
-            document.getElementById('walletsTitle').textContent = trans.walletsTitle;
-            document.getElementById('noWalletsText').textContent = trans.noWalletsText;
-            document.getElementById('addWallet').textContent = trans.addWalletBtn;
-            document.getElementById('refreshWallets').textContent = trans.refreshBtn;
-            document.getElementById('walletGuideTitle').textContent = trans.walletGuideTitle;
-            
             // 지갑 가이드 리스트
             const walletGuideList = document.getElementById('walletGuideList');
             if (walletGuideList) {
@@ -1365,35 +1640,65 @@
                 walletGuideList.innerHTML = guideListHtml;
             }
             
-            // 지갑 테이블 헤더
-            document.getElementById('thWalletName').textContent = trans.thWalletName;
-            document.getElementById('thNetwork').textContent = trans.thNetwork;
-            document.getElementById('thAddress').textContent = trans.thAddress;
-            document.getElementById('thQRCode').textContent = trans.thQRCode;
-            document.getElementById('thWalletStatus').textContent = trans.thWalletStatus;
-            document.getElementById('thCreated').textContent = trans.thCreated;
-            document.getElementById('thWalletAction').textContent = trans.thWalletAction;
+            // 테이블 헤더들
+            const headers = [
+                { id: 'thOrderId', value: trans.thOrderId },
+                { id: 'thAmount', value: trans.thAmount },
+                { id: 'thWallet', value: trans.thWallet },
+                { id: 'thStatus', value: trans.thStatus },
+                { id: 'thStep', value: trans.thStep },
+                { id: 'thProof', value: trans.thProof },
+                { id: 'thAction', value: trans.thAction },
+                { id: 'thWalletName', value: trans.thWalletName },
+                { id: 'thNetwork', value: trans.thNetwork },
+                { id: 'thAddress', value: trans.thAddress },
+                { id: 'thQRCode', value: trans.thQRCode },
+                { id: 'thWalletStatus', value: trans.thWalletStatus },
+                { id: 'thCreated', value: trans.thCreated },
+                { id: 'thWalletAction', value: trans.thWalletAction }
+            ];
             
-            // 모달
-            document.getElementById('orderDetailTitle').textContent = trans.orderDetailTitle;
-            document.getElementById('walletModalTitle').textContent = trans.walletModalTitle;
-            document.getElementById('labelWalletName').textContent = trans.labelWalletName;
-            document.getElementById('labelNetwork').textContent = trans.labelNetwork;
-            document.getElementById('labelStatus').textContent = trans.labelStatus;
-            document.getElementById('labelAddress').textContent = trans.labelAddress;
-            document.getElementById('addressHelp').textContent = trans.addressHelp;
-            document.getElementById('labelQRCode').textContent = trans.labelQRCode;
-            document.getElementById('qrCodeHelp').textContent = trans.qrCodeHelp;
-            document.getElementById('labelMemo').textContent = trans.labelMemo;
-            document.getElementById('saveWallet').textContent = trans.saveBtn;
-            document.getElementById('cancelWalletModal').textContent = trans.cancelBtn;
-            
-            // 동기화 상태
-            document.getElementById('syncStatusText').textContent = trans.syncStatusText;
+            headers.forEach(header => {
+                const el = document.getElementById(header.id);
+                if (el) el.textContent = header.value;
+            });
             
             // 주문 목록의 액션 버튼들도 업데이트
             updateOrders();
             updateWallets();
+        }
+
+        // ==================== 텔레그램 설정 ====================
+        function loadTelegramSettings() {
+            const settings = dataManager.getTelegramSettings();
+            const tokenInput = document.getElementById('telegramBotToken');
+            const chatIdInput = document.getElementById('telegramChatId');
+            
+            if (tokenInput && settings.botToken) {
+                tokenInput.value = settings.botToken;
+            }
+            
+            if (chatIdInput && settings.chatId) {
+                chatIdInput.value = settings.chatId;
+            }
+        }
+
+        function saveTelegramConfig() {
+            const botToken = document.getElementById('telegramBotToken').value.trim();
+            const chatId = document.getElementById('telegramChatId').value.trim();
+            
+            telegramNotifier.updateSettings(botToken, chatId);
+            alert('텔레그램 설정이 저장되었습니다.');
+        }
+
+        async function testTelegramNotification() {
+            const result = await telegramNotifier.sendTestNotification();
+            
+            if (result.success) {
+                alert('✅ 텔레그램 테스트 알림이 성공적으로 전송되었습니다!');
+            } else {
+                alert(`❌ 텔레그램 알림 전송 실패:\n${result.error || '알 수 없는 오류'}`);
+            }
         }
 
         // ==================== 데이터 로드 ====================
@@ -1417,34 +1722,60 @@
             dataManager.updateAdminSync();
         }
 
-        // ==================== 통계 업데이트 ====================
+        // ==================== 통계 업데이트 (수정됨) ====================
         function updateStats() {
             const totalOrders = allOrders.length;
             const waitingOrders = allOrders.filter(o => o.status === '입금대기').length;
             const activeWallets = allWallets.filter(w => w.isActive).length;
             
-            // 오늘 매출 계산
+            // 오늘 날짜
             const today = new Date().toISOString().split('T')[0];
+            
+            // 오늘 완료된 주문들
             const todayOrders = allOrders.filter(o => {
                 const orderDate = o.time.split('T')[0];
                 return orderDate === today && o.status === '완료';
             });
             
-            const todayRevenue = todayOrders.reduce((sum, order) => sum + order.amount, 0);
+            // 오늘 거래액 (총액)
+            const todayAmount = todayOrders.reduce((sum, order) => sum + order.amount, 0);
             
-            document.getElementById('totalOrders').textContent = totalOrders;
-            document.getElementById('waitingOrders').textContent = waitingOrders;
-            document.getElementById('activeWallets').textContent = activeWallets;
-            document.getElementById('todayRevenue').textContent = todayRevenue.toLocaleString() + ' THB';
+            // 오늘 수익 (수수료 3%)
+            const todayRevenue = todayOrders.reduce((sum, order) => {
+                // USDT 금액의 3%를 수수료로 계산
+                const fee = order.usdt * 0.03;
+                // 환율 가정: 1 USDT = 35 THB (실제 환율 적용 필요)
+                const exchangeRate = 35;
+                return sum + (fee * exchangeRate);
+            }, 0);
+            
+            // DOM 요소 안전하게 업데이트
+            const updateIfExists = (id, value) => {
+                const element = document.getElementById(id);
+                if (element) element.textContent = value;
+            };
+            
+            updateIfExists('totalOrders', totalOrders);
+            updateIfExists('waitingOrders', waitingOrders);
+            updateIfExists('activeWallets', activeWallets);
+            updateIfExists('todayRevenue', Math.round(todayRevenue).toLocaleString() + ' THB');
+            updateIfExists('todayAmount', todayAmount.toLocaleString() + ' THB');
             
             const trans = translations[currentLang];
-            document.getElementById('waitingChange').textContent = `${waitingOrders} ${trans.waitingChange}`;
-            document.getElementById('walletsChange').textContent = `${activeWallets} ${trans.walletsChange}`;
+            const waitingChangeEl = document.getElementById('waitingChange');
+            const walletsChangeEl = document.getElementById('walletsChange');
             
-            if (waitingOrders > 0) {
-                document.getElementById('waitingChange').classList.remove('negative');
-            } else {
-                document.getElementById('waitingChange').classList.add('negative');
+            if (waitingChangeEl) {
+                waitingChangeEl.textContent = `${waitingOrders} ${trans.waitingChange}`;
+                if (waitingOrders > 0) {
+                    waitingChangeEl.classList.remove('negative');
+                } else {
+                    waitingChangeEl.classList.add('negative');
+                }
+            }
+            
+            if (walletsChangeEl) {
+                walletsChangeEl.textContent = `${activeWallets} ${trans.walletsChange}`;
             }
         }
 
@@ -1481,6 +1812,8 @@
             filteredOrders.sort((a, b) => new Date(b.time) - new Date(a.time));
             
             const ordersTableBody = document.getElementById('ordersTableBody');
+            
+            if (!ordersTableBody) return;
             
             if (filteredOrders.length === 0) {
                 const trans = translations[currentLang];
@@ -1612,7 +1945,7 @@
             }
         }
 
-        // ==================== 지갑 테이블 업데이트 ====================
+        // ==================== 지갑 테이블 업데이트 (수정됨) ====================
         function updateWallets() {
             const statusFilter = document.getElementById('walletStatusFilter').value;
             const networkFilter = document.getElementById('walletNetworkFilter').value;
@@ -1635,6 +1968,7 @@
             filteredWallets.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
             
             const walletsTableBody = document.getElementById('walletsTableBody');
+            if (!walletsTableBody) return;
             
             if (filteredWallets.length === 0) {
                 const trans = translations[currentLang];
@@ -1661,30 +1995,27 @@
                 const defaultBadgeText = currentLang === 'en' ? 'Default' : '기본';
                 const defaultBadge = wallet.isDefault ? `<span class="default-wallet-badge">${defaultBadgeText}</span>` : '';
                 
-                // QR 코드 표시 (수정됨)
+                // QR 코드 표시 - 모든 이미지 파일 허용
                 let qrDisplay = '';
                 if (wallet.qrCode && 
                     wallet.qrCode !== 'null' && 
                     wallet.qrCode !== '' && 
-                    wallet.qrCode !== null) {
+                    wallet.qrCode !== null &&
+                    typeof wallet.qrCode === 'string' && 
+                    wallet.qrCode.startsWith('data:image/')) {
                     
-                    // base64 형식 확인
-                    if (typeof wallet.qrCode === 'string' && wallet.qrCode.startsWith('data:image/')) {
-                        console.log('QR 코드 표시:', wallet.id, '길이:', wallet.qrCode.length);
-                        
-                        qrDisplay = `
-                            <div class="qr-code-small">
-                                <img src="${wallet.qrCode}" 
-                                     alt="QR Code" 
-                                     style="max-width: 80px; max-height: 80px;"
-                                     onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\'color:#999;font-size:12px;\'>이미지 오류</div>'">
-                            </div>
-                        `;
-                    } else {
-                        qrDisplay = '<div style="text-align: center; color: #999; font-size: 12px;">잘못된 이미지</div>';
-                    }
+                    console.log('이미지 표시:', wallet.id, '타입:', wallet.qrCode.substring(5, 15));
+                    
+                    qrDisplay = `
+                        <div class="qr-code-small">
+                            <img src="${wallet.qrCode}" 
+                                 alt="Wallet Image" 
+                                 style="max-width: 80px; max-height: 80px;"
+                                 onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\'color:#999;font-size:12px;\'>이미지 로드 오류</div>'">
+                        </div>
+                    `;
                 } else {
-                    console.log('QR 코드 없음:', wallet.id);
+                    console.log('이미지 없음:', wallet.id);
                     qrDisplay = '<div style="text-align: center; color: #999; font-size: 12px;">없음</div>';
                 }
                 
@@ -1748,8 +2079,8 @@
             walletsTableBody.innerHTML = html;
         }
 
-        // ==================== 주문 상태 업데이트 ====================
-        function updateOrderStatus(orderId, newStatus) {
+        // ==================== 주문 상태 업데이트 (텔레그램 알림 추가) ====================
+        async function updateOrderStatus(orderId, newStatus) {
             // 상태 텍스트 번역
             const statusText = {
                 '입금대기': currentLang === 'en' ? 'Waiting Deposit' : '입금대기',
@@ -1775,6 +2106,9 @@
                 return;
             }
             
+            // 이전 상태 저장
+            const oldStatus = allOrders[orderIndex].status;
+            
             // 상태 업데이트
             const newStep = getStepFromStatus(newStatus);
             allOrders[orderIndex] = {
@@ -1786,6 +2120,9 @@
             
             // 저장
             dataManager.saveOrders(allOrders);
+            
+            // 텔레그램 알림 전송 (상태 변경 시)
+            await telegramNotifier.sendStatusChangeNotification(orderId, oldStatus, newStatus);
             
             // 사용자 페이지에 알림
             dataManager.notifyUserPage(orderId, newStatus);
@@ -2041,15 +2378,23 @@
         // ==================== 지갑 관리 ====================
         function openAddWalletModal() {
             const trans = translations[currentLang];
-            document.getElementById('walletModalTitle').textContent = trans.walletModalTitle;
-            document.getElementById('walletForm').reset();
-            document.getElementById('walletId').value = '';
+            const title = document.getElementById('walletModalTitle');
+            if (title) title.textContent = trans.walletModalTitle;
+            
+            const form = document.getElementById('walletForm');
+            if (form) form.reset();
+            
+            const walletId = document.getElementById('walletId');
+            if (walletId) walletId.value = '';
+            
             qrCodeFile = null;
             
             // 기본값 설정
-            document.getElementById('walletStatus').value = 'active';
+            const statusSelect = document.getElementById('walletStatus');
+            if (statusSelect) statusSelect.value = 'active';
             
-            document.getElementById('walletModal').classList.remove('hidden');
+            const modal = document.getElementById('walletModal');
+            if (modal) modal.classList.remove('hidden');
         }
 
         function editWallet(walletId) {
@@ -2059,16 +2404,31 @@
             selectedWallet = wallet;
             
             const trans = translations[currentLang];
-            document.getElementById('walletModalTitle').textContent = currentLang === 'en' ? '✏️ Edit Wallet' : '✏️ 지갑 수정';
-            document.getElementById('walletId').value = wallet.id;
-            document.getElementById('walletName').value = wallet.name;
-            document.getElementById('walletNetwork').value = wallet.network;
-            document.getElementById('walletStatus').value = wallet.isActive ? 'active' : 'inactive';
-            document.getElementById('walletAddress').value = wallet.address;
-            document.getElementById('walletMemo').value = wallet.memo || '';
+            const title = document.getElementById('walletModalTitle');
+            if (title) title.textContent = currentLang === 'en' ? '✏️ Edit Wallet' : '✏️ 지갑 수정';
+            
+            const walletIdInput = document.getElementById('walletId');
+            if (walletIdInput) walletIdInput.value = wallet.id;
+            
+            const nameInput = document.getElementById('walletName');
+            if (nameInput) nameInput.value = wallet.name;
+            
+            const networkSelect = document.getElementById('walletNetwork');
+            if (networkSelect) networkSelect.value = wallet.network;
+            
+            const statusSelect = document.getElementById('walletStatus');
+            if (statusSelect) statusSelect.value = wallet.isActive ? 'active' : 'inactive';
+            
+            const addressInput = document.getElementById('walletAddress');
+            if (addressInput) addressInput.value = wallet.address;
+            
+            const memoInput = document.getElementById('walletMemo');
+            if (memoInput) memoInput.value = wallet.memo || '';
+            
             qrCodeFile = null;
             
-            document.getElementById('walletModal').classList.remove('hidden');
+            const modal = document.getElementById('walletModal');
+            if (modal) modal.classList.remove('hidden');
         }
 
         function handleQRCodeUpload(event) {
@@ -2095,26 +2455,35 @@
             qrCodeFile = file;
         }
 
-        // ==================== 지갑 저장 함수 (수정됨) ====================
+        // ==================== 지갑 저장 함수 ====================
         function saveWallet() {
             console.log('지갑 저장 시작');
             
             // 폼 검증
-            if (!document.getElementById('walletName').value.trim()) {
+            const nameInput = document.getElementById('walletName');
+            const networkSelect = document.getElementById('walletNetwork');
+            const addressInput = document.getElementById('walletAddress');
+            
+            if (!nameInput || !networkSelect || !addressInput) {
+                console.error('폼 요소를 찾을 수 없음');
+                return;
+            }
+            
+            if (!nameInput.value.trim()) {
                 alert(currentLang === 'en' ? 
                     'Please enter wallet name' : 
                     '지갑 이름을 입력하세요');
                 return;
             }
             
-            if (!document.getElementById('walletNetwork').value) {
+            if (!networkSelect.value) {
                 alert(currentLang === 'en' ? 
                     'Please select network' : 
                     '네트워크를 선택하세요');
                 return;
             }
             
-            if (!document.getElementById('walletAddress').value.trim()) {
+            if (!addressInput.value.trim()) {
                 alert(currentLang === 'en' ? 
                     'Please enter wallet address' : 
                     '지갑 주소를 입력하세요');
@@ -2134,15 +2503,15 @@
                     if (qrCodeData && qrCodeData.startsWith('data:image/')) {
                         saveWalletData(qrCodeData);
                     } else {
-                        console.error('잘못된 QR 코드 형식');
-                        alert('QR 코드 이미지 형식이 올바르지 않습니다.');
+                        console.error('잘못된 이미지 형식');
+                        alert('이미지 형식이 올바르지 않습니다.');
                         return;
                     }
                 };
                 
                 reader.onerror = function(e) {
-                    console.error('QR 코드 읽기 오류:', e);
-                    alert('QR 코드 파일을 읽을 수 없습니다.');
+                    console.error('이미지 읽기 오류:', e);
+                    alert('이미지 파일을 읽을 수 없습니다.');
                 };
                 
                 reader.readAsDataURL(qrCodeFile);
@@ -2158,9 +2527,9 @@
             function saveWalletData(qrCodeData) {
                 const walletData = {
                     id: isEdit ? walletId : 'wallet_' + Date.now(),
-                    name: document.getElementById('walletName').value.trim(),
-                    network: document.getElementById('walletNetwork').value,
-                    address: document.getElementById('walletAddress').value.trim(),
+                    name: nameInput.value.trim(),
+                    network: networkSelect.value,
+                    address: addressInput.value.trim(),
                     qrCode: qrCodeData, // null 또는 base64 문자열
                     isActive: document.getElementById('walletStatus').value === 'active',
                     isDefault: isEdit ? (selectedWallet?.isDefault || false) : false,
@@ -2191,11 +2560,11 @@
                     updatedWallets[0].isActive = true;
                 }
                 
-                // ✅ 지갑 데이터 저장
+                // 저장
                 const saveSuccess = dataManager.saveWallets(updatedWallets);
                 
                 if (saveSuccess) {
-                    // ✅ 사용자 페이지에 지갑 업데이트 알림 (강화됨)
+                    // 사용자 페이지에 알림
                     dataManager.notifyUserPageWallets(updatedWallets);
                     
                     // 페이지 업데이트
@@ -2357,23 +2726,28 @@
         }
 
         function closeWalletModal() {
-            document.getElementById('walletModal').classList.add('hidden');
+            const modal = document.getElementById('walletModal');
+            if (modal) modal.classList.add('hidden');
             selectedWallet = null;
             qrCodeFile = null;
         }
 
-        // ==================== 데이터 동기화 ====================
+        // ==================== 데이터 동기화 (강화됨) ====================
         function startSyncCheck() {
             if (syncCheckInterval) clearInterval(syncCheckInterval);
             
             console.log('관리자: 실시간 동기화 시작 (1초 간격)');
             
+            // ✅ 즉시 한번 실행
+            checkDataSync();
+            
             syncCheckInterval = setInterval(() => {
                 checkDataSync();
-            }, 1000);
+            }, 1000); // 1초마다 체크
         }
 
         function checkDataSync() {
+            // 항상 데이터 체크 (강제 업데이트)
             const syncKey = localStorage.getItem('payment_sync_flag');
             const lastCheck = localStorage.getItem('admin_last_check') || '0';
             
@@ -2402,6 +2776,7 @@
         function showNotification(message) {
             console.log('알림:', message);
             
+            // 간단한 알림 표시
             const notification = document.createElement('div');
             notification.style.cssText = `
                 position: fixed;
@@ -2420,6 +2795,7 @@
             
             document.body.appendChild(notification);
             
+            // 3초 후 제거
             setTimeout(() => {
                 if (notification.parentNode) {
                     notification.parentNode.removeChild(notification);
@@ -2478,6 +2854,8 @@
 
         function showSaveStatus(message) {
             const saveStatus = document.getElementById('saveStatus');
+            if (!saveStatus) return;
+            
             saveStatus.textContent = message;
             saveStatus.classList.add('show');
             
@@ -2512,6 +2890,10 @@
             
             allOrders.unshift(testOrder);
             dataManager.saveOrders(allOrders);
+            
+            // 텔레그램 알림 전송
+            telegramNotifier.sendNewOrderNotification(testOrder);
+            
             loadAllData();
             
             alert(currentLang === 'en' ?
@@ -2552,6 +2934,27 @@
                     'All wallets deleted (except default wallet)' :
                     '모든 지갑이 삭제되었습니다 (기본 지갑 제외)');
             }
+        };
+
+        // ==================== 사용자 페이지에서 주문 생성 시 호출되는 함수 ====================
+        window.newOrderFromUser = async function(order) {
+            console.log('사용자로부터 새 주문 받음:', order.id);
+            
+            // 주문 추가
+            allOrders.unshift(order);
+            dataManager.saveOrders(allOrders);
+            
+            // 통계 업데이트
+            updateStats();
+            updateOrders();
+            
+            // 텔레그램 알림 전송
+            await telegramNotifier.sendNewOrderNotification(order);
+            
+            // 알림 표시
+            showNotification(`새 주문이 접수되었습니다: ${order.id}`);
+            
+            return { success: true, message: '주문이 접수되었습니다' };
         };
 
         // ==================== 초기화 완료 ====================
