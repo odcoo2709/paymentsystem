@@ -1257,6 +1257,7 @@
                 this.SYNC_KEY = 'payment_sync_flag';
                 this.ADMIN_SYNC_KEY = 'admin_sync_check';
                 this.TELEGRAM_BOTS_KEY = 'telegram_bots';
+                this.LAST_NOTIFICATION_KEY = 'last_notification_time';
             }
 
             // 주문 데이터 가져오기
@@ -1367,6 +1368,30 @@
                 }
             }
 
+            // 마지막 알림 시간 저장
+            saveLastNotificationTime() {
+                localStorage.setItem(this.LAST_NOTIFICATION_KEY, Date.now().toString());
+            }
+
+            // 마지막 알림 시간 가져오기
+            getLastNotificationTime() {
+                return parseInt(localStorage.getItem(this.LAST_NOTIFICATION_KEY) || '0');
+            }
+
+            // 새로운 주문이 있는지 확인 (마지막 알림 이후)
+            getNewOrdersSinceLastNotification() {
+                const lastNotificationTime = this.getLastNotificationTime();
+                const allOrders = this.getOrders();
+                
+                // 마지막 알림 이후 생성된 주문 필터링
+                const newOrders = allOrders.filter(order => {
+                    const orderTime = new Date(order.time).getTime();
+                    return orderTime > lastNotificationTime;
+                });
+                
+                return newOrders;
+            }
+
             // 동기화 체크
             checkSync() {
                 return localStorage.getItem(this.SYNC_KEY);
@@ -1409,244 +1434,283 @@
             }
         }
 
-       // ==================== 텔레그램 알림 클래스 (다중 봇 + 이미지 지원) ====================
-class TelegramMultiNotifier {
-    constructor() {
-        this.dataManager = new DataManager();
-        this.bots = this.dataManager.getTelegramBots();
-    }
-
-    // 모든 활성화된 봇에 메시지 전송 (이미지 포함)
-    async sendToAllBots(message, options = {}) {
-        const results = [];
-        const activeBots = this.bots.filter(bot => bot.enabled);
-        
-        if (activeBots.length === 0) {
-            console.warn('활성화된 텔레그램 봇이 없습니다');
-            return [];
-        }
-
-        for (const bot of activeBots) {
-            // 알림 유형 필터링
-            if (options.notificationType === 'newOrder' && !bot.notifyNewOrders) {
-                continue;
-            }
-            if (options.notificationType === 'statusChange' && !bot.notifyStatusChanges) {
-                continue;
-            }
-            if (options.notificationType === 'test' && !bot.notifyTestMessages) {
-                continue;
+        // ==================== 텔레그램 알림 클래스 (다중 봇 + 이미지 지원) ====================
+        class TelegramMultiNotifier {
+            constructor() {
+                this.dataManager = new DataManager();
+                this.bots = this.dataManager.getTelegramBots();
             }
 
-            // 이미지가 있으면 이미지 전송
-            let imageResult = null;
-            if (options.imageData) {
-                imageResult = await this.sendImageToBot(bot, options.imageData, options.imageCaption || message);
+            // 모든 활성화된 봇에 메시지 전송 (이미지 포함)
+            async sendToAllBots(message, options = {}) {
+                const results = [];
+                const activeBots = this.bots.filter(bot => bot.enabled);
+                
+                if (activeBots.length === 0) {
+                    console.warn('활성화된 텔레그램 봇이 없습니다');
+                    return [];
+                }
+
+                for (const bot of activeBots) {
+                    // 알림 유형 필터링
+                    if (options.notificationType === 'newOrder' && !bot.notifyNewOrders) {
+                        continue;
+                    }
+                    if (options.notificationType === 'statusChange' && !bot.notifyStatusChanges) {
+                        continue;
+                    }
+                    if (options.notificationType === 'test' && !bot.notifyTestMessages) {
+                        continue;
+                    }
+
+                    try {
+                        // 이미지가 있으면 이미지 전송
+                        let imageResult = null;
+                        if (options.imageData) {
+                            console.log(`📤 ${bot.name}에 이미지 전송 시도...`);
+                            imageResult = await this.sendImageToBot(bot, options.imageData, options.imageCaption || message);
+                            console.log(`🖼️ ${bot.name} 이미지 전송 결과:`, imageResult.success ? '성공' : '실패');
+                        }
+                        
+                        // 텍스트 메시지 전송 (이미지 전송 실패해도 텍스트는 전송)
+                        const textResult = await this.sendMessageToBot(bot, message);
+                        console.log(`💬 ${bot.name} 텍스트 전송 결과:`, textResult.success ? '성공' : '실패');
+                        
+                        results.push({
+                            botName: bot.name,
+                            textSuccess: textResult.success,
+                            imageSuccess: imageResult ? imageResult.success : null,
+                            error: textResult.error || (imageResult ? imageResult.error : null),
+                            data: { text: textResult.data, image: imageResult ? imageResult.data : null }
+                        });
+                    } catch (error) {
+                        console.error(`❌ ${bot.name} 알림 전송 실패:`, error);
+                        results.push({
+                            botName: bot.name,
+                            textSuccess: false,
+                            imageSuccess: false,
+                            error: error.message
+                        });
+                    }
+                }
+
+                return results;
             }
-            
+
+            // 단일 봇에 메시지 전송
+            async sendMessageToBot(bot, message) {
+                if (!bot.token || !bot.chatIds || bot.chatIds.length === 0) {
+                    return { success: false, error: '봇 설정이 올바르지 않습니다' };
+                }
+
+                const results = [];
+                
+                for (const chatId of bot.chatIds) {
+                    try {
+                        console.log(`📨 ${bot.name} → 채팅 ${chatId} 메시지 전송...`);
+                        const result = await this.sendTextMessage(bot.token, chatId, message);
+                        results.push({
+                            chatId: chatId,
+                            success: result.success,
+                            error: result.error
+                        });
+                        
+                        // 각 메시지 사이에 약간의 지연
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    } catch (error) {
+                        console.error(`❌ ${bot.name} → 채팅 ${chatId} 메시지 전송 실패:`, error);
+                        results.push({
+                            chatId: chatId,
+                            success: false,
+                            error: error.message
+                        });
+                    }
+                }
+
+                const allSuccess = results.every(r => r.success);
+                const errors = results.filter(r => !r.success).map(r => `채팅 ${r.chatId}: ${r.error}`);
+
+                return {
+                    success: allSuccess,
+                    error: errors.length > 0 ? errors.join(' | ') : null,
+                    details: results
+                };
+            }
+
+            // 단일 봇에 이미지 전송
+            async sendImageToBot(bot, imageData, caption = '') {
+                if (!bot.token || !bot.chatIds || bot.chatIds.length === 0) {
+                    return { success: false, error: '봇 설정이 올바르지 않습니다' };
+                }
+
+                const results = [];
+                
+                for (const chatId of bot.chatIds) {
+                    try {
+                        console.log(`📤 ${bot.name} → 채팅 ${chatId} 이미지 전송...`);
+                        const result = await this.sendImage(bot.token, chatId, imageData, caption);
+                        results.push({
+                            chatId: chatId,
+                            success: result.success,
+                            error: result.error
+                        });
+                        
+                        // 각 이미지 사이에 약간의 지연
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                    } catch (error) {
+                        console.error(`❌ ${bot.name} → 채팅 ${chatId} 이미지 전송 실패:`, error);
+                        results.push({
+                            chatId: chatId,
+                            success: false,
+                            error: error.message
+                        });
+                    }
+                }
+
+                const allSuccess = results.every(r => r.success);
+                const errors = results.filter(r => !r.success).map(r => `채팅 ${r.chatId}: ${r.error}`);
+
+                return {
+                    success: allSuccess,
+                    error: errors.length > 0 ? errors.join(' | ') : null,
+                    details: results
+                };
+            }
+
             // 텍스트 메시지 전송
-            const textResult = await this.sendMessageToBot(bot, message);
-            
-            results.push({
-                botName: bot.name,
-                textSuccess: textResult.success,
-                imageSuccess: imageResult ? imageResult.success : null,
-                error: textResult.error || (imageResult ? imageResult.error : null),
-                data: { text: textResult.data, image: imageResult ? imageResult.data : null }
-            });
-        }
+            async sendTextMessage(botToken, chatId, message) {
+                try {
+                    const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+                    
+                    console.log(`🌐 텍스트 메시지 API 호출: ${url.substring(0, 50)}...`);
+                    
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            chat_id: chatId,
+                            text: message,
+                            parse_mode: 'HTML'
+                        })
+                    });
 
-        return results;
-    }
-
-    // 단일 봇에 메시지 전송
-    async sendMessageToBot(bot, message) {
-        if (!bot.token || !bot.chatIds || bot.chatIds.length === 0) {
-            return { success: false, error: '봇 설정이 올바르지 않습니다' };
-        }
-
-        const results = [];
-        
-        for (const chatId of bot.chatIds) {
-            try {
-                const result = await this.sendTextMessage(bot.token, chatId, message);
-                results.push({
-                    chatId: chatId,
-                    success: result.success,
-                    error: result.error
-                });
-                
-                // 각 메시지 사이에 약간의 지연
-                await new Promise(resolve => setTimeout(resolve, 100));
-            } catch (error) {
-                results.push({
-                    chatId: chatId,
-                    success: false,
-                    error: error.message
-                });
-            }
-        }
-
-        const allSuccess = results.every(r => r.success);
-        const errors = results.filter(r => !r.success).map(r => `채팅 ${r.chatId}: ${r.error}`);
-
-        return {
-            success: allSuccess,
-            error: errors.length > 0 ? errors.join(' | ') : null,
-            details: results
-        };
-    }
-
-    // 단일 봇에 이미지 전송
-    async sendImageToBot(bot, imageData, caption = '') {
-        if (!bot.token || !bot.chatIds || bot.chatIds.length === 0) {
-            return { success: false, error: '봇 설정이 올바르지 않습니다' };
-        }
-
-        const results = [];
-        
-        for (const chatId of bot.chatIds) {
-            try {
-                const result = await this.sendImage(bot.token, chatId, imageData, caption);
-                results.push({
-                    chatId: chatId,
-                    success: result.success,
-                    error: result.error
-                });
-                
-                // 각 이미지 사이에 약간의 지연
-                await new Promise(resolve => setTimeout(resolve, 200));
-            } catch (error) {
-                results.push({
-                    chatId: chatId,
-                    success: false,
-                    error: error.message
-                });
-            }
-        }
-
-        const allSuccess = results.every(r => r.success);
-        const errors = results.filter(r => !r.success).map(r => `채팅 ${r.chatId}: ${r.error}`);
-
-        return {
-            success: allSuccess,
-            error: errors.length > 0 ? errors.join(' | ') : null,
-            details: results
-        };
-    }
-
-    // 텍스트 메시지 전송 (기존과 동일)
-    async sendTextMessage(botToken, chatId, message) {
-        try {
-            const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
-            
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    chat_id: chatId,
-                    text: message,
-                    parse_mode: 'HTML'
-                })
-            });
-
-            const data = await response.json();
-            
-            if (response.ok && data.ok) {
-                return { success: true, data: data };
-            } else {
-                let errorMessage = data.description || '알 수 없는 오류';
-                
-                if (errorMessage.includes('Forbidden')) {
-                    errorMessage = '봇이 채팅에 접근할 수 없습니다. 봇을 먼저 채팅에 초대해주세요.';
-                } else if (errorMessage.includes('chat not found')) {
-                    errorMessage = '채팅을 찾을 수 없습니다. 채팅 ID를 확인해주세요.';
-                } else if (errorMessage.includes('Bad Request')) {
-                    errorMessage = '잘못된 요청입니다. 봇 토큰을 확인해주세요.';
+                    const data = await response.json();
+                    
+                    if (response.ok && data.ok) {
+                        console.log('✅ 텍스트 메시지 전송 성공');
+                        return { success: true, data: data };
+                    } else {
+                        let errorMessage = data.description || '알 수 없는 오류';
+                        
+                        if (errorMessage.includes('Forbidden')) {
+                            errorMessage = '봇이 채팅에 접근할 수 없습니다. 봇을 먼저 채팅에 초대해주세요.';
+                        } else if (errorMessage.includes('chat not found')) {
+                            errorMessage = '채팅을 찾을 수 없습니다. 채팅 ID를 확인해주세요.';
+                        } else if (errorMessage.includes('Bad Request')) {
+                            errorMessage = '잘못된 요청입니다. 봇 토큰을 확인해주세요.';
+                        }
+                        
+                        console.error('❌ 텍스트 메시지 전송 실패:', errorMessage);
+                        return { success: false, error: errorMessage };
+                    }
+                } catch (error) {
+                    console.error('🌐 텍스트 메시지 네트워크 오류:', error);
+                    return { 
+                        success: false, 
+                        error: `네트워크 연결 오류: ${error.message}` 
+                    };
                 }
-                
-                return { success: false, error: errorMessage };
             }
-        } catch (error) {
-            return { 
-                success: false, 
-                error: `네트워크 연결 오류: ${error.message}` 
-            };
-        }
-    }
 
-    // 이미지 전송 함수 (개선됨)
-    async sendImage(botToken, chatId, imageData, caption = '') {
-        try {
-            // Base64 데이터 처리
-            let base64Data;
-            if (imageData.includes('base64,')) {
-                base64Data = imageData.split(',')[1];
-            } else {
-                base64Data = imageData;
-            }
-            
-            const byteCharacters = atob(base64Data);
-            const byteNumbers = new Array(byteCharacters.length);
-            
-            for (let i = 0; i < byteCharacters.length; i++) {
-                byteNumbers[i] = byteCharacters.charCodeAt(i);
-            }
-            
-            const byteArray = new Uint8Array(byteNumbers);
-            
-            // MIME 타입 추측 (기본값: jpeg)
-            let mimeType = 'image/jpeg';
-            if (imageData.includes('data:image/')) {
-                mimeType = imageData.split('data:image/')[1].split(';')[0];
-            }
-            
-            const blob = new Blob([byteArray], { type: `image/${mimeType}` });
-            const fileExtension = mimeType.split('/')[1] || 'jpg';
-            
-            const formData = new FormData();
-            formData.append('chat_id', chatId);
-            formData.append('photo', blob, `payment_proof.${fileExtension}`);
-            
-            if (caption) {
-                formData.append('caption', caption);
-                formData.append('parse_mode', 'HTML');
-            }
-            
-            const url = `https://api.telegram.org/bot${botToken}/sendPhoto`;
-            const response = await fetch(url, {
-                method: 'POST',
-                body: formData
-            });
+            // 이미지 전송 함수 (수정됨)
+            async sendImage(botToken, chatId, imageData, caption = '') {
+                try {
+                    console.log('🖼️ 이미지 전송 시작:', botToken.substring(0, 10) + '...', '채팅 ID:', chatId);
+                    
+                    // 이미지 데이터가 이미 Base64 문자열인지 확인
+                    let base64Data;
+                    if (typeof imageData === 'string') {
+                        if (imageData.includes('data:image/')) {
+                            // data:image/...;base64, 형식
+                            base64Data = imageData.split(',')[1];
+                        } else {
+                            // 순수 Base64 문자열
+                            base64Data = imageData;
+                        }
+                    } else {
+                        throw new Error('이미지 데이터가 문자열 형식이 아닙니다');
+                    }
+                    
+                    // Base64를 ArrayBuffer로 변환
+                    const byteCharacters = atob(base64Data);
+                    const byteNumbers = new Array(byteCharacters.length);
+                    
+                    for (let i = 0; i < byteCharacters.length; i++) {
+                        byteNumbers[i] = byteCharacters.charCodeAt(i);
+                    }
+                    
+                    const byteArray = new Uint8Array(byteNumbers);
+                    
+                    // MIME 타입 추측
+                    let mimeType = 'image/jpeg';
+                    if (typeof imageData === 'string' && imageData.includes('data:image/')) {
+                        mimeType = 'image/' + imageData.split('data:image/')[1].split(';')[0];
+                    }
+                    
+                    console.log('📁 이미지 정보:', 'MIME:', mimeType, '크기:', byteArray.length, '바이트');
+                    
+                    // Blob 생성
+                    const blob = new Blob([byteArray], { type: mimeType });
+                    const fileExtension = mimeType.split('/')[1] || 'jpg';
+                    
+                    // FormData 생성
+                    const formData = new FormData();
+                    formData.append('chat_id', chatId);
+                    formData.append('photo', blob, `payment_proof.${fileExtension}`);
+                    
+                    if (caption) {
+                        formData.append('caption', caption);
+                        formData.append('parse_mode', 'HTML');
+                    }
+                    
+                    console.log('📦 FormData 생성 완료');
+                    
+                    const url = `https://api.telegram.org/bot${botToken}/sendPhoto`;
+                    console.log('🚀 API 요청:', url);
+                    
+                    const response = await fetch(url, {
+                        method: 'POST',
+                        body: formData
+                    });
 
-            const data = await response.json();
-            
-            if (response.ok && data.ok) {
-                console.log('✅ 이미지 전송 성공:', chatId);
-                return { success: true, data: data };
-            } else {
-                console.error('❌ 이미지 전송 실패:', data);
-                let errorMessage = data.description || '이미지 전송 실패';
-                
-                if (errorMessage.includes('file is too big')) {
-                    errorMessage = '이미지 파일이 너무 큽니다 (20MB 제한)';
-                } else if (errorMessage.includes('wrong file type')) {
-                    errorMessage = '지원되지 않는 이미지 형식입니다';
+                    const data = await response.json();
+                    
+                    if (response.ok && data.ok) {
+                        console.log('✅ 이미지 전송 성공:', data.result.photo.length, '장의 이미지 전송됨');
+                        return { success: true, data: data };
+                    } else {
+                        console.error('❌ 이미지 전송 실패:', data);
+                        let errorMessage = data.description || '이미지 전송 실패';
+                        
+                        if (errorMessage.includes('file is too big')) {
+                            errorMessage = '이미지 파일이 너무 큽니다 (20MB 제한)';
+                        } else if (errorMessage.includes('wrong file type')) {
+                            errorMessage = '지원되지 않는 이미지 형식입니다';
+                        }
+                        
+                        return { success: false, error: errorMessage };
+                    }
+                } catch (error) {
+                    console.error('🌐 이미지 전송 네트워크 오류:', error);
+                    return { success: false, error: `네트워크 오류: ${error.message}` };
                 }
-                
-                return { success: false, error: errorMessage };
             }
-        } catch (error) {
-            console.error('🌐 이미지 전송 네트워크 오류:', error);
-            return { success: false, error: `네트워크 오류: ${error.message}` };
-        }
-    }
 
-    // 테스트 알림 전송 (이미지 포함 테스트)
-    async sendTestNotification(botId = null) {
-        const message = `
+            // 테스트 알림 전송 (이미지 포함 테스트)
+            async sendTestNotification(botId = null) {
+                const message = `
 <b>✅ 텔레그램 테스트 알림 (이미지 포함)</b>
 
 관리자 시스템이 정상적으로 작동 중입니다!
@@ -1654,58 +1718,58 @@ class TelegramMultiNotifier {
 
 ✅ 텍스트 메시지 전송 확인
 📸 이미지 전송 기능 확인
-        `.trim();
-        
-        // 테스트 이미지 (작은 빈 이미지)
-        const testImage = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
-        
-        if (botId) {
-            // 특정 봇에만 전송
-            const bot = this.bots.find(b => b.id === botId);
-            if (!bot) {
-                return { success: false, error: '봇을 찾을 수 없습니다' };
+                `.trim();
+                
+                // 테스트 이미지 (작은 빈 이미지)
+                const testImage = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+                
+                if (botId) {
+                    // 특정 봇에만 전송
+                    const bot = this.bots.find(b => b.id === botId);
+                    if (!bot) {
+                        return { success: false, error: '봇을 찾을 수 없습니다' };
+                    }
+                    
+                    const textResult = await this.sendMessageToBot(bot, message);
+                    const imageResult = await this.sendImageToBot(bot, testImage, '테스트 이미지');
+                    
+                    return {
+                        success: textResult.success && imageResult.success,
+                        textSuccess: textResult.success,
+                        imageSuccess: imageResult.success,
+                        error: textResult.error || imageResult.error,
+                        botName: bot.name
+                    };
+                } else {
+                    // 모든 봇에 전송
+                    const textResults = await this.sendToAllBots(message, { notificationType: 'test' });
+                    const imageResults = await this.sendToAllBots('테스트 이미지', { 
+                        notificationType: 'test',
+                        imageData: testImage,
+                        imageCaption: '테스트 이미지'
+                    });
+                    
+                    return {
+                        success: true,
+                        message: '테스트 알림 전송 완료 (텍스트 + 이미지)'
+                    };
+                }
             }
-            
-            const textResult = await this.sendMessageToBot(bot, message);
-            const imageResult = await this.sendImageToBot(bot, testImage, '테스트 이미지');
-            
-            return {
-                success: textResult.success && imageResult.success,
-                textSuccess: textResult.success,
-                imageSuccess: imageResult.success,
-                error: textResult.error || imageResult.error,
-                botName: bot.name
-            };
-        } else {
-            // 모든 봇에 전송
-            const textResults = await this.sendToAllBots(message, { notificationType: 'test' });
-            const imageResults = await this.sendToAllBots('테스트 이미지', { 
-                notificationType: 'test',
-                imageData: testImage,
-                imageCaption: '테스트 이미지'
-            });
-            
-            return {
-                success: true,
-                message: '테스트 알림 전송 완료 (텍스트 + 이미지)'
-            };
-        }
-    }
 
-    // 새 주문 알림 (이미지 포함)
-    async sendNewOrderNotification(order) {
-        const statusText = {
-            '입금대기': '입금 대기',
-            '입금확인': '입금 확인',
-            '처리중': '처리 중',
-            '완료': '완료',
-            '취소': '취소'
-        }[order.status] || order.status;
+            // 새 주문 알림 (이미지 포함) - 개선된 버전
+            async sendNewOrderNotification(order) {
+                const statusText = {
+                    '입금대기': '입금 대기',
+                    '입금확인': '입금 확인',
+                    '처리중': '처리 중',
+                    '완료': '완료',
+                    '취소': '취소'
+                }[order.status] || order.status;
 
-        const fee = order.usdt * 0.03;
-        const netAmount = order.usdt - fee;
-        
-        const message = `
+                const fee = order.usdt * 0.03;
+                const netAmount = order.usdt - fee;
+                
+                const message = `
 <b>🚨 새로운 주문이 접수되었습니다!</b>
 
 📋 <b>주문 ID:</b> ${order.id}
@@ -1723,13 +1787,15 @@ class TelegramMultiNotifier {
 📎 <b>결제 증명서:</b> ${order.proof ? '첨부됨 (아래 이미지 확인)' : '없음'}
 
 ✅ <b>빠른 처리 요망</b>
-        `.trim();
+                `.trim();
 
-        const results = await this.sendToAllBots(message, { notificationType: 'newOrder' });
-        
-        // 결제 증명서 이미지가 있으면 별도로 전송
-        if (order.proof && order.proof.data && order.proof.type.startsWith('image/')) {
-            const imageCaption = `
+                console.log('📨 새 주문 알림 준비:', order.id);
+                
+                const results = await this.sendToAllBots(message, { notificationType: 'newOrder' });
+                
+                // 결제 증명서 이미지가 있으면 별도로 전송
+                if (order.proof && order.proof.data && order.proof.type.startsWith('image/')) {
+                    const imageCaption = `
 <b>📸 결제 증명서</b>
 
 주문 ID: ${order.id}
@@ -1737,47 +1803,48 @@ class TelegramMultiNotifier {
 업로드 시간: ${new Date(order.time).toLocaleString('ko-KR')}
 
 <code>이미지를 확인해주세요 👇</code>
-            `.trim();
-            
-            const imageResults = await this.sendToAllBots(imageCaption, { 
-                notificationType: 'newOrder',
-                imageData: order.proof.data,
-                imageCaption: imageCaption
-            });
-            
-            // 결과 병합
-            return {
-                textResults: results,
-                imageResults: imageResults,
-                hasImage: true
-            };
-        }
+                    `.trim();
+                    
+                    console.log('🖼️ 결제 증명서 이미지 전송 시도:', order.id);
+                    const imageResults = await this.sendToAllBots(imageCaption, { 
+                        notificationType: 'newOrder',
+                        imageData: order.proof.data,
+                        imageCaption: imageCaption
+                    });
+                    
+                    // 결과 병합
+                    return {
+                        textResults: results,
+                        imageResults: imageResults,
+                        hasImage: true
+                    };
+                }
 
-        return {
-            textResults: results,
-            hasImage: false
-        };
-    }
+                return {
+                    textResults: results,
+                    hasImage: false
+                };
+            }
 
-    // 주문 상태 변경 알림
-    async sendStatusChangeNotification(orderId, oldStatus, newStatus) {
-        const oldStatusText = {
-            '입금대기': '입금 대기',
-            '입금확인': '입금 확인',
-            '처리중': '처리 중',
-            '완료': '완료',
-            '취소': '취소'
-        }[oldStatus] || oldStatus;
+            // 주문 상태 변경 알림
+            async sendStatusChangeNotification(orderId, oldStatus, newStatus) {
+                const oldStatusText = {
+                    '입금대기': '입금 대기',
+                    '입금확인': '입금 확인',
+                    '처리중': '처리 중',
+                    '완료': '완료',
+                    '취소': '취소'
+                }[oldStatus] || oldStatus;
 
-        const newStatusText = {
-            '입금대기': '입금 대기',
-            '입금확인': '입금 확인',
-            '처리중': '처리 중',
-            '완료': '완료',
-            '취소': '취소'
-        }[newStatus] || newStatus;
+                const newStatusText = {
+                    '입금대기': '입금 대기',
+                    '입금확인': '입금 확인',
+                    '처리중': '처리 중',
+                    '완료': '완료',
+                    '취소': '취소'
+                }[newStatus] || newStatus;
 
-        const message = `
+                const message = `
 <b>📊 주문 상태 변경 알림</b>
 
 📋 <b>주문 ID:</b> ${orderId}
@@ -1786,39 +1853,39 @@ class TelegramMultiNotifier {
 ⏰ <b>변경 시간:</b> ${new Date().toLocaleString('ko-KR')}
 
 🔄 <b>변경이 완료되었습니다</b>
-        `.trim();
+                `.trim();
 
-        return await this.sendToAllBots(message, { notificationType: 'statusChange' });
-    }
+                return await this.sendToAllBots(message, { notificationType: 'statusChange' });
+            }
 
-    // 봇 목록 업데이트
-    updateBots(bots) {
-        this.bots = bots;
-        return this.dataManager.saveTelegramBots(bots);
-    }
+            // 봇 목록 업데이트
+            updateBots(bots) {
+                this.bots = bots;
+                return this.dataManager.saveTelegramBots(bots);
+            }
 
-    // 봇 추가
-    addBot(bot) {
-        this.bots.push(bot);
-        return this.dataManager.saveTelegramBots(this.bots);
-    }
+            // 봇 추가
+            addBot(bot) {
+                this.bots.push(bot);
+                return this.dataManager.saveTelegramBots(this.bots);
+            }
 
-    // 봇 수정
-    updateBot(botId, updatedBot) {
-        const index = this.bots.findIndex(b => b.id === botId);
-        if (index !== -1) {
-            this.bots[index] = updatedBot;
-            return this.dataManager.saveTelegramBots(this.bots);
+            // 봇 수정
+            updateBot(botId, updatedBot) {
+                const index = this.bots.findIndex(b => b.id === botId);
+                if (index !== -1) {
+                    this.bots[index] = updatedBot;
+                    return this.dataManager.saveTelegramBots(this.bots);
+                }
+                return false;
+            }
+
+            // 봇 삭제
+            deleteBot(botId) {
+                this.bots = this.bots.filter(b => b.id !== botId);
+                return this.dataManager.saveTelegramBots(this.bots);
+            }
         }
-        return false;
-    }
-
-    // 봇 삭제
-    deleteBot(botId) {
-        this.bots = this.bots.filter(b => b.id !== botId);
-        return this.dataManager.saveTelegramBots(this.bots);
-    }
-}
 
         // ==================== 전역 변수 ====================
         const dataManager = new DataManager();
@@ -1834,6 +1901,7 @@ class TelegramMultiNotifier {
         let qrCodeFile = null;
         let currentLang = 'ko';
         let syncCheckInterval = null;
+        let notificationCheckInterval = null;
 
         // 번역 데이터
         const translations = {
@@ -2032,6 +2100,9 @@ class TelegramMultiNotifier {
             
             // 동기화 체크 시작
             startSyncCheck();
+            
+            // 새로운 주문 알림 체크 시작
+            startNotificationCheck();
             
             console.log('관리자 페이지 초기화 완료');
         });
@@ -2470,6 +2541,9 @@ class TelegramMultiNotifier {
             
             // 동기화 시간 업데이트
             dataManager.updateAdminSync();
+            
+            // 마지막 알림 시간 업데이트 (현재 시간으로 설정하여 과거 주문들은 알림 안보내게)
+            dataManager.saveLastNotificationTime();
         }
 
         // ==================== 통계 업데이트 ====================
@@ -3544,6 +3618,73 @@ class TelegramMultiNotifier {
             }
         }
 
+        // ==================== 새로운 주문 알림 체크 ====================
+        function startNotificationCheck() {
+            if (notificationCheckInterval) clearInterval(notificationCheckInterval);
+            
+            console.log('🔄 새로운 주문 알림 체크 시작 (5초 간격)');
+            
+            checkNewOrders();
+            
+            notificationCheckInterval = setInterval(() => {
+                checkNewOrders();
+            }, 5000); // 5초마다 체크
+        }
+
+        async function checkNewOrders() {
+            try {
+                // 마지막 알림 이후의 새로운 주문 가져오기
+                const newOrders = dataManager.getNewOrdersSinceLastNotification();
+                
+                if (newOrders.length > 0) {
+                    console.log(`📢 ${newOrders.length}개의 새로운 주문 발견!`);
+                    
+                    // 각 새로운 주문에 대해 알림 전송
+                    for (const order of newOrders) {
+                        console.log(`📨 주문 ${order.id} 알림 전송 중...`);
+                        
+                        try {
+                            // 텔레그램 알림 전송
+                            const result = await telegramNotifier.sendNewOrderNotification(order);
+                            
+                            if (result.textResults && result.textResults.length > 0) {
+                                console.log(`✅ 주문 ${order.id} 알림 전송 완료`);
+                                
+                                // 이미지가 전송되었는지 확인
+                                if (result.hasImage && result.imageResults) {
+                                    const successfulImageBots = result.imageResults.filter(r => r.imageSuccess).length;
+                                    console.log(`🖼️ ${successfulImageBots}개의 봇에 이미지 전송 완료`);
+                                }
+                            } else {
+                                console.warn(`⚠️ 주문 ${order.id} 알림 전송 실패`);
+                            }
+                        } catch (error) {
+                            console.error(`❌ 주문 ${order.id} 알림 전송 오류:`, error);
+                        }
+                        
+                        // 각 주문 사이에 약간의 지연
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                    }
+                    
+                    // 마지막 알림 시간 업데이트
+                    dataManager.saveLastNotificationTime();
+                    
+                    // 페이지 업데이트
+                    updateStats();
+                    updateOrders();
+                    
+                    // 사용자에게 알림
+                    if (newOrders.length === 1) {
+                        showNotification(`새로운 주문이 접수되었습니다: ${newOrders[0].id}`);
+                    } else {
+                        showNotification(`${newOrders.length}개의 새로운 주문이 접수되었습니다`);
+                    }
+                }
+            } catch (error) {
+                console.error('새로운 주문 체크 오류:', error);
+            }
+        }
+
         function showNotification(message) {
             console.log('알림:', message);
             
@@ -3660,8 +3801,8 @@ class TelegramMultiNotifier {
             allOrders.unshift(testOrder);
             dataManager.saveOrders(allOrders);
             
-            // 텔레그램 알림 전송 (다중 봇 지원)
-            await telegramNotifier.sendNewOrderNotification(testOrder);
+            // 마지막 알림 시간을 업데이트하지 않아서 checkNewOrders에서 감지하도록 함
+            // dataManager.saveLastNotificationTime(); // 주석 처리
             
             loadAllData();
             
@@ -3717,8 +3858,7 @@ class TelegramMultiNotifier {
             updateStats();
             updateOrders();
             
-            // 텔레그램 알림 전송 (다중 봇 지원)
-            await telegramNotifier.sendNewOrderNotification(order);
+            // 마지막 알림 시간을 업데이트하지 않음 (checkNewOrders에서 감지하도록)
             
             // 알림 표시
             showNotification(`새 주문이 접수되었습니다: ${order.id}`);
