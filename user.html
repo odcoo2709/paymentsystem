@@ -20,19 +20,40 @@
 
         .container {
             width: 100%;
-            max-width: 500px;
+            max-width: 1200px;
             background: white;
             border-radius: 20px;
             padding: 30px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
             margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        /* 새로운 두 컬럼 레이아웃 */
+        .main-content {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .payment-column {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .orders-column {
+            flex: 1;
+            min-width: 300px;
         }
 
         .header {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             position: relative;
             padding-top: 50px;
+            width: 100%;
         }
 
         .language-container {
@@ -247,12 +268,13 @@
             cursor: not-allowed;
         }
 
+        /* 주문 목록 스타일 개선 */
         .orders-section {
             background: #f7fafc;
             border: 2px solid #e2e8f0;
             border-radius: 15px;
             padding: 25px;
-            margin-top: 30px;
+            margin-top: 0;
         }
 
         .section-title {
@@ -260,12 +282,28 @@
             font-size: 18px;
             font-weight: bold;
             margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .toggle-images-btn {
+            background: #4299e1;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
         }
 
         .orders-list {
             display: flex;
             flex-direction: column;
             gap: 15px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 5px;
         }
 
         .order-card {
@@ -274,6 +312,13 @@
             padding: 20px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             border: 2px solid #e2e8f0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .order-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
         }
 
         .order-card.status-waiting { border-color: #f6ad55; }
@@ -344,12 +389,25 @@
             color: #4a5568;
         }
 
+        /* 증명서 이미지 스타일 - 기본적으로 숨김 */
+        .proof-image-container {
+            display: none;
+            text-align: center;
+            margin-top: 10px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .proof-image-container.show {
+            display: block;
+        }
+
         .proof-image {
             max-width: 100%;
-            max-height: 150px;
+            max-height: 200px;
             border-radius: 8px;
             margin-top: 10px;
             border: 1px solid #ddd;
+            cursor: pointer;
         }
 
         .no-orders {
@@ -362,6 +420,39 @@
             border: 2px dashed #cbd5e0;
         }
 
+        /* 완료된 주문 섹션 */
+        .completed-orders-section {
+            background: #f0fff4;
+            border: 2px solid #c6f6d5;
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 0;
+        }
+
+        .completed-section-title {
+            color: #38a169;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .completed-section-title::before {
+            content: '✓';
+            background: #38a169;
+            color: white;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        /* 모달 스타일 */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -609,37 +700,6 @@
         .network-erc20 { background: #4299e1; }
         .network-bep20 { background: #38a169; }
 
-        .completed-orders-section {
-            background: #f0fff4;
-            border: 2px solid #c6f6d5;
-            border-radius: 15px;
-            padding: 25px;
-            margin-top: 30px;
-        }
-
-        .completed-section-title {
-            color: #38a169;
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .completed-section-title::before {
-            content: '✓';
-            background: #38a169;
-            color: white;
-            width: 24px;
-            height: 24px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 14px;
-        }
-
         .rate-loading {
             color: #718096;
             font-size: 16px;
@@ -698,6 +758,26 @@
             font-size: 14px;
             padding: 20px;
         }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .payment-column, .orders-column {
+                width: 100%;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -719,91 +799,108 @@
             <p class="subtitle" id="pageSubtitle">로그인 없이 USDT로 태국 바트(THB) 결제하기</p>
         </div>
 
-        <div class="exchange-section">
-            <h4 id="exchangeTitle">💱 실시간 환율</h4>
-            <div class="rate-display">
-                1 USDT = <span class="rate-value" id="exchangeRate">
-                    <span class="rate-loading">로딩 중...</span>
-                </span> THB
-            </div>
-            <div id="rateUpdate">마지막 업데이트: 로딩 중...</div>
-        </div>
-
-        <div class="payment-form">
-            <div class="input-group">
-                <label class="input-label" id="amountLabel">💰 결제 금액 입력 (THB):</label>
-                <input type="number" 
-                       class="amount-input" 
-                       id="thbAmount" 
-                       placeholder="금액을 입력하세요"
-                       min="1000"
-                       max="500000"
-                       value="">
-                <div class="amount-limit" id="amountLimit">
-                    최소 1,000 THB ~ 최대 500,000 THB
-                </div>
-            </div>
-
-            <div class="calculation-preview" id="calcPreview" style="display: none;">
-                <div class="calc-row">
-                    <span id="calcAmountLabel">결제 금액:</span>
-                    <span id="calcAmount">0 THB</span>
-                </div>
-                <div class="calc-row">
-                    <span id="calcRateLabel">환율:</span>
-                    <span>1 USDT = <span id="calcRate">0.00</span> THB</span>
-                </div>
-                <div class="calc-row">
-                    <span id="calcUsdtLabel">USDT 금액:</span>
-                    <span id="calcUsdt">0.0000 USDT</span>
-                </div>
-                <div class="calc-row">
-                    <span id="calcFeeLabel">수수료 (3%):</span>
-                    <span id="calcFee">0.0000 USDT</span>
-                </div>
-                <div class="calc-row">
-                    <span id="calcTotalLabel">총 결제 금액:</span>
-                    <span class="calc-total" id="calcTotal">0.0000 USDT</span>
-                </div>
-            </div>
-
-            <div class="upload-section">
-                <label class="upload-label" for="paymentProof">
-                    <div class="upload-button" id="uploadButtonText">
-                        📎 결제 할 상점 QR (필수)
+        <div class="main-content">
+            <!-- 왼쪽 열: 결제 폼 -->
+            <div class="payment-column">
+                <div class="exchange-section">
+                    <h4 id="exchangeTitle">💱 실시간 환율</h4>
+                    <div class="rate-display">
+                        1 USDT = <span class="rate-value" id="exchangeRate">
+                            <span class="rate-loading">로딩 중...</span>
+                        </span> THB
                     </div>
-                </label>
-                <div class="upload-required" id="uploadRequired">
-                    ※ 결제를 위해 QR 코드 스크린샷을 업로드해야 합니다
+                    <div id="rateUpdate">마지막 업데이트: 로딩 중...</div>
                 </div>
-                <input type="file" class="upload-input" id="paymentProof" accept="image/*,.pdf,.png,.jpg,.jpeg">
-                <div class="upload-preview" id="uploadPreview">
-                    <!-- 초기에는 미리보기 없음 -->
+
+                <div class="payment-form">
+                    <div class="input-group">
+                        <label class="input-label" id="amountLabel">💰 결제 금액 입력 (THB):</label>
+                        <input type="number" 
+                               class="amount-input" 
+                               id="thbAmount" 
+                               placeholder="금액을 입력하세요"
+                               min="1000"
+                               max="500000"
+                               value="">
+                        <div class="amount-limit" id="amountLimit">
+                            최소 1,000 THB ~ 최대 500,000 THB
+                        </div>
+                    </div>
+
+                    <div class="calculation-preview" id="calcPreview" style="display: none;">
+                        <div class="calc-row">
+                            <span id="calcAmountLabel">결제 금액:</span>
+                            <span id="calcAmount">0 THB</span>
+                        </div>
+                        <div class="calc-row">
+                            <span id="calcRateLabel">환율:</span>
+                            <span>1 USDT = <span id="calcRate">0.00</span> THB</span>
+                        </div>
+                        <div class="calc-row">
+                            <span id="calcUsdtLabel">USDT 금액:</span>
+                            <span id="calcUsdt">0.0000 USDT</span>
+                        </div>
+                        <div class="calc-row">
+                            <span id="calcFeeLabel">수수료 (3%):</span>
+                            <span id="calcFee">0.0000 USDT</span>
+                        </div>
+                        <div class="calc-row">
+                            <span id="calcTotalLabel">총 결제 금액:</span>
+                            <span class="calc-total" id="calcTotal">0.0000 USDT</span>
+                        </div>
+                    </div>
+
+                    <div class="upload-section">
+                        <label class="upload-label" for="paymentProof">
+                            <div class="upload-button" id="uploadButtonText">
+                                📎 결제 할 상점 QR (필수)
+                            </div>
+                        </label>
+                        <div class="upload-required" id="uploadRequired">
+                            ※ 결제를 위해 QR 코드 스크린샷을 업로드해야 합니다
+                        </div>
+                        <input type="file" class="upload-input" id="paymentProof" accept="image/*,.pdf,.png,.jpg,.jpeg">
+                        <div class="upload-preview" id="uploadPreview">
+                            <!-- 초기에는 미리보기 없음 -->
+                        </div>
+                    </div>
+
+                    <button class="pay-button" id="payButton" disabled>
+                        💳 <span id="payButtonText">지금 결제하기</span>
+                    </button>
                 </div>
             </div>
 
-            <button class="pay-button" id="payButton" disabled>
-                💳 <span id="payButtonText">지금 결제하기</span>
-            </button>
-        </div>
+            <!-- 오른쪽 열: 주문 목록 -->
+            <div class="orders-column">
+                <div class="orders-section">
+                    <h3 class="section-title">
+                        ⏳ <span id="activeOrdersTitle">진행 중인 주문</span>
+                        <button class="toggle-images-btn" id="toggleActiveImages">
+                            이미지 보기
+                        </button>
+                    </h3>
+                    <div class="orders-list" id="activeOrdersList">
+                        <div class="no-orders" id="noActiveOrders">진행 중인 주문이 없습니다</div>
+                    </div>
+                </div>
 
-        <div class="orders-section">
-            <h3 class="section-title">⏳ <span id="activeOrdersTitle">진행 중인 주문</span></h3>
-            <div class="orders-list" id="activeOrdersList">
-                <div class="no-orders" id="noActiveOrders">진행 중인 주문이 없습니다</div>
-            </div>
-        </div>
-
-        <div class="completed-orders-section">
-            <h3 class="completed-section-title">
-                <span id="completedOrdersTitle">✅ 완료된 주문</span>
-            </h3>
-            <div class="orders-list" id="completedOrdersList">
-                <div class="no-orders" id="noCompletedOrders">완료된 주문이 없습니다</div>
+                <div class="completed-orders-section">
+                    <h3 class="completed-section-title">
+                        <span id="completedOrdersTitle">✅ 완료된 주문</span>
+                        <button class="toggle-images-btn" id="toggleCompletedImages">
+                            이미지 보기
+                        </button>
+                    </h3>
+                    <div class="orders-list" id="completedOrdersList">
+                        <div class="no-orders" id="noCompletedOrders">완료된 주문이 없습니다</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- QR 모달 -->
     <div class="modal-overlay hidden" id="qrModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -1010,8 +1107,12 @@
         let allOrders = [];
         let currentLang = 'ko';
         let syncCheckInterval = null;
+        
+        // 이미지 표시 상태
+        let showActiveImages = false;
+        let showCompletedImages = false;
 
-        // 번역 데이터
+        // 번역 데이터 - "결제 할 상점 QR" 텍스트 추가
         const translations = {
             en: {
                 title: "USDT/THB Payment",
@@ -1058,7 +1159,11 @@
                 amountMinAlert: "Minimum payment amount is 1,000 THB",
                 amountMaxAlert: "Maximum payment amount is 500,000 THB",
                 languageBtnText: "한국어",
-                syncText: "Syncing..."
+                syncText: "Syncing...",
+                showImages: "Show Images",
+                hideImages: "Hide Images",
+                proof: "Proof:",
+                attached: "Attached"
             },
             ko: {
                 title: "USDT → THB 결제",
@@ -1086,8 +1191,6 @@
                 orderIdLabel: "주문 ID:",
                 statusMessage1Text: "USDT 전송 후 관리자 확인 대기 중...",
                 step2Description: "USDT 입금 확인 중...",
-                statusMessage2Text: "관리자가 입금을 확인 중입니다. 잠시만 기다려주세요...",
-                step3Description: "THB 결제 처리 중...",
                 statusMessage3Text: "THB 결제가 처리 중입니다...",
                 completeMessage: "결제 완료!",
                 step4Description: "결제가 성공적으로 완료되었습니다.",
@@ -1101,11 +1204,15 @@
                 cancelled: "취소",
                 rateLoading: "로딩 중...",
                 rateError: "환율 로딩 실패",
-                uploadRequiredAlert: "먼저 결제 증명서(QR 코드 스크린샷)를 업로드해주세요",
+                uploadRequiredAlert: "먼저 결제 할 상점 QR(QR 코드 스크린샷)을 업로드해주세요",
                 amountMinAlert: "최소 결제 금액은 1,000 THB 입니다",
                 amountMaxAlert: "최대 결제 금액은 500,000 THB 입니다",
                 languageBtnText: "English",
-                syncText: "동기화 중..."
+                syncText: "동기화 중...",
+                showImages: "이미지 보기",
+                hideImages: "이미지 숨기기",
+                proof: "증명서:",
+                attached: "첨부됨"
             }
         };
 
@@ -1173,6 +1280,7 @@
         function updateAllText() {
             const trans = translations[currentLang];
             
+            // 기본 텍스트 업데이트
             document.getElementById('pageTitle').textContent = trans.title;
             document.getElementById('pageSubtitle').textContent = trans.subtitle;
             document.getElementById('exchangeTitle').textContent = trans.exchangeTitle;
@@ -1191,6 +1299,7 @@
             document.getElementById('noCompletedOrders').textContent = trans.noCompletedOrders;
             document.getElementById('syncText').textContent = trans.syncText;
             
+            // 업로드 버튼 텍스트 업데이트 (한영 전환)
             const uploadButtonText = document.getElementById('uploadButtonText');
             if (uploadButtonText) {
                 if (!uploadedFile) {
@@ -1200,6 +1309,16 @@
                     uploadButtonText.innerHTML = 
                         `✅ ${uploadText}<br><span style="font-size:12px;color:#718096;">${uploadedFile.name}</span>`;
                 }
+            }
+            
+            // 이미지 토글 버튼 텍스트 업데이트
+            const toggleActiveBtn = document.getElementById('toggleActiveImages');
+            const toggleCompletedBtn = document.getElementById('toggleCompletedImages');
+            if (toggleActiveBtn) {
+                toggleActiveBtn.textContent = showActiveImages ? trans.hideImages : trans.showImages;
+            }
+            if (toggleCompletedBtn) {
+                toggleCompletedBtn.textContent = showCompletedImages ? trans.hideImages : trans.showImages;
             }
             
             const now = new Date();
@@ -1414,6 +1533,32 @@
                     fileInput.files = e.dataTransfer.files;
                 }
             });
+            
+            // 이미지 토글 버튼 이벤트
+            document.getElementById('toggleActiveImages').addEventListener('click', function() {
+                showActiveImages = !showActiveImages;
+                updateToggleButtonText();
+                updateOrdersList();
+            });
+            
+            document.getElementById('toggleCompletedImages').addEventListener('click', function() {
+                showCompletedImages = !showCompletedImages;
+                updateToggleButtonText();
+                updateOrdersList();
+            });
+        }
+
+        function updateToggleButtonText() {
+            const trans = translations[currentLang];
+            const toggleActiveBtn = document.getElementById('toggleActiveImages');
+            const toggleCompletedBtn = document.getElementById('toggleCompletedImages');
+            
+            if (toggleActiveBtn) {
+                toggleActiveBtn.textContent = showActiveImages ? trans.hideImages : trans.showImages;
+            }
+            if (toggleCompletedBtn) {
+                toggleCompletedBtn.textContent = showCompletedImages ? trans.hideImages : trans.showImages;
+            }
         }
 
         // ==================== 파일 업로드 처리 ====================
@@ -1596,7 +1741,7 @@
             allOrders = orders;
         }
 
-        // ==================== 주문 목록 업데이트 ====================
+        // ==================== 주문 목록 업데이트 (수정됨) ====================
         function updateOrdersList() {
             const trans = translations[currentLang];
             
@@ -1623,9 +1768,22 @@
             } else {
                 let html = '';
                 activeOrders.forEach(order => {
-                    html += createOrderCard(order);
+                    html += createOrderCard(order, showActiveImages);
                 });
                 activeOrdersList.innerHTML = html;
+                
+                // 주문 카드 클릭 이벤트 추가
+                activeOrdersList.querySelectorAll('.order-card').forEach((card, index) => {
+                    card.addEventListener('click', function() {
+                        const order = activeOrders[index];
+                        if (order.proof && order.proof.data) {
+                            const imageContainer = this.querySelector('.proof-image-container');
+                            if (imageContainer) {
+                                imageContainer.classList.toggle('show');
+                            }
+                        }
+                    });
+                });
             }
             
             if (completedOrders.length === 0) {
@@ -1637,13 +1795,26 @@
             } else {
                 let html = '';
                 completedOrders.forEach(order => {
-                    html += createOrderCard(order);
+                    html += createOrderCard(order, showCompletedImages);
                 });
                 completedOrdersList.innerHTML = html;
+                
+                // 주문 카드 클릭 이벤트 추가
+                completedOrdersList.querySelectorAll('.order-card').forEach((card, index) => {
+                    card.addEventListener('click', function() {
+                        const order = completedOrders[index];
+                        if (order.proof && order.proof.data) {
+                            const imageContainer = this.querySelector('.proof-image-container');
+                            if (imageContainer) {
+                                imageContainer.classList.toggle('show');
+                            }
+                        }
+                    });
+                });
             }
         }
 
-        function createOrderCard(order) {
+        function createOrderCard(order, showImages = false) {
             const trans = translations[currentLang];
             
             const statusClass = {
@@ -1664,18 +1835,21 @@
             
             const time = new Date(order.time).toLocaleString('ko-KR');
             
+            // 증명서 이미지 HTML - 클릭 시 표시됨
             let proofHtml = '';
             if (order.proof && order.proof.data) {
-                const proofLabel = currentLang === 'en' ? 'Proof:' : '증명서:';
-                const attachedText = currentLang === 'en' ? 'Attached' : '첨부됨';
+                const proofLabel = trans.proof;
+                const attachedText = trans.attached;
                 
                 if (order.proof.type && order.proof.type.startsWith('image/')) {
                     proofHtml = `
                         <div class="breakdown-item">
                             <span>${proofLabel}</span>
-                            <span>${attachedText}</span>
+                            <span>${attachedText} (클릭하여 표시)</span>
                         </div>
-                        <img src="${order.proof.data}" alt="Payment proof" class="proof-image">
+                        <div class="proof-image-container ${showImages ? 'show' : ''}">
+                            <img src="${order.proof.data}" alt="Payment proof" class="proof-image">
+                        </div>
                     `;
                 } else {
                     proofHtml = `
