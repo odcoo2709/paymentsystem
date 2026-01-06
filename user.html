@@ -1982,7 +1982,12 @@
         }
 
         function goToStep(step) {
-            console.log('🔧 goToStep 실행:', currentStep, '->', step);
+    console.log('🔧 goToStep 실행:', currentStep, '->', step);
+    console.log('단계 ' + currentStep + ' 비활성화');
+    console.log('단계 ' + currentStep + ' 활성화');
+    console.log('❌ 단계 ' + step + ' 요소 찾을 수 없음!');
+}
+
             
             if (currentStep >= 1 && currentStep <= 4) {
                 const currentStepElement = document.getElementById(`step${currentStep}`);
