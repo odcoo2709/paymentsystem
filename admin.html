@@ -431,14 +431,12 @@
             justify-content: center;
             border: 1px solid #dee2e6;
             margin: 0 auto;
-            overflow: hidden;
         }
 
         .qr-code-small img {
             max-width: 100%;
             max-height: 100%;
             border-radius: 4px;
-            object-fit: contain;
         }
 
         .modal-overlay {
@@ -999,174 +997,6 @@
             font-size: 14px;
             border: 1px solid #fc8181;
         }
-
-        /* Binance 지갑 연동 스타일 */
-        .binance-wallet-settings {
-            background: white;
-            padding: 25px;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            margin-bottom: 25px;
-            border: 2px solid #e2e8f0;
-            border-left: 5px solid #f0b90b;
-        }
-
-        .binance-wallet-settings h3 {
-            color: #2c3e50;
-            margin-bottom: 20px;
-            font-size: 18px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .binance-wallet-settings h3::before {
-            content: "💰";
-            font-size: 20px;
-        }
-
-        .binance-status {
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 14px;
-            display: none;
-        }
-
-        .binance-status.connected {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-            display: block;
-        }
-
-        .binance-status.disconnected {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-            display: block;
-        }
-
-        .binance-status.pending {
-            background: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeaa7;
-            display: block;
-        }
-
-        .binance-api-key {
-            position: relative;
-        }
-
-        .toggle-password {
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            color: #666;
-            cursor: pointer;
-            font-size: 14px;
-        }
-
-        .connect-binance-btn {
-            background: linear-gradient(135deg, #f0b90b, #f0b90b);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-top: 10px;
-            width: 100%;
-            transition: all 0.3s;
-        }
-
-        .connect-binance-btn:hover {
-            background: linear-gradient(135deg, #e0a800, #e0a800);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(240, 185, 11, 0.3);
-        }
-
-        .disconnect-binance-btn {
-            background: linear-gradient(135deg, #e74c3c, #c0392b);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-top: 10px;
-            width: 100%;
-            transition: all 0.3s;
-        }
-
-        .disconnect-binance-btn:hover {
-            background: linear-gradient(135deg, #d62c1a, #a93226);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
-        }
-
-        .binance-balance {
-            margin-top: 15px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-        }
-
-        .balance-item {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-            padding-bottom: 8px;
-            border-bottom: 1px solid #e2e8f0;
-        }
-
-        .balance-item:last-child {
-            margin-bottom: 0;
-            border-bottom: none;
-        }
-
-        .balance-amount {
-            font-weight: bold;
-            color: #2ecc71;
-        }
-
-        /* Binance 지갑 추가 옵션 */
-        .binance-wallet-option {
-            margin-top: 20px;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            border: 1px dashed #ddd;
-        }
-
-        .auto-sync-checkbox {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .sync-interval {
-            margin-top: 10px;
-        }
-
-        .sync-interval label {
-            display: block;
-            margin-bottom: 5px;
-            font-size: 14px;
-            color: #666;
-        }
-
-        .sync-interval select {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
     </style>
 </head>
 <body>
@@ -1230,83 +1060,6 @@
             </div>
             <h1 class="admin-title" id="adminTitle">📊 주문 및 지갑 관리 시스템</h1>
             <p class="admin-subtitle" id="adminSubtitle">한 곳에서 사용자 주문과 지갑 설정을 관리하세요</p>
-        </div>
-
-        <!-- Binance 지갑 연동 설정 -->
-        <div class="binance-wallet-settings">
-            <h3>Binance 지갑 연동 설정</h3>
-            
-            <div class="form-group">
-                <label class="form-label">Binance API Key</label>
-                <div class="binance-api-key">
-                    <input type="password" 
-                           class="form-input" 
-                           id="binanceApiKey" 
-                           placeholder="Binance API Key를 입력하세요">
-                    <button type="button" class="toggle-password" id="toggleBinanceKey">
-                        👁️
-                    </button>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Binance Secret Key</label>
-                <div class="binance-api-key">
-                    <input type="password" 
-                           class="form-input" 
-                           id="binanceSecretKey" 
-                           placeholder="Binance Secret Key를 입력하세요">
-                    <button type="button" class="toggle-password" id="toggleBinanceSecret">
-                        👁️
-                    </button>
-                </div>
-            </div>
-
-            <div class="binance-wallet-option">
-                <div class="auto-sync-checkbox">
-                    <input type="checkbox" id="autoSyncBinance" checked>
-                    <label for="autoSyncBinance">자동으로 Binance 지갑 정보 동기화</label>
-                </div>
-                
-                <div class="sync-interval">
-                    <label>동기화 간격:</label>
-                    <select id="syncInterval">
-                        <option value="30000">30초</option>
-                        <option value="60000" selected>1분</option>
-                        <option value="300000">5분</option>
-                        <option value="600000">10분</option>
-                    </select>
-                </div>
-            </div>
-
-            <button class="connect-binance-btn" id="connectBinance">
-                🔗 Binance 지갑 연결
-            </button>
-
-            <button class="disconnect-binance-btn hidden" id="disconnectBinance">
-                🔒 연결 해제
-            </button>
-
-            <button class="test-telegram-btn" id="checkBinanceBalance">
-                💰 잔액 확인
-            </button>
-
-            <div class="binance-status" id="binanceStatus">
-                <!-- 상태 메시지 표시 -->
-            </div>
-
-            <div class="binance-balance hidden" id="binanceBalance">
-                <h4>Binance 지갑 잔액</h4>
-                <div id="balanceList">
-                    <!-- 잔액 정보 동적 생성 -->
-                </div>
-            </div>
-
-            <small>
-                * Binance API 키와 시크릿 키는 안전하게 저장됩니다.<br>
-                * API 키에는 <strong>읽기 전용 권한</strong>만 부여해주세요.<br>
-                * 자동 동기화를 활성화하면 정해진 간격으로 입금 내역을 확인합니다.
-            </small>
         </div>
 
         <!-- 텔레그램 설정 -->
@@ -1435,7 +1188,6 @@
                             <option value="BEP20">BEP20</option>
                             <option value="Solana">Solana</option>
                             <option value="Polygon">Polygon</option>
-                            <option value="Binance">Binance</option>
                         </select>
                         <button class="add-button" id="addWallet">➕ 새 지갑 추가</button>
                         <button class="refresh-button" id="refreshWallets">🔄 새로고침</button>
@@ -1471,7 +1223,6 @@
                         <li><strong>기본 지갑</strong>은 삭제할 수 없지만 활성 상태는 변경할 수 있습니다.</li>
                         <li>각 지갑에 대한 QR 코드 이미지를 업로드할 수 있습니다.</li>
                         <li>네트워크 유형별로 지갑을 관리할 수 있습니다.</li>
-                        <li><strong>Binance 지갑</strong>을 연동하여 자동 입금 확인이 가능합니다.</li>
                     </ul>
                 </div>
             </div>
@@ -1524,7 +1275,6 @@
                                 <option value="BEP20">BEP20 (BNB 스마트 체인)</option>
                                 <option value="Solana">Solana</option>
                                 <option value="Polygon">Polygon</option>
-                                <option value="Binance">Binance (바이낸스)</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -1549,12 +1299,9 @@
                     <div class="form-group">
                         <label class="form-label" id="labelQRCode">QR 코드 이미지 (선택사항)</label>
                         <input type="file" class="form-input" id="walletQRCode" 
-                               accept="image/png,image/jpeg,image/jpg,image/gif,image/webp">
-                        <div class="qr-preview" id="qrPreview" style="margin-top: 10px; display: none;">
-                            <img id="qrPreviewImage" style="max-width: 150px; max-height: 150px; border: 1px solid #ddd; border-radius: 8px;">
-                        </div>
+                               accept="image/*">
                         <small style="color: #718096; font-size: 12px;" id="qrCodeHelp">
-                            * 지갑 주소에 대한 QR 코드 이미지를 업로드하세요. (권장 크기: 200x200px, 최대 2MB)
+                            * 지갑 주소에 대한 QR 코드 이미지를 업로드하세요. (권장 크기: 200x200px)
                         </small>
                     </div>
 
@@ -1642,427 +1389,6 @@
     </div>
 
     <script>
-        // ==================== Binance 지갑 연동 클래스 ====================
-        class BinanceWalletManager {
-            constructor() {
-                this.API_BASE_URL = 'https://api.binance.com';
-                this.WAPI_BASE_URL = 'https://api.binance.com/wapi/v3';
-                this.SAPI_BASE_URL = 'https://api.binance.com/sapi/v1';
-                this.API_KEY_STORAGE_KEY = 'binance_api_keys';
-                this.BALANCE_STORAGE_KEY = 'binance_balance_cache';
-                this.DEPOSIT_HISTORY_KEY = 'binance_deposit_history';
-                this.isConnected = false;
-                this.apiKey = '';
-                this.secretKey = '';
-                this.autoSyncInterval = null;
-                this.syncInterval = 60000; // 1분 기본
-                this.autoSyncEnabled = false;
-            }
-
-            loadCredentials() {
-                try {
-                    const credentials = JSON.parse(localStorage.getItem(this.API_KEY_STORAGE_KEY) || '{}');
-                    if (credentials.apiKey && credentials.secretKey) {
-                        this.apiKey = credentials.apiKey;
-                        this.secretKey = credentials.secretKey;
-                        this.autoSyncEnabled = credentials.autoSyncEnabled || false;
-                        this.syncInterval = credentials.syncInterval || 60000;
-                        return true;
-                    }
-                } catch (error) {
-                    console.error('Binance 자격증명 로드 오류:', error);
-                }
-                return false;
-            }
-
-            saveCredentials(apiKey, secretKey) {
-                try {
-                    const credentials = {
-                        apiKey: apiKey,
-                        secretKey: secretKey,
-                        autoSyncEnabled: this.autoSyncEnabled,
-                        syncInterval: this.syncInterval,
-                        lastUpdated: new Date().toISOString()
-                    };
-                    localStorage.setItem(this.API_KEY_STORAGE_KEY, JSON.stringify(credentials));
-                    this.apiKey = apiKey;
-                    this.secretKey = secretKey;
-                    return true;
-                } catch (error) {
-                    console.error('Binance 자격증명 저장 오류:', error);
-                    return false;
-                }
-            }
-
-            clearCredentials() {
-                localStorage.removeItem(this.API_KEY_STORAGE_KEY);
-                localStorage.removeItem(this.BALANCE_STORAGE_KEY);
-                localStorage.removeItem(this.DEPOSIT_HISTORY_KEY);
-                this.apiKey = '';
-                this.secretKey = '';
-                this.isConnected = false;
-                this.stopAutoSync();
-            }
-
-            generateSignature(queryString) {
-                return CryptoJS.HmacSHA256(queryString, this.secretKey).toString(CryptoJS.enc.Hex);
-            }
-
-            async testConnection() {
-                if (!this.apiKey || !this.secretKey) {
-                    return { success: false, message: 'API 키가 설정되지 않았습니다' };
-                }
-
-                try {
-                    const timestamp = Date.now();
-                    const queryString = `timestamp=${timestamp}`;
-                    const signature = this.generateSignature(queryString);
-                    
-                    const response = await fetch(`${this.API_BASE_URL}/api/v3/account?${queryString}&signature=${signature}`, {
-                        method: 'GET',
-                        headers: {
-                            'X-MBX-APIKEY': this.apiKey
-                        }
-                    });
-
-                    if (response.status === 200) {
-                        const data = await response.json();
-                        this.isConnected = true;
-                        return { 
-                            success: true, 
-                            message: 'Binance 연결 성공',
-                            data: {
-                                canTrade: data.canTrade,
-                                canWithdraw: data.canWithdraw,
-                                canDeposit: data.canDeposit
-                            }
-                        };
-                    } else {
-                        const error = await response.json();
-                        return { 
-                            success: false, 
-                            message: `연결 실패: ${error.msg || '알 수 없는 오류'}` 
-                        };
-                    }
-                } catch (error) {
-                    console.error('Binance 연결 테스트 오류:', error);
-                    return { 
-                        success: false, 
-                        message: `네트워크 오류: ${error.message}` 
-                    };
-                }
-            }
-
-            async getAccountBalance() {
-                if (!this.isConnected) {
-                    const connection = await this.testConnection();
-                    if (!connection.success) {
-                        return { success: false, message: connection.message };
-                    }
-                }
-
-                try {
-                    const timestamp = Date.now();
-                    const queryString = `timestamp=${timestamp}`;
-                    const signature = this.generateSignature(queryString);
-                    
-                    const response = await fetch(`${this.API_BASE_URL}/api/v3/account?${queryString}&signature=${signature}`, {
-                        method: 'GET',
-                        headers: {
-                            'X-MBX-APIKEY': this.apiKey
-                        }
-                    });
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        const balances = data.balances
-                            .filter(b => parseFloat(b.free) > 0 || parseFloat(b.locked) > 0)
-                            .map(b => ({
-                                asset: b.asset,
-                                free: parseFloat(b.free),
-                                locked: parseFloat(b.locked),
-                                total: parseFloat(b.free) + parseFloat(b.locked)
-                            }))
-                            .sort((a, b) => b.total - a.total);
-
-                        // 캐시 저장
-                        localStorage.setItem(this.BALANCE_STORAGE_KEY, JSON.stringify({
-                            balances: balances,
-                            timestamp: timestamp,
-                            updateTime: new Date().toLocaleString('ko-KR')
-                        }));
-
-                        return { 
-                            success: true, 
-                            balances: balances,
-                            totalAssets: balances.reduce((sum, b) => sum + b.total, 0)
-                        };
-                    } else {
-                        const error = await response.json();
-                        return { success: false, message: error.msg || '잔액 조회 실패' };
-                    }
-                } catch (error) {
-                    console.error('잔액 조회 오류:', error);
-                    return { success: false, message: `네트워크 오류: ${error.message}` };
-                }
-            }
-
-            async getDepositHistory(asset = null, status = null, startTime = null, endTime = null) {
-                try {
-                    let queryString = `timestamp=${Date.now()}`;
-                    if (asset) queryString += `&coin=${asset}`;
-                    if (status) queryString += `&status=${status}`;
-                    if (startTime) queryString += `&startTime=${startTime}`;
-                    if (endTime) queryString += `&endTime=${endTime}`;
-                    
-                    const signature = this.generateSignature(queryString);
-                    
-                    const response = await fetch(`${this.SAPI_BASE_URL}/capital/deposit/hisrec?${queryString}&signature=${signature}`, {
-                        method: 'GET',
-                        headers: {
-                            'X-MBX-APIKEY': this.apiKey
-                        }
-                    });
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        return { success: true, deposits: data };
-                    } else {
-                        const error = await response.json();
-                        return { success: false, message: error.msg || '입금 내역 조회 실패' };
-                    }
-                } catch (error) {
-                    console.error('입금 내역 조회 오류:', error);
-                    return { success: false, message: `네트워크 오류: ${error.message}` };
-                }
-            }
-
-            async checkNewDeposits() {
-                try {
-                    // 마지막 확인 시간 가져오기
-                    const lastCheckTime = localStorage.getItem('last_deposit_check') || Date.now() - 3600000; // 1시간 전
-                    
-                    const result = await this.getDepositHistory(
-                        null, 
-                        1, // 상태 1: 성공
-                        lastCheckTime,
-                        Date.now()
-                    );
-
-                    if (result.success && result.deposits) {
-                        // 새 입금 내역이 있는지 확인
-                        const newDeposits = result.deposits.filter(deposit => 
-                            deposit.insertTime > lastCheckTime
-                        );
-
-                        // 마지막 확인 시간 업데이트
-                        localStorage.setItem('last_deposit_check', Date.now());
-
-                        // 새 입금 내역 저장
-                        if (newDeposits.length > 0) {
-                            const existingDeposits = JSON.parse(localStorage.getItem(this.DEPOSIT_HISTORY_KEY) || '[]');
-                            const updatedDeposits = [...existingDeposits, ...newDeposits];
-                            localStorage.setItem(this.DEPOSIT_HISTORY_KEY, JSON.stringify(updatedDeposits));
-                        }
-
-                        return { 
-                            success: true, 
-                            newDeposits: newDeposits,
-                            count: newDeposits.length
-                        };
-                    }
-
-                    return result;
-                } catch (error) {
-                    console.error('새 입금 확인 오류:', error);
-                    return { success: false, message: error.message };
-                }
-            }
-
-            async matchDepositsWithOrders(orders) {
-                try {
-                    // Binance에서 최근 입금 내역 가져오기
-                    const depositResult = await this.getDepositHistory(null, 1);
-                    
-                    if (!depositResult.success || !depositResult.deposits) {
-                        return { matched: [], unmatched: [] };
-                    }
-
-                    const matchedOrders = [];
-                    const unmatchedDeposits = [];
-                    const unmatchedOrders = orders.filter(order => order.status === '입금대기');
-
-                    // 각 입금 내역에 대해 주문 매칭 시도
-                    for (const deposit of depositResult.deposits) {
-                        let matched = false;
-                        
-                        for (const order of unmatchedOrders) {
-                            // USDT 금액 비교 (소수점 2자리까지)
-                            const orderUSDT = order.usdt.toFixed(2);
-                            const depositAmount = parseFloat(deposit.amount).toFixed(2);
-                            
-                            // 네트워크 확인 (TRC20, ERC20 등)
-                            const orderNetwork = order.wallet?.network || '';
-                            const depositNetwork = deposit.network || '';
-                            
-                            // 시간 범위 확인 (주문 시간 ± 2시간)
-                            const orderTime = new Date(order.time).getTime();
-                            const depositTime = deposit.insertTime;
-                            const timeDiff = Math.abs(depositTime - orderTime);
-                            
-                            if (orderUSDT === depositAmount && 
-                                orderNetwork.toLowerCase().includes(depositNetwork.toLowerCase()) &&
-                                timeDiff <= 7200000) { // 2시간
-                                
-                                matchedOrders.push({
-                                    order: order,
-                                    deposit: deposit,
-                                    matchTime: new Date().toISOString()
-                                });
-                                
-                                matched = true;
-                                break;
-                            }
-                        }
-                        
-                        if (!matched) {
-                            unmatchedDeposits.push(deposit);
-                        }
-                    }
-
-                    return {
-                        matched: matchedOrders,
-                        unmatchedDeposits: unmatchedDeposits,
-                        unmatchedOrders: unmatchedOrders.filter(order => 
-                            !matchedOrders.some(m => m.order.id === order.id)
-                        )
-                    };
-                } catch (error) {
-                    console.error('입금 매칭 오류:', error);
-                    return { matched: [], unmatched: [], error: error.message };
-                }
-            }
-
-            startAutoSync() {
-                this.stopAutoSync(); // 기존 인터벌 정지
-                
-                if (!this.autoSyncEnabled || !this.isConnected) {
-                    return;
-                }
-
-                console.log(`Binance 자동 동기화 시작 (간격: ${this.syncInterval/1000}초)`);
-                
-                this.autoSyncInterval = setInterval(async () => {
-                    try {
-                        // 잔액 업데이트
-                        await this.getAccountBalance();
-                        
-                        // 새 입금 확인
-                        const depositResult = await this.checkNewDeposits();
-                        
-                        if (depositResult.success && depositResult.newDeposits.length > 0) {
-                            console.log(`새 입금 ${depositResult.newDeposits.length}건 발견`);
-                            // 텔레그램 알림이나 UI 업데이트 가능
-                        }
-                    } catch (error) {
-                        console.error('자동 동기화 오류:', error);
-                    }
-                }, this.syncInterval);
-            }
-
-            stopAutoSync() {
-                if (this.autoSyncInterval) {
-                    clearInterval(this.autoSyncInterval);
-                    this.autoSyncInterval = null;
-                    console.log('Binance 자동 동기화 중지');
-                }
-            }
-
-            setSyncInterval(interval) {
-                this.syncInterval = parseInt(interval);
-                
-                // 자격증명 업데이트
-                const credentials = JSON.parse(localStorage.getItem(this.API_KEY_STORAGE_KEY) || '{}');
-                credentials.syncInterval = this.syncInterval;
-                localStorage.setItem(this.API_KEY_STORAGE_KEY, JSON.stringify(credentials));
-                
-                // 자동 동기화 재시작
-                if (this.autoSyncEnabled && this.isConnected) {
-                    this.startAutoSync();
-                }
-            }
-
-            setAutoSync(enabled) {
-                this.autoSyncEnabled = enabled;
-                
-                // 자격증명 업데이트
-                const credentials = JSON.parse(localStorage.getItem(this.API_KEY_STORAGE_KEY) || '{}');
-                credentials.autoSyncEnabled = this.autoSyncEnabled;
-                localStorage.setItem(this.API_KEY_STORAGE_KEY, JSON.stringify(credentials));
-                
-                if (enabled && this.isConnected) {
-                    this.startAutoSync();
-                } else {
-                    this.stopAutoSync();
-                }
-            }
-
-            getCachedBalance() {
-                try {
-                    const cache = JSON.parse(localStorage.getItem(this.BALANCE_STORAGE_KEY) || '{}');
-                    if (cache.balances && cache.timestamp) {
-                        // 5분 이내 캐시만 유효
-                        if (Date.now() - cache.timestamp < 300000) {
-                            return {
-                                success: true,
-                                balances: cache.balances,
-                                timestamp: cache.timestamp,
-                                updateTime: cache.updateTime,
-                                cached: true
-                            };
-                        }
-                    }
-                } catch (error) {
-                    console.error('캐시된 잔액 로드 오류:', error);
-                }
-                return { success: false, cached: false };
-            }
-
-            async verifyDeposit(order, depositTxId) {
-                try {
-                    const result = await this.getDepositHistory();
-                    
-                    if (result.success && result.deposits) {
-                        const matchingDeposit = result.deposits.find(deposit => 
-                            deposit.txId === depositTxId || 
-                            deposit.address === order.wallet?.address
-                        );
-                        
-                        if (matchingDeposit) {
-                            return {
-                                success: true,
-                                verified: true,
-                                deposit: matchingDeposit,
-                                message: '입금 확인 완료'
-                            };
-                        }
-                    }
-                    
-                    return {
-                        success: true,
-                        verified: false,
-                        message: '입금 내역을 찾을 수 없습니다'
-                    };
-                } catch (error) {
-                    console.error('입금 확인 오류:', error);
-                    return {
-                        success: false,
-                        message: `입금 확인 실패: ${error.message}`
-                    };
-                }
-            }
-        }
-
         // ==================== 로그인 관리 클래스 ====================
         class LoginManager {
             constructor() {
@@ -2070,7 +1396,7 @@
                 this.CURRENT_ADMIN_KEY = 'current_admin';
                 this.DEFAULT_ADMIN = {
                     username: 'admin',
-                    password: '1234!@!@',
+                    password: '1234',
                     isDefault: true
                 };
             }
@@ -2861,7 +2187,6 @@
         const dataManager = new DataManager();
         const telegramNotifier = new TelegramMultiNotifier();
         const loginManager = new LoginManager();
-        const binanceManager = new BinanceWalletManager();
         
         let allOrders = [];
         let allWallets = [];
@@ -3136,9 +2461,6 @@
             
             currentLang = 'ko';
             
-            // Binance 설정 초기화
-            initializeBinanceSettings();
-            
             updateTelegramBotsList();
             
             setupEventListeners();
@@ -3157,283 +2479,6 @@
             console.log('관리자 대시보드 초기화 완료');
         }
 
-        // ==================== Binance 설정 초기화 ====================
-        function initializeBinanceSettings() {
-            // Binance 자격증명 로드
-            if (binanceManager.loadCredentials()) {
-                document.getElementById('binanceApiKey').value = binanceManager.apiKey;
-                document.getElementById('binanceSecretKey').value = binanceManager.secretKey;
-                document.getElementById('autoSyncBinance').checked = binanceManager.autoSyncEnabled;
-                document.getElementById('syncInterval').value = binanceManager.syncInterval;
-                
-                // 연결 상태 확인
-                checkBinanceConnection();
-            }
-            
-            // 이벤트 리스너 설정
-            document.getElementById('connectBinance').addEventListener('click', connectBinanceWallet);
-            document.getElementById('disconnectBinance').addEventListener('click', disconnectBinanceWallet);
-            document.getElementById('checkBinanceBalance').addEventListener('click', checkBinanceBalance);
-            document.getElementById('toggleBinanceKey').addEventListener('click', togglePasswordVisibility.bind(null, 'binanceApiKey'));
-            document.getElementById('toggleBinanceSecret').addEventListener('click', togglePasswordVisibility.bind(null, 'binanceSecretKey'));
-            document.getElementById('autoSyncBinance').addEventListener('change', toggleAutoSync);
-            document.getElementById('syncInterval').addEventListener('change', updateSyncInterval);
-        }
-
-        function togglePasswordVisibility(inputId) {
-            const input = document.getElementById(inputId);
-            const button = document.getElementById(`toggle${inputId.charAt(0).toUpperCase() + inputId.slice(1)}`);
-            
-            if (input.type === 'password') {
-                input.type = 'text';
-                button.textContent = '👁️‍🗨️';
-            } else {
-                input.type = 'password';
-                button.textContent = '👁️';
-            }
-        }
-
-        async function connectBinanceWallet() {
-            const apiKey = document.getElementById('binanceApiKey').value.trim();
-            const secretKey = document.getElementById('binanceSecretKey').value.trim();
-            
-            if (!apiKey || !secretKey) {
-                showBinanceStatus('API 키와 시크릿 키를 모두 입력해주세요.', 'error');
-                return;
-            }
-            
-            showBinanceStatus('Binance 연결 중...', 'pending');
-            
-            // 자격증명 저장
-            binanceManager.saveCredentials(apiKey, secretKey);
-            
-            // 연결 테스트
-            const result = await binanceManager.testConnection();
-            
-            if (result.success) {
-                binanceManager.isConnected = true;
-                showBinanceStatus('✅ Binance 연결 성공!', 'connected');
-                
-                // UI 업데이트
-                document.getElementById('connectBinance').classList.add('hidden');
-                document.getElementById('disconnectBinance').classList.remove('hidden');
-                
-                // 자동 동기화 설정 적용
-                const autoSyncEnabled = document.getElementById('autoSyncBinance').checked;
-                binanceManager.setAutoSync(autoSyncEnabled);
-                
-                // 잔액 정보 표시
-                await checkBinanceBalance();
-            } else {
-                showBinanceStatus(`❌ 연결 실패: ${result.message}`, 'error');
-                binanceManager.clearCredentials();
-            }
-        }
-
-        function disconnectBinanceWallet() {
-            if (confirm('Binance 연결을 해제하시겠습니까?')) {
-                binanceManager.clearCredentials();
-                
-                // UI 초기화
-                document.getElementById('binanceApiKey').value = '';
-                document.getElementById('binanceSecretKey').value = '';
-                document.getElementById('connectBinance').classList.remove('hidden');
-                document.getElementById('disconnectBinance').classList.add('hidden');
-                document.getElementById('binanceBalance').classList.add('hidden');
-                
-                showBinanceStatus('Binance 연결이 해제되었습니다.', 'disconnected');
-            }
-        }
-
-        async function checkBinanceBalance() {
-            if (!binanceManager.isConnected) {
-                showBinanceStatus('먼저 Binance에 연결해주세요.', 'error');
-                return;
-            }
-            
-            showBinanceStatus('잔액 확인 중...', 'pending');
-            
-            const result = await binanceManager.getAccountBalance();
-            
-            if (result.success) {
-                updateBinanceBalanceUI(result.balances, result.totalAssets);
-                showBinanceStatus(`✅ 잔액 확인 완료 (총 ${result.totalAssets.toFixed(4)} USDT)`, 'connected');
-            } else {
-                showBinanceStatus(`❌ 잔액 확인 실패: ${result.message}`, 'error');
-            }
-        }
-
-        function updateBinanceBalanceUI(balances, totalAssets) {
-            const balanceElement = document.getElementById('binanceBalance');
-            const balanceList = document.getElementById('balanceList');
-            
-            if (!balances || balances.length === 0) {
-                balanceList.innerHTML = '<div style="color: #666; text-align: center;">잔액 정보가 없습니다.</div>';
-                balanceElement.classList.remove('hidden');
-                return;
-            }
-            
-            let html = '';
-            balances.forEach(balance => {
-                const usdValue = balance.total * 1; // 실제로는 현재 가격 API를 호출해야 함
-                html += `
-                    <div class="balance-item">
-                        <span>${balance.asset}</span>
-                        <span class="balance-amount">${balance.total.toFixed(4)} (≈$${usdValue.toFixed(2)})</span>
-                    </div>
-                `;
-            });
-            
-            html += `
-                <div class="balance-item" style="border-top: 2px solid #ddd; padding-top: 10px; margin-top: 10px;">
-                    <span><strong>총 계정 가치</strong></span>
-                    <span class="balance-amount" style="color: #2ecc71; font-size: 16px;">
-                        ${totalAssets.toFixed(4)} USDT
-                    </span>
-                </div>
-            `;
-            
-            balanceList.innerHTML = html;
-            balanceElement.classList.remove('hidden');
-        }
-
-        function showBinanceStatus(message, type) {
-            const statusElement = document.getElementById('binanceStatus');
-            statusElement.textContent = message;
-            statusElement.className = 'binance-status ' + type;
-            
-            // 5초 후에 상태 메시지 숨기기 (성공/실패 시)
-            if (type !== 'pending') {
-                setTimeout(() => {
-                    statusElement.className = 'binance-status';
-                    statusElement.textContent = '';
-                }, 5000);
-            }
-        }
-
-        function toggleAutoSync() {
-            const enabled = document.getElementById('autoSyncBinance').checked;
-            binanceManager.setAutoSync(enabled);
-            
-            if (enabled && binanceManager.isConnected) {
-                showBinanceStatus('자동 동기화가 활성화되었습니다.', 'connected');
-            } else if (!enabled) {
-                showBinanceStatus('자동 동기화가 비활성화되었습니다.', 'disconnected');
-            }
-        }
-
-        function updateSyncInterval() {
-            const interval = document.getElementById('syncInterval').value;
-            binanceManager.setSyncInterval(interval);
-            
-            showBinanceStatus(`동기화 간격이 ${interval/1000}초로 설정되었습니다.`, 'connected');
-        }
-
-        async function checkBinanceConnection() {
-            if (binanceManager.apiKey && binanceManager.secretKey) {
-                showBinanceStatus('Binance 연결 확인 중...', 'pending');
-                
-                const result = await binanceManager.testConnection();
-                
-                if (result.success) {
-                    binanceManager.isConnected = true;
-                    document.getElementById('connectBinance').classList.add('hidden');
-                    document.getElementById('disconnectBinance').classList.remove('hidden');
-                    
-                    // 캐시된 잔액 표시
-                    const cachedBalance = binanceManager.getCachedBalance();
-                    if (cachedBalance.success) {
-                        updateBinanceBalanceUI(cachedBalance.balances, 
-                            cachedBalance.balances.reduce((sum, b) => sum + b.total, 0));
-                        showBinanceStatus(`✅ 연결됨 (마지막 업데이트: ${cachedBalance.updateTime})`, 'connected');
-                    } else {
-                        showBinanceStatus('✅ Binance 연결됨', 'connected');
-                    }
-                    
-                    // 자동 동기화 시작
-                    if (binanceManager.autoSyncEnabled) {
-                        binanceManager.startAutoSync();
-                    }
-                } else {
-                    showBinanceStatus('❌ 연결 실패: 자격증명을 확인해주세요.', 'error');
-                }
-            }
-        }
-
-        // ==================== 자동 입금 확인 ====================
-        async function checkDepositsAndUpdateOrders() {
-            if (!binanceManager.isConnected) {
-                return;
-            }
-            
-            try {
-                const matchResult = await binanceManager.matchDepositsWithOrders(allOrders);
-                
-                if (matchResult.matched.length > 0) {
-                    console.log(`✅ ${matchResult.matched.length}개의 입금이 주문과 매칭되었습니다.`);
-                    
-                    // 매칭된 주문 상태 업데이트
-                    matchResult.matched.forEach(async (match) => {
-                        const orderIndex = allOrders.findIndex(o => o.id === match.order.id);
-                        if (orderIndex > -1) {
-                            // 주문 상태를 '입금확인'으로 업데이트
-                            allOrders[orderIndex].status = '입금확인';
-                            allOrders[orderIndex].step = 2;
-                            allOrders[orderIndex].updated = new Date().toISOString();
-                            allOrders[orderIndex].binanceDeposit = match.deposit;
-                            
-                            // 텔레그램 알림 전송
-                            await telegramNotifier.sendStatusChangeNotification(
-                                match.order.id, 
-                                '입금대기', 
-                                '입금확인'
-                            );
-                            
-                            console.log(`주문 ${match.order.id} 상태 업데이트: 입금확인`);
-                        }
-                    });
-                    
-                    // 변경사항 저장
-                    dataManager.saveOrders(allOrders);
-                    
-                    // UI 업데이트
-                    updateStats();
-                    updateOrders();
-                    
-                    // 사용자 페이지에 알림
-                    matchResult.matched.forEach(match => {
-                        dataManager.notifyUserPage(match.order.id, '입금확인');
-                    });
-                    
-                    // 알림 표시
-                    if (matchResult.matched.length === 1) {
-                        showNotification(`1개의 입금이 확인되어 주문 상태가 업데이트되었습니다.`);
-                    } else {
-                        showNotification(`${matchResult.matched.length}개의 입금이 확인되어 주문 상태가 업데이트되었습니다.`);
-                    }
-                }
-                
-                // 매칭되지 않은 입금이 있는 경우 알림
-                if (matchResult.unmatchedDeposits.length > 0) {
-                    console.log(`⚠️ ${matchResult.unmatchedDeposits.length}개의 매칭되지 않은 입금이 있습니다.`);
-                    
-                    // 필요시 텔레그램 알림 전송
-                    if (matchResult.unmatchedDeposits.length <= 5) { // 너무 많으면 스팸 방지
-                        const message = 
-                            `<b>⚠️ 매칭되지 않은 입금 발견</b>\n\n` +
-                            `총 ${matchResult.unmatchedDeposits.length}개의 입금이 주문과 매칭되지 않았습니다.\n` +
-                            `마지막 입금: ${matchResult.unmatchedDeposits[0].amount} ${matchResult.unmatchedDeposits[0].coin}\n` +
-                            `시간: ${new Date(matchResult.unmatchedDeposits[0].insertTime).toLocaleString('ko-KR')}`;
-                        
-                        await telegramNotifier.sendToAllBots(message, { notificationType: 'statusChange' });
-                    }
-                }
-                
-            } catch (error) {
-                console.error('입금 확인 오류:', error);
-            }
-        }
-
         function startSyncCheck() {
             if (syncCheckInterval) clearInterval(syncCheckInterval);
             
@@ -3441,65 +2486,11 @@
             
             syncCheckInterval = setInterval(() => {
                 checkDataSync();
-                
-                // Binance 자동 입금 확인 (5분 간격)
-                if (binanceManager.isConnected && binanceManager.autoSyncEnabled) {
-                    checkDepositsAndUpdateOrders();
-                }
             }, 3000);
         }
 
         function showNotification(message) {
             console.log('🔔 알림:', message);
-            
-            // 화면에 알림 표시 (옵션)
-            const notification = document.createElement('div');
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: #3498db;
-                color: white;
-                padding: 15px 20px;
-                border-radius: 10px;
-                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-                z-index: 10000;
-                max-width: 300px;
-                animation: slideIn 0.3s ease;
-            `;
-            
-            notification.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <div style="font-size: 20px;">🔔</div>
-                    <div>${message}</div>
-                </div>
-            `;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.style.animation = 'slideOut 0.3s ease';
-                setTimeout(() => {
-                    document.body.removeChild(notification);
-                }, 300);
-            }, 5000);
-            
-            // CSS 애니메이션 추가
-            if (!document.getElementById('notification-animations')) {
-                const style = document.createElement('style');
-                style.id = 'notification-animations';
-                style.textContent = `
-                    @keyframes slideIn {
-                        from { transform: translateX(100%); opacity: 0; }
-                        to { transform: translateX(0); opacity: 1; }
-                    }
-                    @keyframes slideOut {
-                        from { transform: translateX(0); opacity: 1; }
-                        to { transform: translateX(100%); opacity: 0; }
-                    }
-                `;
-                document.head.appendChild(style);
-            }
         }
 
         // ==================== 이벤트 리스너 ====================
@@ -4166,7 +3157,7 @@
             }
         }
 
-        // ==================== 지갑 테이블 업데이트 (QR 이미지 오류 수정) ====================
+        // ==================== 지갑 테이블 업데이트 ====================
         function updateWallets() {
             const statusFilter = document.getElementById('walletStatusFilter').value;
             const networkFilter = document.getElementById('walletNetworkFilter').value;
@@ -4211,7 +3202,6 @@
                 const defaultBadgeText = currentLang === 'en' ? 'Default' : '기본';
                 const defaultBadge = wallet.isDefault ? `<span class="default-wallet-badge">${defaultBadgeText}</span>` : '';
                 
-                // QR 코드 이미지 표시 (오류 수정 버전)
                 let qrDisplay = '';
                 if (wallet.qrCode && 
                     wallet.qrCode !== 'null' && 
@@ -4220,25 +3210,16 @@
                     typeof wallet.qrCode === 'string' && 
                     wallet.qrCode.startsWith('data:image/')) {
                     
-                    // 이미지 로드 에러 핸들링 추가
                     qrDisplay = `
                         <div class="qr-code-small">
                             <img src="${wallet.qrCode}" 
                                  alt="Wallet QR Code" 
-                                 style="max-width: 70px; max-height: 70px; border-radius: 4px;"
-                                 onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNzAiIGhlaWdodD0iNzAiIHZpZXdCb3g9IjAgMCA3MCA3MCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNzAiIGhlaWdodD0iNzAiIGZpbGw9IiNGNUY1RjUiIHJ4PSI0Ii8+PHBhdGggZD0iTTI0IDIxQzIxLjIzOSAyMSAxOSAyMy4yNCAxOSAyNlY0NEMxOSA0Ni43NjEgMjEuMjM5IDQ5IDI0IDQ5SDQ2QzQ4Ljc2MSA0OSA1MSA0Ni43NjEgNDEgNDRWMjZDNDEgMjMuMjQgMzguNzYxIDIxIDM2IDIxSDI0Wk0yNCAyNkgzNkMzNi41NTMgMjYgMzcgMjYuNDQ4IDM3IDI3VjQzQzM3IDQzLjU1MiAzNi41NTMgNDQgMzYgNDRIMjRDMjMuNDQ3IDQ0IDIzIDQzLjU1MiAyMyA0M1YyN0MyMyAyNi40NDggMjMuNDQ3IDI2IDI0IDI2Wk0zMi41IDM1QzM1LjUzMiAzNSAzOCAzMi41MzIgMzggMjkuNUMzOCAyNi40NjggMzUuNTMyIDI0IDMyLjUgMjRDMjkuNDY4IDI0IDI3IDI2LjQ2OCAyNyAyOS41QzI3IDMyLjUzMiAyOS40NjggMzUgMzIuNSAzNVoiIGZpbGw9IiNDMEMwQzAiLz48L3N2Zz4='; this.style.display='block'; this.parentElement.innerHTML='<div style=\"display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; color: #999; font-size: 11px; text-align: center;\">QR<br>코드</div>'">
+                                 style="max-width: 80px; max-height: 80px;"
+                                 onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\"color:#999;font-size:12px;\">이미지 로드 오류</div>'">
                         </div>
                     `;
                 } else {
-                    // 기본 QR 아이콘 표시
-                    qrDisplay = `
-                        <div class="qr-code-small" style="display: flex; align-items: center; justify-content: center; background: #f5f5f5;">
-                            <div style="color: #999; font-size: 11px; text-align: center;">
-                                <div style="margin-bottom: 3px;">QR</div>
-                                <div style="color: #666;">코드</div>
-                            </div>
-                        </div>
-                    `;
+                    qrDisplay = '<div style="text-align: center; color: #999; font-size: 12px;">없음</div>';
                 }
                 
                 const shortAddress = wallet.address.length > 20 ? 
@@ -4588,7 +3569,7 @@
             selectedOrder = null;
         }
 
-        // ==================== 지갑 관리 (QR 이미지 오류 수정) ====================
+        // ==================== 지갑 관리 ====================
         function openAddWalletModal() {
             const trans = translations[currentLang];
             const title = document.getElementById('walletModalTitle');
@@ -4601,10 +3582,6 @@
             if (walletId) walletId.value = '';
             
             qrCodeFile = null;
-            
-            // QR 미리보기 숨기기
-            const qrPreview = document.getElementById('qrPreview');
-            if (qrPreview) qrPreview.style.display = 'none';
             
             const statusSelect = document.getElementById('walletStatus');
             if (statusSelect) statusSelect.value = 'active';
@@ -4641,16 +3618,6 @@
             const memoInput = document.getElementById('walletMemo');
             if (memoInput) memoInput.value = wallet.memo || '';
             
-            // QR 코드 미리보기
-            if (wallet.qrCode && wallet.qrCode.startsWith('data:image/')) {
-                const qrPreview = document.getElementById('qrPreview');
-                const qrPreviewImage = document.getElementById('qrPreviewImage');
-                if (qrPreview && qrPreviewImage) {
-                    qrPreviewImage.src = wallet.qrCode;
-                    qrPreview.style.display = 'block';
-                }
-            }
-            
             qrCodeFile = null;
             
             const modal = document.getElementById('walletModal');
@@ -4661,50 +3628,24 @@
             const file = event.target.files[0];
             if (!file) return;
             
-            const maxSize = 2 * 1024 * 1024; // 2MB
+            const maxSize = 2 * 1024 * 1024;
             if (file.size > maxSize) {
-                alert('파일 크기는 2MB 이하여야 합니다.');
+                alert(currentLang === 'en' ? 
+                    'File size must be less than 2MB' : 
+                    '파일 크기는 2MB 이하여야 합니다.');
                 event.target.value = '';
                 return;
             }
             
             if (!file.type.startsWith('image/')) {
-                alert('이미지 파일만 업로드할 수 있습니다 (PNG, JPG, JPEG, GIF, WebP)');
+                alert(currentLang === 'en' ? 
+                    'Only image files can be uploaded' : 
+                    '이미지 파일만 업로드할 수 있습니다');
                 event.target.value = '';
                 return;
             }
             
-            // 이미지 미리보기
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const qrPreview = document.getElementById('qrPreview');
-                const qrPreviewImage = document.getElementById('qrPreviewImage');
-                if (qrPreview && qrPreviewImage) {
-                    qrPreviewImage.src = e.target.result;
-                    qrPreview.style.display = 'block';
-                }
-                
-                // 이미지 유효성 검사
-                const img = new Image();
-                img.onload = function() {
-                    console.log('이미지 유효성 검사 통과:', img.width, 'x', img.height);
-                    qrCodeFile = file;
-                };
-                img.onerror = function() {
-                    console.error('이미지 로드 실패');
-                    alert('이미지 파일이 손상되었거나 유효하지 않습니다.');
-                    event.target.value = '';
-                    const qrPreview = document.getElementById('qrPreview');
-                    if (qrPreview) qrPreview.style.display = 'none';
-                };
-                img.src = e.target.result;
-            };
-            reader.onerror = function() {
-                console.error('파일 읽기 오류');
-                alert('파일을 읽을 수 없습니다.');
-                event.target.value = '';
-            };
-            reader.readAsDataURL(file);
+            qrCodeFile = file;
         }
 
         function saveWallet() {
@@ -4720,17 +3661,23 @@
             }
             
             if (!nameInput.value.trim()) {
-                alert('지갑 이름을 입력하세요');
+                alert(currentLang === 'en' ? 
+                    'Please enter wallet name' : 
+                    '지갑 이름을 입력하세요');
                 return;
             }
             
             if (!networkSelect.value) {
-                alert('네트워크를 선택하세요');
+                alert(currentLang === 'en' ? 
+                    'Please select network' : 
+                    '네트워크를 선택하세요');
                 return;
             }
             
             if (!addressInput.value.trim()) {
-                alert('지갑 주소를 입력하세요');
+                alert(currentLang === 'en' ? 
+                    'Please enter wallet address' : 
+                    '지갑 주소를 입력하세요');
                 return;
             }
             
@@ -4743,38 +3690,11 @@
                     const qrCodeData = e.target.result;
                     console.log('QR 코드 데이터 읽기 완료, 길이:', qrCodeData.length);
                     
-                    // 이미지 유효성 검사
                     if (qrCodeData && qrCodeData.startsWith('data:image/')) {
-                        const base64Data = qrCodeData.split(',')[1];
-                        const sizeInBytes = (base64Data.length * 3) / 4;
-                        const sizeInMB = sizeInBytes / (1024 * 1024);
-                        
-                        if (sizeInMB > 2) {
-                            alert('이미지 크기가 2MB를 초과합니다. 더 작은 이미지를 업로드해주세요.');
-                            return;
-                        }
-                        
-                        // 이미지가 유효한지 추가 검사
-                        const img = new Image();
-                        img.onload = function() {
-                            console.log('이미지 로드 성공, 크기:', img.width, 'x', img.height);
-                            
-                            // 이미지 크기 제한 (1000x1000px)
-                            if (img.width > 1000 || img.height > 1000) {
-                                alert('이미지 크기가 너무 큽니다. 1000x1000px 이하의 이미지를 사용해주세요.');
-                                return;
-                            }
-                            
-                            saveWalletData(qrCodeData);
-                        };
-                        img.onerror = function() {
-                            console.error('이미지 로드 실패');
-                            alert('유효하지 않은 이미지 파일입니다. 다른 이미지를 선택해주세요.');
-                        };
-                        img.src = qrCodeData;
+                        saveWalletData(qrCodeData);
                     } else {
-                        console.error('잘못된 이미지 형식:', qrCodeData ? qrCodeData.substring(0, 50) : 'null');
-                        alert('이미지 형식이 올바르지 않습니다. PNG, JPG, JPEG 형식의 이미지를 업로드해주세요.');
+                        console.error('잘못된 이미지 형식');
+                        alert('이미지 형식이 올바르지 않습니다.');
                         return;
                     }
                 };
@@ -4786,8 +3706,7 @@
                 
                 reader.readAsDataURL(qrCodeFile);
             } else {
-                if (isEdit && selectedWallet && selectedWallet.qrCode && 
-                    selectedWallet.qrCode.startsWith('data:image/')) {
+                if (isEdit && selectedWallet && selectedWallet.qrCode) {
                     saveWalletData(selectedWallet.qrCode);
                 } else {
                     saveWalletData(null);
@@ -4839,12 +3758,16 @@
                     
                     closeWalletModal();
                     
-                    const successMessage = isEdit ? '지갑이 성공적으로 수정되었습니다.' : '지갑이 성공적으로 추가되었습니다.';
+                    const successMessage = currentLang === 'en' ?
+                        `Wallet ${isEdit ? 'updated' : 'added'} successfully` :
+                        `지갑이 성공적으로 ${isEdit ? '수정' : '추가'}되었습니다`;
                     alert(successMessage);
                     
                     console.log('✅ 지갑 저장 및 동기화 완료');
                 } else {
-                    alert('지갑 데이터 저장에 실패했습니다.');
+                    alert(currentLang === 'en' ? 
+                        'Failed to save wallet data' : 
+                        '지갑 데이터 저장에 실패했습니다');
                 }
             }
         }
@@ -4854,12 +3777,18 @@
             if (!wallet) return;
             
             if (wallet.isDefault && !activate) {
-                alert('기본 지갑은 비활성화할 수 없습니다');
+                alert(currentLang === 'en' ?
+                    'Default wallet cannot be deactivated' :
+                    '기본 지갑은 비활성화할 수 없습니다');
                 return;
             }
             
-            const action = activate ? '활성화' : '비활성화';
-            const confirmMessage = `이 지갑을 ${action}하시겠습니까?`;
+            const action = activate ? 
+                (currentLang === 'en' ? 'Activate' : '활성화') : 
+                (currentLang === 'en' ? 'Deactivate' : '비활성화');
+            const confirmMessage = currentLang === 'en' ?
+                `${action} this wallet?` :
+                `이 지갑을 ${action}하시겠습니까?`;
             
             if (!confirm(confirmMessage)) {
                 return;
@@ -4880,7 +3809,9 @@
             updateStats();
             updateWallets();
             
-            const successMessage = `지갑이 ${action}되었습니다`;
+            const successMessage = currentLang === 'en' ?
+                `Wallet ${action.toLowerCase()}d` :
+                `지갑이 ${action}되었습니다`;
             alert(successMessage);
         }
 
@@ -4888,7 +3819,9 @@
             const wallet = allWallets.find(w => w.id === walletId);
             if (!wallet) return;
             
-            const confirmMessage = `이 지갑을 기본 지갑으로 설정하시겠습니까?\n\n기본 지갑은 삭제할 수 없으며 항상 활성 상태입니다.`;
+            const confirmMessage = currentLang === 'en' ?
+                `Set this wallet as default?\n\nDefault wallet cannot be deleted and is always active.` :
+                `이 지갑을 기본 지갑으로 설정하시겠습니까?\n\n기본 지갑은 삭제할 수 없으며 항상 활성 상태입니다.`;
             
             if (!confirm(confirmMessage)) {
                 return;
@@ -4910,7 +3843,7 @@
             updateStats();
             updateWallets();
             
-            alert('기본 지갑이 설정되었습니다');
+            alert(currentLang === 'en' ? 'Default wallet set' : '기본 지갑이 설정되었습니다');
         }
 
         function deleteWallet(walletId) {
@@ -4918,7 +3851,9 @@
             if (!wallet) return;
             
             if (wallet.isDefault) {
-                alert('기본 지갑은 삭제할 수 없습니다');
+                alert(currentLang === 'en' ? 
+                    'Default wallet cannot be deleted' : 
+                    '기본 지갑은 삭제할 수 없습니다');
                 return;
             }
             
@@ -4927,11 +3862,15 @@
             );
             
             if (ordersUsingWallet.length > 0) {
-                alert(`이 지갑을 사용하는 ${ordersUsingWallet.length}개의 활성 주문이 있습니다.\n먼저 상태를 변경해주세요.`);
+                alert(currentLang === 'en' ?
+                    `There are ${ordersUsingWallet.length} active orders using this wallet.\nPlease change their status first.` :
+                    `이 지갑을 사용하는 ${ordersUsingWallet.length}개의 활성 주문이 있습니다.\n먼저 상태를 변경해주세요.`);
                 return;
             }
             
-            const confirmMessage = `이 지갑을 삭제하시겠습니까?\n\n삭제 후에는 복구할 수 없습니다.`;
+            const confirmMessage = currentLang === 'en' ?
+                `Delete this wallet?\n\nCannot be recovered after deletion.` :
+                `이 지갑을 삭제하시겠습니까?\n\n삭제 후에는 복구할 수 없습니다.`;
             
             if (!confirm(confirmMessage)) {
                 return;
@@ -4952,7 +3891,7 @@
             updateStats();
             updateWallets();
             
-            alert('지갑이 삭제되었습니다');
+            alert(currentLang === 'en' ? 'Wallet deleted' : '지갑이 삭제되었습니다');
         }
 
         function closeWalletModal() {
@@ -4960,14 +3899,6 @@
             if (modal) modal.classList.add('hidden');
             selectedWallet = null;
             qrCodeFile = null;
-            
-            // QR 미리보기 초기화
-            const qrPreview = document.getElementById('qrPreview');
-            if (qrPreview) {
-                qrPreview.style.display = 'none';
-                const qrPreviewImage = document.getElementById('qrPreviewImage');
-                if (qrPreviewImage) qrPreviewImage.src = '';
-            }
         }
 
         // ==================== 데이터 동기화 ====================
@@ -5115,7 +4046,9 @@
             
             loadAllData();
             
-            alert(`테스트 주문 ${testOrder.id} 생성됨`);
+            alert(currentLang === 'en' ?
+                `Test order ${testOrder.id} created` :
+                `테스트 주문 ${testOrder.id} 생성됨`);
         };
 
         window.clearAllOrders = function() {
@@ -5170,26 +4103,6 @@
 
         // ==================== 텔레그램 테스트 버튼 글로벌 함수 ====================
         window.testAllTelegramBots = testAllTelegramBots;
-
-        // ==================== Binance 테스트 함수 ====================
-        window.testBinanceConnection = async function() {
-            await connectBinanceWallet();
-        };
-
-        window.checkAllDeposits = async function() {
-            if (!binanceManager.isConnected) {
-                alert('먼저 Binance에 연결해주세요.');
-                return;
-            }
-            
-            const result = await checkDepositsAndUpdateOrders();
-            
-            if (result && result.matched && result.matched.length > 0) {
-                alert(`${result.matched.length}개의 입금이 확인되어 주문 상태가 업데이트되었습니다.`);
-            } else {
-                alert('새로운 입금이 없습니다.');
-            }
-        };
 
         console.log('관리자 페이지 스크립트 로드 완료');
     </script>
