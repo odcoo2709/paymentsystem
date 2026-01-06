@@ -1982,15 +1982,12 @@ initializeSentOrders() {
     }
 
     async sendTestNotification(botId = null) {
-        const message = `
-<b>✅ 텔레그램 테스트 알림 (이미지 포함)</b>
-
-관리자 시스템이 정상적으로 작동 중입니다!
-시간: ${new Date().toLocaleString('ko-KR')}
-
-✅ 텍스트 메시지 전송 확인
-📸 이미지 전송 기능 확인
-                `.trim();
+       const message = 
+    '<b>✅ 텔레그램 테스트 알림 (이미지 포함)</b>\n\n' +
+    '관리자 시스템이 정상적으로 작동 중입니다!\n' +
+    '시간: ' + new Date().toLocaleString('ko-KR') + '\n\n' +
+    '✅ 텍스트 메시지 전송 확인\n' +
+    '📸 이미지 전송 기능 확인';
         
         const testImage = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
         
@@ -2046,7 +2043,7 @@ initializeSentOrders() {
         const fee = order.usdt * 0.03;
         const netAmount = order.usdt - fee;
         
-        const message = `
+        const message = 
 <b>🚨 새로운 주문이 접수되었습니다!</b>
 
 📋 <b>주문 ID:</b> ${order.id}
@@ -2064,7 +2061,7 @@ initializeSentOrders() {
 📎 <b>결제 증명서:</b> ${order.proof ? '첨부됨 (아래 이미지 확인)' : '없음'}
 
 ✅ <b>빠른 처리 요망</b>
-                `.trim();
+                
 
         console.log('📨 새 주문 알림 준비:', order.id);
         
