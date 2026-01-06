@@ -287,8 +287,8 @@
             justify-content: space-between;
         }
 
-        .toggle-images-btn {
-            background: #4299e1;
+        .toggle-receipt-btn {
+            background: #9b59b6;
             color: white;
             border: none;
             padding: 6px 12px;
@@ -389,7 +389,7 @@
             color: #4a5568;
         }
 
-        /* 증명서 이미지 스타일 - 기본적으로 숨김 */
+        /* 증명서 이미지 스타일 */
         .proof-image-container {
             display: none;
             text-align: center;
@@ -402,6 +402,27 @@
         }
 
         .proof-image {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 8px;
+            margin-top: 10px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+        }
+
+        /* 영수증 이미지 스타일 */
+        .receipt-image-container {
+            display: none;
+            text-align: center;
+            margin-top: 10px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .receipt-image-container.show {
+            display: block;
+        }
+
+        .receipt-image {
             max-width: 100%;
             max-height: 200px;
             border-radius: 8px;
@@ -452,7 +473,7 @@
             font-size: 14px;
         }
 
-        /* 모달 스타일 */
+        /* 모달 스타일 - 단순화 */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -497,36 +518,6 @@
             font-size: 24px;
             color: #718096;
             cursor: pointer;
-        }
-
-        .step-indicator {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 30px;
-            position: relative;
-        }
-
-        .step-circle {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: #e2e8f0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            color: #718096;
-            z-index: 1;
-        }
-
-        .step-circle.active {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-
-        .step-circle.completed {
-            background: #38a169;
-            color: white;
         }
 
         .qr-container {
@@ -593,6 +584,19 @@
             width: 100%;
         }
 
+        .deposit-complete-button {
+            background: #27ae60;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+            width: 100%;
+        }
+
         .timer {
             background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
             padding: 20px;
@@ -604,12 +608,32 @@
             margin: 20px 0;
         }
 
-        .complete-message {
-            text-align: center;
-            font-size: 24px;
-            color: #38a169;
-            font-weight: bold;
-            margin: 20px 0;
+        .payment-info {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border: 2px solid #e2e8f0;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .info-value {
+            color: #4a5568;
         }
 
         .hidden {
@@ -629,23 +653,6 @@
             border-radius: 50%;
             animation: spin 1s linear infinite;
             margin: 20px auto;
-        }
-
-        .status-update-message {
-            text-align: center;
-            padding: 15px;
-            background: #f0fff4;
-            border-radius: 10px;
-            margin: 15px 0;
-            color: #2d3748;
-            font-size: 14px;
-            border: 1px solid #c6f6d5;
-        }
-
-        .step-description {
-            text-align: center;
-            color: #4a5568;
-            margin-bottom: 20px;
         }
 
         .wallet-selection {
@@ -876,9 +883,6 @@
                 <div class="orders-section">
                     <h3 class="section-title">
                         ⏳ <span id="activeOrdersTitle">진행 중인 주문</span>
-                        <button class="toggle-images-btn" id="toggleActiveImages">
-                            이미지 보기
-                        </button>
                     </h3>
                     <div class="orders-list" id="activeOrdersList">
                         <div class="no-orders" id="noActiveOrders">진행 중인 주문이 없습니다</div>
@@ -888,8 +892,8 @@
                 <div class="completed-orders-section">
                     <h3 class="completed-section-title">
                         <span id="completedOrdersTitle">✅ 완료된 주문</span>
-                        <button class="toggle-images-btn" id="toggleCompletedImages">
-                            이미지 보기
+                        <button class="toggle-receipt-btn" id="toggleReceiptBtn">
+                            영수증 보기
                         </button>
                     </h3>
                     <div class="orders-list" id="completedOrdersList">
@@ -900,7 +904,7 @@
         </div>
     </div>
 
-    <!-- QR 모달 -->
+    <!-- 간단한 결제 모달 -->
     <div class="modal-overlay hidden" id="qrModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -908,82 +912,53 @@
                 <button class="modal-close" id="closeModal">✕</button>
             </div>
 
-            <div class="step-indicator">
-                <div class="step-circle active" id="step1">1</div>
-                <div class="step-circle" id="step2">2</div>
-                <div class="step-circle" id="step3">3</div>
-                <div class="step-circle" id="step4">4</div>
-            </div>
-
-            <div id="step1Content">
-                <div class="wallet-selection" id="walletSelection">
-                    <div class="wallet-selection-title" id="walletSelectionTitle">선택된 지갑:</div>
-                    <div class="selected-wallet" id="selectedWalletInfo">
-                        <div class="wallet-loading">지갑 정보 로딩 중...</div>
-                    </div>
-                </div>
-
-                <div class="qr-container">
-                    <div class="qr-code" id="qrCodeContainer">
-                        <div class="wallet-loading">QR 코드 로딩 중...</div>
-                    </div>
-                    <p class="step-description" id="step1Description">아래 지갑 주소로 USDT를 전송해주세요</p>
-                </div>
-                
-                <div class="wallet-address" id="walletAddress">
-                    지갑 정보 로딩 중...
-                </div>
-                
-                <button class="copy-button" id="copyAddress">
-                    📋 <span id="copyButtonText">주소 복사</span>
-                </button>
-
-                <div class="calculation-preview" style="margin-top: 20px;">
-                    <div class="calc-row">
-                        <span id="modalTotalLabel">총 결제 금액:</span>
-                        <span class="calc-total" id="modalTotal">0.0000 USDT</span>
-                    </div>
-                    <div class="calc-row">
-                        <span id="orderIdLabel">주문 ID:</span>
-                        <span id="orderId">ORD-000000</span>
-                    </div>
-                </div>
-
-                <div class="status-update-message" id="statusMessage1">
-                    ⏳ <span id="statusMessage1Text">USDT 전송 후 관리자 확인 대기 중...</span>
+            <div class="wallet-selection" id="walletSelection">
+                <div class="wallet-selection-title" id="walletSelectionTitle">선택된 지갑:</div>
+                <div class="selected-wallet" id="selectedWalletInfo">
+                    <div class="wallet-loading">지갑 정보 로딩 중...</div>
                 </div>
             </div>
 
-            <div id="step2Content" style="display: none;">
-                <div class="spinner"></div>
-                <p class="step-description" id="step2Description">USDT 입금 확인 중...</p>
-                <div class="status-update-message" id="statusMessage2">
-                    <span id="statusMessage2Text">관리자가 입금을 확인 중입니다. 잠시만 기다려주세요...</span>
+            <div class="qr-container">
+                <div class="qr-code" id="qrCodeContainer">
+                    <div class="wallet-loading">QR 코드 로딩 중...</div>
                 </div>
+                <p class="step-description" id="step1Description">아래 지갑 주소로 USDT를 전송해주세요</p>
             </div>
+            
+            <div class="wallet-address" id="walletAddress">
+                지갑 정보 로딩 중...
+            </div>
+            
+            <button class="copy-button" id="copyAddress">
+                📋 <span id="copyButtonText">주소 복사</span>
+            </button>
 
-            <div id="step3Content" style="display: none;">
-                <div class="spinner" style="border-top-color: #f6ad55;"></div>
-                <p class="step-description" id="step3Description">THB 결제 처리 중...</p>
-                <div class="status-update-message" id="statusMessage3">
-                    <span id="statusMessage3Text">THB 결제가 처리 중입니다...</span>
+            <div class="payment-info">
+                <div class="info-row">
+                    <span class="info-label" id="modalTotalLabel">총 결제 금액:</span>
+                    <span class="info-value" id="modalTotal">0.0000 USDT</span>
                 </div>
-            </div>
-
-            <div id="step4Content" style="display: none;">
-                <div class="complete-message">🎉 <span id="completeMessage">결제 완료!</span></div>
-                <p class="step-description" id="step4Description">결제가 성공적으로 완료되었습니다.</p>
-                <button class="pay-button" id="finishPayment">
-                    <span id="finishButtonText">확인</span>
-                </button>
+                <div class="info-row">
+                    <span class="info-label" id="orderIdLabel">주문 ID:</span>
+                    <span class="info-value" id="orderId">ORD-000000</span>
+                </div>
+                <div class="info-row">
+                    <span class="info-label" id="orderTimeLabel">주문 시간:</span>
+                    <span class="info-value" id="orderTime">로딩 중...</span>
+                </div>
             </div>
 
             <div class="timer" id="timer">
                 ⏰ <span id="timerLabel">남은 시간:</span> <span id="timeLeft">5:00</span>
             </div>
 
+            <button class="deposit-complete-button" id="depositCompleteBtn">
+                ✅ <span id="depositCompleteText">입금 완료</span>
+            </button>
+
             <div class="status-update-message" id="autoUpdateInfo">
-                🔄 <span id="autoUpdateText">관리자 확인 후 자동으로 진행됩니다...</span>
+                🔄 <span id="autoUpdateText">결제 완료 후 진행 중인 주문에서 확인하세요</span>
             </div>
         </div>
     </div>
@@ -1098,21 +1073,18 @@
         let exchangeRate = 0;
         let timeLeft = 300;
         let timerInterval = null;
-        let currentStep = 1;
-        let currentOrderId = '';
-        let statusCheckInterval = null;
         let uploadedFile = null;
         let activeWallet = null;
         let allWallets = [];
         let allOrders = [];
         let currentLang = 'ko';
         let syncCheckInterval = null;
+        let currentOrderId = '';
         
-        // 이미지 표시 상태
-        let showActiveImages = false;
-        let showCompletedImages = false;
+        // 영수증 표시 상태
+        let showReceipts = false;
 
-        // 번역 데이터 - "결제 할 상점 QR" 텍스트 추가
+        // 번역 데이터
         const translations = {
             en: {
                 title: "USDT/THB Payment",
@@ -1138,16 +1110,10 @@
                 copyButtonText: "Copy Address",
                 modalTotalLabel: "Total Payment:",
                 orderIdLabel: "Order ID:",
-                statusMessage1Text: "Waiting for admin confirmation after USDT transfer...",
-                step2Description: "Verifying USDT deposit...",
-                statusMessage2Text: "Admin is confirming the deposit. Please wait...",
-                step3Description: "Processing THB payment...",
-                statusMessage3Text: "THB payment is being processed...",
-                completeMessage: "Payment Completed!",
-                step4Description: "Payment has been successfully completed.",
-                finishButtonText: "Confirm",
+                orderTimeLabel: "Order Time:",
+                depositCompleteText: "Deposit Complete",
                 timerLabel: "Time left:",
-                autoUpdateText: "Will proceed automatically after admin confirmation...",
+                autoUpdateText: "Check in Active Orders after payment completion",
                 waitingDeposit: "Waiting Deposit",
                 depositConfirmed: "Deposit Confirmed",
                 processing: "Processing",
@@ -1160,10 +1126,12 @@
                 amountMaxAlert: "Maximum payment amount is 500,000 THB",
                 languageBtnText: "한국어",
                 syncText: "Syncing...",
-                showImages: "Show Images",
-                hideImages: "Hide Images",
+                showReceipts: "Show Receipts",
+                hideReceipts: "Hide Receipts",
                 proof: "Proof:",
-                attached: "Attached"
+                attached: "Attached",
+                receipt: "Receipt:",
+                viewReceipt: "View Receipt"
             },
             ko: {
                 title: "USDT → THB 결제",
@@ -1189,14 +1157,10 @@
                 copyButtonText: "주소 복사",
                 modalTotalLabel: "총 결제 금액:",
                 orderIdLabel: "주문 ID:",
-                statusMessage1Text: "USDT 전송 후 관리자 확인 대기 중...",
-                step2Description: "USDT 입금 확인 중...",
-                statusMessage3Text: "THB 결제가 처리 중입니다...",
-                completeMessage: "결제 완료!",
-                step4Description: "결제가 성공적으로 완료되었습니다.",
-                finishButtonText: "확인",
+                orderTimeLabel: "주문 시간:",
+                depositCompleteText: "입금 완료",
                 timerLabel: "남은 시간:",
-                autoUpdateText: "관리자 확인 후 자동으로 진행됩니다...",
+                autoUpdateText: "결제 완료 후 진행 중인 주문에서 확인하세요",
                 waitingDeposit: "입금대기",
                 depositConfirmed: "입금확인",
                 processing: "처리중",
@@ -1209,10 +1173,12 @@
                 amountMaxAlert: "최대 결제 금액은 500,000 THB 입니다",
                 languageBtnText: "English",
                 syncText: "동기화 중...",
-                showImages: "이미지 보기",
-                hideImages: "이미지 숨기기",
+                showReceipts: "영수증 보기",
+                hideReceipts: "영수증 숨기기",
                 proof: "증명서:",
-                attached: "첨부됨"
+                attached: "첨부됨",
+                receipt: "영수증:",
+                viewReceipt: "영수증 보기"
             }
         };
 
@@ -1220,7 +1186,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('사용자 페이지 로드됨');
             
-            // ⭐⭐⭐ 페이지 로드 시 결제 폼 초기화
+            // 페이지 로드 시 결제 폼 초기화
             resetPaymentForm();
             
             currentLang = 'ko';
@@ -1238,9 +1204,9 @@
             
             startSyncCheck();
             
-            // ⭐⭐⭐ 모달 오버레이 클릭 이벤트 추가
+            // 모달 오버레이 클릭 이벤트 추가
             document.getElementById('qrModal').addEventListener('click', function(e) {
-                if (e.target === this) { // 모달 배경(오버레이) 클릭 시
+                if (e.target === this) {
                     if (confirm(currentLang === 'en' ? 
                         'Cancel payment?\n\nCurrent payment will be cancelled and form will be reset.' : 
                         '결제를 취소하시겠습니까?\n\n현재 결제가 취소되고 폼이 초기화됩니다.')) {
@@ -1249,7 +1215,7 @@
                 }
             });
             
-            // ⭐⭐⭐ ESC 키로 모달 닫을 때도 처리
+            // ESC 키로 모달 닫을 때도 처리
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape' && !document.getElementById('qrModal').classList.contains('hidden')) {
                     if (confirm(currentLang === 'en' ? 
@@ -1324,7 +1290,7 @@
             document.getElementById('noCompletedOrders').textContent = trans.noCompletedOrders;
             document.getElementById('syncText').textContent = trans.syncText;
             
-            // 업로드 버튼 텍스트 업데이트 (한영 전환)
+            // 업로드 버튼 텍스트 업데이트
             const uploadButtonText = document.getElementById('uploadButtonText');
             if (uploadButtonText) {
                 if (!uploadedFile) {
@@ -1336,14 +1302,10 @@
                 }
             }
             
-            // 이미지 토글 버튼 텍스트 업데이트
-            const toggleActiveBtn = document.getElementById('toggleActiveImages');
-            const toggleCompletedBtn = document.getElementById('toggleCompletedImages');
-            if (toggleActiveBtn) {
-                toggleActiveBtn.textContent = showActiveImages ? trans.hideImages : trans.showImages;
-            }
-            if (toggleCompletedBtn) {
-                toggleCompletedBtn.textContent = showCompletedImages ? trans.hideImages : trans.showImages;
+            // 영수증 토글 버튼 텍스트 업데이트
+            const toggleReceiptBtn = document.getElementById('toggleReceiptBtn');
+            if (toggleReceiptBtn) {
+                toggleReceiptBtn.textContent = showReceipts ? trans.hideReceipts : trans.showReceipts;
             }
             
             const now = new Date();
@@ -1524,7 +1486,7 @@
             });
             
             document.getElementById('payButton').addEventListener('click', function() {
-                // ⭐⭐⭐ 이미 진행 중인 결제가 있는지 확인
+                // 이미 진행 중인 결제가 있는지 확인
                 const modal = document.getElementById('qrModal');
                 if (!modal.classList.contains('hidden')) {
                     if (confirm(currentLang === 'en' ? 
@@ -1549,7 +1511,23 @@
             
             document.getElementById('copyAddress').addEventListener('click', copyWalletAddress);
             
-            document.getElementById('finishPayment').addEventListener('click', finishPayment);
+            document.getElementById('depositCompleteBtn').addEventListener('click', function() {
+                const trans = translations[currentLang];
+                const confirmMsg = currentLang === 'en' ? 
+                    'I have completed the USDT transfer.\n\nThe administrator will confirm the deposit.' :
+                    'USDT 전송을 완료했습니다.\n\n관리자가 입금을 확인할 것입니다.';
+                
+                if (confirm(confirmMsg)) {
+                    closePaymentModal();
+                }
+            });
+            
+            // 영수증 토글 버튼 이벤트
+            document.getElementById('toggleReceiptBtn').addEventListener('click', function() {
+                showReceipts = !showReceipts;
+                updateReceiptButtonText();
+                updateOrdersList();
+            });
             
             const uploadButton = document.querySelector('.upload-button');
             uploadButton.addEventListener('dragover', function(e) {
@@ -1572,22 +1550,9 @@
                     fileInput.files = e.dataTransfer.files;
                 }
             });
-            
-            // 이미지 토글 버튼 이벤트
-            document.getElementById('toggleActiveImages').addEventListener('click', function() {
-                showActiveImages = !showActiveImages;
-                updateToggleButtonText();
-                updateOrdersList();
-            });
-            
-            document.getElementById('toggleCompletedImages').addEventListener('click', function() {
-                showCompletedImages = !showCompletedImages;
-                updateToggleButtonText();
-                updateOrdersList();
-            });
         }
 
-        // ⭐⭐⭐ 새로 추가할 함수: 결제 폼 초기화
+        // 결제 폼 초기화
         function resetPaymentForm() {
             // 금액 입력 초기화
             document.getElementById('thbAmount').value = '';
@@ -1623,16 +1588,12 @@
             console.log('결제 폼이 초기화되었습니다.');
         }
 
-        function updateToggleButtonText() {
+        function updateReceiptButtonText() {
             const trans = translations[currentLang];
-            const toggleActiveBtn = document.getElementById('toggleActiveImages');
-            const toggleCompletedBtn = document.getElementById('toggleCompletedImages');
+            const toggleReceiptBtn = document.getElementById('toggleReceiptBtn');
             
-            if (toggleActiveBtn) {
-                toggleActiveBtn.textContent = showActiveImages ? trans.hideImages : trans.showImages;
-            }
-            if (toggleCompletedBtn) {
-                toggleCompletedBtn.textContent = showCompletedImages ? trans.hideImages : trans.showImages;
+            if (toggleReceiptBtn) {
+                toggleReceiptBtn.textContent = showReceipts ? trans.hideReceipts : trans.showReceipts;
             }
         }
 
@@ -1743,6 +1704,9 @@
             
             document.getElementById('modalTotal').textContent = total.toFixed(4) + ' USDT';
             
+            const now = new Date();
+            document.getElementById('orderTime').textContent = now.toLocaleString('ko-KR');
+            
             const reader = new FileReader();
             reader.onload = function(e) {
                 const proofData = {
@@ -1758,7 +1722,7 @@
                     usdt: total,
                     status: '입금대기',
                     step: 1,
-                    time: new Date().toISOString(),
+                    time: now.toISOString(),
                     wallet: activeWallet ? {
                         id: activeWallet.id,
                         name: activeWallet.name,
@@ -1777,8 +1741,6 @@
                 updateQRCodeDisplay();
                 
                 startTimer();
-                
-                startStatusChecking();
             };
             
             reader.onerror = function(e) {
@@ -1843,22 +1805,9 @@
             } else {
                 let html = '';
                 activeOrders.forEach(order => {
-                    html += createOrderCard(order, showActiveImages);
+                    html += createOrderCard(order, false); // 진행중인 주문은 증명서만 표시
                 });
                 activeOrdersList.innerHTML = html;
-                
-                // 주문 카드 클릭 이벤트 추가
-                activeOrdersList.querySelectorAll('.order-card').forEach((card, index) => {
-                    card.addEventListener('click', function() {
-                        const order = activeOrders[index];
-                        if (order.proof && order.proof.data) {
-                            const imageContainer = this.querySelector('.proof-image-container');
-                            if (imageContainer) {
-                                imageContainer.classList.toggle('show');
-                            }
-                        }
-                    });
-                });
             }
             
             if (completedOrders.length === 0) {
@@ -1870,26 +1819,16 @@
             } else {
                 let html = '';
                 completedOrders.forEach(order => {
-                    html += createOrderCard(order, showCompletedImages);
+                    html += createOrderCard(order, showReceipts); // 완료된 주문은 영수증 표시
                 });
                 completedOrdersList.innerHTML = html;
-                
-                // 주문 카드 클릭 이벤트 추가
-                completedOrdersList.querySelectorAll('.order-card').forEach((card, index) => {
-                    card.addEventListener('click', function() {
-                        const order = completedOrders[index];
-                        if (order.proof && order.proof.data) {
-                            const imageContainer = this.querySelector('.proof-image-container');
-                            if (imageContainer) {
-                                imageContainer.classList.toggle('show');
-                            }
-                        }
-                    });
-                });
             }
+            
+            // 클릭 이벤트 추가
+            addOrderCardClickEvents();
         }
 
-        function createOrderCard(order, showImages = false) {
+        function createOrderCard(order, showReceipt = false) {
             const trans = translations[currentLang];
             
             const statusClass = {
@@ -1910,7 +1849,7 @@
             
             const time = new Date(order.time).toLocaleString('ko-KR');
             
-            // 증명서 이미지 HTML - 클릭 시 표시됨
+            // 증명서 이미지 HTML
             let proofHtml = '';
             if (order.proof && order.proof.data) {
                 const proofLabel = trans.proof;
@@ -1922,15 +1861,27 @@
                             <span>${proofLabel}</span>
                             <span>${attachedText} (클릭하여 표시)</span>
                         </div>
-                        <div class="proof-image-container ${showImages ? 'show' : ''}">
+                        <div class="proof-image-container">
                             <img src="${order.proof.data}" alt="Payment proof" class="proof-image">
                         </div>
                     `;
-                } else {
-                    proofHtml = `
+                }
+            }
+            
+            // 영수증 이미지 HTML (완료된 주문만)
+            let receiptHtml = '';
+            if (order.receipt && order.receipt.data && order.status === '완료') {
+                const receiptLabel = trans.receipt;
+                const viewReceiptText = trans.viewReceipt;
+                
+                if (order.receipt.type && order.receipt.type.startsWith('image/')) {
+                    receiptHtml = `
                         <div class="breakdown-item">
-                            <span>${proofLabel}</span>
-                            <span>${order.proof.name}</span>
+                            <span>${receiptLabel}</span>
+                            <span>${viewReceiptText} (클릭하여 표시)</span>
+                        </div>
+                        <div class="receipt-image-container ${showReceipt ? 'show' : ''}">
+                            <img src="${order.receipt.data}" alt="Payment receipt" class="receipt-image">
                         </div>
                     `;
                 }
@@ -1941,7 +1892,7 @@
             const walletLabel = currentLang === 'en' ? 'Deposit Wallet:' : '입금 지갑:';
             
             return `
-                <div class="order-card ${statusClass}">
+                <div class="order-card ${statusClass}" data-order-id="${order.id}">
                     <div class="order-header">
                         <div>
                             <div class="order-id">${order.id}</div>
@@ -1967,10 +1918,35 @@
                             </div>
                             ` : ''}
                             ${proofHtml}
+                            ${receiptHtml}
                         </div>
                     </div>
                 </div>
             `;
+        }
+
+        function addOrderCardClickEvents() {
+            // 진행중인 주문의 증명서 클릭 이벤트
+            document.querySelectorAll('#activeOrdersList .order-card').forEach(card => {
+                card.addEventListener('click', function(e) {
+                    // 증명서 이미지 표시/숨기기 토글
+                    const proofImageContainer = this.querySelector('.proof-image-container');
+                    if (proofImageContainer) {
+                        proofImageContainer.classList.toggle('show');
+                    }
+                });
+            });
+            
+            // 완료된 주문의 영수증 클릭 이벤트
+            document.querySelectorAll('#completedOrdersList .order-card').forEach(card => {
+                card.addEventListener('click', function(e) {
+                    // 영수증 이미지 표시/숨기기 토글
+                    const receiptImageContainer = this.querySelector('.receipt-image-container');
+                    if (receiptImageContainer) {
+                        receiptImageContainer.classList.toggle('show');
+                    }
+                });
+            });
         }
 
         // ==================== 모달 관련 함수 ====================
@@ -1983,14 +1959,8 @@
             document.getElementById('copyButtonText').textContent = trans.copyButtonText;
             document.getElementById('modalTotalLabel').textContent = trans.modalTotalLabel;
             document.getElementById('orderIdLabel').textContent = trans.orderIdLabel;
-            document.getElementById('statusMessage1Text').textContent = trans.statusMessage1Text;
-            document.getElementById('step2Description').textContent = trans.step2Description;
-            document.getElementById('statusMessage2Text').textContent = trans.statusMessage2Text;
-            document.getElementById('step3Description').textContent = trans.step3Description;
-            document.getElementById('statusMessage3Text').textContent = trans.statusMessage3Text;
-            document.getElementById('completeMessage').textContent = trans.completeMessage;
-            document.getElementById('step4Description').textContent = trans.step4Description;
-            document.getElementById('finishButtonText').textContent = trans.finishButtonText;
+            document.getElementById('orderTimeLabel').textContent = trans.orderTimeLabel;
+            document.getElementById('depositCompleteText').textContent = trans.depositCompleteText;
             document.getElementById('timerLabel').textContent = trans.timerLabel;
             document.getElementById('autoUpdateText').textContent = trans.autoUpdateText;
         }
@@ -2044,7 +2014,7 @@
                 typeof activeWallet.qrCode === 'string' && 
                 activeWallet.qrCode.startsWith('data:image/')) {
                 
-                console.log('QR 코드 표시 시도:', activeWallet.id, '타입:', activeWallet.qrCode.substring(0, 50) + '...');
+                console.log('QR 코드 표시 시도:', activeWallet.id);
                 
                 const img = document.createElement('img');
                 img.src = activeWallet.qrCode;
@@ -2128,169 +2098,45 @@
 
         // ==================== 결제 취소/완료 ====================
         function cancelPayment() {
-            if (statusCheckInterval) {
-                clearInterval(statusCheckInterval);
-                statusCheckInterval = null;
-            }
-            
             if (timerInterval) {
                 clearInterval(timerInterval);
                 timerInterval = null;
             }
             
             if (currentOrderId) {
-                updateOrderStatus('취소', 1);
+                updateOrderStatus('취소');
                 currentOrderId = '';
             }
             
             document.getElementById('qrModal').classList.add('hidden');
-            resetSteps();
             
-            // ⭐⭐⭐ 폼 초기화 추가
             resetPaymentForm();
             
             alert(currentLang === 'en' ? 'Payment cancelled' : '결제가 취소되었습니다');
         }
 
-        function finishPayment() {
-            if (statusCheckInterval) {
-                clearInterval(statusCheckInterval);
-                statusCheckInterval = null;
-            }
-            
+        function closePaymentModal() {
             if (timerInterval) {
                 clearInterval(timerInterval);
                 timerInterval = null;
             }
             
             document.getElementById('qrModal').classList.add('hidden');
-            resetSteps();
             
-            currentOrderId = '';
-            
-            // ⭐⭐⭐ 폼 초기화 추가
             resetPaymentForm();
             
-            alert(currentLang === 'en' ? 'Payment completed!' : '결제가 완료되었습니다!');
+            alert(currentLang === 'en' ? 
+                'Thank you for your payment. Please check the status in Active Orders.' : 
+                '결제해 주셔서 감사합니다. 진행 중인 주문에서 상태를 확인하세요.');
         }
 
-        function resetSteps() {
-            currentStep = 1;
-            document.getElementById('step1').classList.add('active');
-            document.getElementById('step1').classList.remove('completed');
-            document.getElementById('step2').classList.remove('active', 'completed');
-            document.getElementById('step3').classList.remove('active', 'completed');
-            document.getElementById('step4').classList.remove('active', 'completed');
-            
-            document.getElementById('step1Content').style.display = 'block';
-            document.getElementById('step2Content').style.display = 'none';
-            document.getElementById('step3Content').style.display = 'none';
-            document.getElementById('step4Content').style.display = 'none';
-        }
-
-        // ==================== 상태 체크 및 업데이트 ====================
-        function startStatusChecking() {
-            if (statusCheckInterval) clearInterval(statusCheckInterval);
-            
-            statusCheckInterval = setInterval(() => {
-                checkOrderStatus();
-            }, 3000);
-        }
-
-        function checkOrderStatus() {
-            const currentOrder = allOrders.find(order => order.id === currentOrderId);
-            
-            if (!currentOrder) return;
-            
-            switch(currentOrder.status) {
-                case '입금확인':
-                    if (currentStep < 2) goToStep(2);
-                    break;
-                case '처리중':
-                    if (currentStep < 3) goToStep(3);
-                    break;
-                case '완료':
-                    if (currentStep < 4) {
-                        goToStep(4);
-                        clearInterval(statusCheckInterval);
-                    }
-                    break;
-                case '취소':
-                    cancelPayment();
-                    clearInterval(statusCheckInterval);
-                    break;
-            }
-        }
-
-        function goToStep(step) {
-            console.log('🔧 goToStep 실행:', currentStep, '->', step);
-            
-            if (currentStep >= 1 && currentStep <= 4) {
-                const currentStepElement = document.getElementById(`step${currentStep}`);
-                const currentContentElement = document.getElementById(`step${currentStep}Content`);
-                
-                if (currentStepElement) {
-                    currentStepElement.classList.remove('active');
-                    currentStepElement.classList.add('completed');
-                    console.log(`단계 ${currentStep} 비활성화`);
-                }
-                
-                if (currentContentElement) {
-                    currentContentElement.style.display = 'none';
-                }
-            }
-            
-            currentStep = step;
-            
-            const newStepElement = document.getElementById(`step${currentStep}`);
-            const newContentElement = document.getElementById(`step${currentStep}Content`);
-            
-            if (newStepElement) {
-                newStepElement.classList.add('active');
-                newStepElement.classList.remove('completed');
-                console.log(`단계 ${currentStep} 활성화`);
-            } else {
-                console.error(`❌ 단계 ${currentStep} 요소 찾을 수 없음!`);
-            }
-            
-            if (newContentElement) {
-                newContentElement.style.display = 'block';
-            } else {
-                console.error(`❌ 단계 ${currentStep} 콘텐츠 찾을 수 없음!`);
-            }
-            
-            let status = '';
-            switch(step) {
-                case 1: status = '입금대기'; break;
-                case 2: status = '입금확인'; break;
-                case 3: status = '처리중'; break;
-                case 4: status = '완료'; break;
-            }
-            
-            if (status) {
-                console.log('상태 업데이트:', status);
-                updateOrderStatus(status, step);
-                
-                if (step === 4) {
-                    if (timerInterval) {
-                        clearInterval(timerInterval);
-                        timerInterval = null;
-                        console.log('⏹️ 타이머 정지됨');
-                    }
-                }
-            }
-            
-            console.log('✅ goToStep 완료');
-        }
-
-        function updateOrderStatus(status, step = currentStep) {
+        function updateOrderStatus(status) {
             const orderIndex = allOrders.findIndex(o => o.id === currentOrderId);
             if (orderIndex === -1) return;
             
             allOrders[orderIndex] = {
                 ...allOrders[orderIndex],
                 status: status,
-                step: step,
                 updated: new Date().toISOString()
             };
             
@@ -2314,26 +2160,9 @@
                     
                     if (currentOrderId) {
                         const currentOrder = allOrders.find(o => o.id === currentOrderId);
-                        if (currentOrder && currentOrder.status) {
-                            const status = currentOrder.status;
-                            const step = currentOrder.step || 1;
-                            
-                            const modal = document.getElementById('qrModal');
-                            if (!modal.classList.contains('hidden')) {
-                                console.log('✅ 모달 열려있음, 단계 체크');
-                                
-                                if (currentStep !== step) {
-                                    console.log('🚀 단계 변경 실행:', currentStep, '->', step);
-                                    goToStep(step);
-                                }
-                                
-                                if (timeLeft <= 0) {
-                                    startTimer();
-                                }
-                                
-                                document.getElementById('modalTotal').textContent = 
-                                    currentOrder.usdt.toFixed(4) + ' USDT';
-                            }
+                        if (currentOrder) {
+                            document.getElementById('modalTotal').textContent = 
+                                currentOrder.usdt.toFixed(4) + ' USDT';
                         }
                     }
                 }
@@ -2357,32 +2186,12 @@
             }
         }
 
-        function checkCurrentOrderStatus() {
-            if (!currentOrderId) {
-                return;
-            }
-            
-            const currentOrder = allOrders.find(o => o.id === currentOrderId);
-            if (!currentOrder) return;
-            
-            const modal = document.getElementById('qrModal');
-            if (modal.classList.contains('hidden')) return;
-            
-            const step = currentOrder.step || 1;
-            
-            if (currentStep !== step) {
-                console.log('🎯 단계 변경 필요!', currentStep, '->', step);
-                goToStep(step);
-            }
-        }
-
         function startSyncCheck() {
             if (syncCheckInterval) clearInterval(syncCheckInterval);
             
             console.log('🔄 동기화 체크 시작 (1초 간격)');
             syncCheckInterval = setInterval(() => {
                 checkDataSync();
-                checkCurrentOrderStatus();
             }, 1000);
         }
 
@@ -2397,41 +2206,37 @@
         }
 
         // ==================== 관리자 페이지 통신 함수 ====================
-        window.updateOrderStatusFromAdmin = function(orderId, newStatus) {
-            console.log('관리자로부터 상태 업데이트:', orderId, newStatus);
+        window.updateOrderStatusFromAdmin = function(orderId, newStatus, receipt = null) {
+            console.log('관리자로부터 상태 업데이트:', orderId, newStatus, receipt);
             
             const orderIndex = allOrders.findIndex(o => o.id === orderId);
             if (orderIndex === -1) return;
             
-            const step = getStepFromStatus(newStatus);
             allOrders[orderIndex] = {
                 ...allOrders[orderIndex],
                 status: newStatus,
-                step: step,
                 updated: new Date().toISOString()
             };
             
+            // 영수증 추가
+            if (receipt && newStatus === '완료') {
+                allOrders[orderIndex].receipt = receipt;
+            }
+            
             dataManager.saveOrders(allOrders);
             
-            // ⭐⭐⭐ 관리자가 취소 처리했을 때 모달 닫기 및 폼 초기화
+            // 관리자가 취소 처리했을 때
             if (newStatus === '취소' && currentOrderId === orderId) {
-                // 모달이 열려있다면 닫기
                 const modal = document.getElementById('qrModal');
                 if (!modal.classList.contains('hidden')) {
                     modal.classList.add('hidden');
-                    resetSteps();
-                    resetPaymentForm(); // 폼 초기화
+                    resetPaymentForm();
                     currentOrderId = '';
                     
-                    // 알림 메시지
                     alert(currentLang === 'en' ? 
                         'Payment has been cancelled by administrator.' : 
                         '관리자에 의해 결제가 취소되었습니다.');
                 }
-            }
-            
-            if (currentOrderId === orderId && currentStep !== step) {
-                goToStep(step);
             }
             
             updateOrdersList();
@@ -2451,17 +2256,6 @@
                 updateQRCodeDisplay();
             }
         };
-
-        function getStepFromStatus(status) {
-            switch(status) {
-                case '입금대기': return 1;
-                case '입금확인': return 2;
-                case '처리중': return 3;
-                case '완료': return 4;
-                case '취소': return 1;
-                default: return 1;
-            }
-        }
 
         // ==================== 테스트 함수 ====================
         window.createTestOrder = function() {
@@ -2490,23 +2284,6 @@
             updateOrdersList();
             
             alert(`테스트 주문 ${testOrder.id} 생성됨`);
-        };
-        
-        // ==================== QR 코드 이미지 에러 처리 ====================
-        window.handleQRCodeError = function(imgElement) {
-            console.log('QR 코드 이미지 로드 실패');
-            imgElement.style.display = 'none';
-            
-            const container = imgElement.parentElement;
-            if (container) {
-                const errorDiv = document.createElement('div');
-                errorDiv.style.color = '#999';
-                errorDiv.style.fontSize = '12px';
-                errorDiv.style.textAlign = 'center';
-                errorDiv.style.padding = '20px';
-                errorDiv.textContent = 'QR 코드 로드 실패';
-                container.appendChild(errorDiv);
-            }
         };
         
         console.log('유저 페이지 스크립트 로드 완료');
