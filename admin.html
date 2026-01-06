@@ -1396,10 +1396,21 @@ class LoginManager {
         this.CURRENT_ADMIN_KEY = 'current_admin';
         this.DEFAULT_ADMIN = {
             username: 'admin',
-            password: '1234!@#$',  // ← 이렇게 변경
+            password: '1234!@#$',
             isDefault: true
-        };
+        }; // ✅ 여기 세미콜론 추가
+    } // ✅ constructor 닫기
+
+    // debugLoginState 메서드는 여기에 위치해야 합니다
+    debugLoginState() {
+        console.log('=== 로그인 상태 디버깅 ===');
+        console.log('Session Storage current_admin:', sessionStorage.getItem('current_admin'));
+        console.log('Local Storage admin_credentials:', localStorage.getItem('admin_credentials'));
+        console.log('isLoggedIn():', this.isLoggedIn());
+        console.log('getCurrentAdmin():', this.getCurrentAdmin());
+        console.log('========================');
     }
+
 
             saveAdminCredentials(credentials) {
                 try {
@@ -2347,15 +2358,12 @@ initializeSentOrders() {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('관리자 페이지 로드됨');
     
-    // 로그인 관리자 생성
-    const loginManager = new LoginManager();
+    // 디버깅 정보 출력
+    loginManager.debugLoginState();
     
-    // 현재 로그인 상태 확인
+    // 이미 전역 변수로 선언된 loginManager 사용
     const isLoggedIn = loginManager.isLoggedIn();
     console.log('로그인 상태:', isLoggedIn);
-    
-    // 세션스토리지 확인
-    console.log('sessionStorage current_admin:', sessionStorage.getItem('current_admin'));
     
     if (!isLoggedIn) {
         console.log('로그인 필요 - 로그인 화면 표시');
@@ -2397,7 +2405,6 @@ document.addEventListener('DOMContentLoaded', function() {
         initializeAdminDashboard();
     }
 });
-
         // 로그인 화면 표시
         function showLoginScreen() {
             document.getElementById('loginContainer').classList.remove('hidden');
