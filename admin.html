@@ -1664,13 +1664,14 @@
 
         // ==================== 텔레그램 알림 클래스 ====================
         class TelegramMultiNotifier {
-            constructor() {
-                this.dataManager = new DataManager();
-                this.bots = this.dataManager.getTelegramBots();
-                this.lastSentOrders = new Set();
-                this.localStorageKey = 'telegram_sent_orders';
-                this.initializeSentOrders();
-            }
+    constructor() {
+        // this.dataManager를 바로 정의
+        this.dataManager = new DataManager();
+        this.bots = this.dataManager.getTelegramBots();
+        this.lastSentOrders = new Set();
+        this.localStorageKey = 'telegram_sent_orders';
+        this.initializeSentOrders();
+    }
 
             initializeSentOrders() {
                 try {
@@ -1841,6 +1842,16 @@
             });
         }
     }
+
+    const allSuccess = results.every(r => r.success);
+    const errors = results.filter(r => !r.success).map(r => `채팅 ${r.chatId}: ${r.error}`);
+
+    return {
+        success: allSuccess,
+        error: errors.length > 0 ? errors.join(' | ') : null,
+        details: results
+    };
+}
 
     const allSuccess = results.every(r => r.success);
     const errors = results.filter(r => !r.success).map(r => `채팅 ${r.chatId}: ${r.error}`);
@@ -2026,7 +2037,8 @@
                 }
             }
 
-            // TelegramMultiNotifier 클래스 내부의 sendNewOrderNotification 함수 수정
+            
+// TelegramMultiNotifier 클래스의 sendNewOrderNotification 함수 수정:
 async sendNewOrderNotification(order) {
     // 이미 알림 보낸 주문인지 확인
     if (this.hasOrderBeenSent(order.id)) {
