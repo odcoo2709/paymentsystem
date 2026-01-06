@@ -2473,7 +2473,22 @@ function initializeAdminDashboard() {
     // 동기화 및 알림 체크 시작
     startSyncCheck();
     startNotificationCheck();
+    function startSyncCheck() {
+    if (syncCheckInterval) clearInterval(syncCheckInterval);
     
+    // 즉시 한 번 체크
+    checkDataSync();
+    
+    // 3초마다 체크
+    syncCheckInterval = setInterval(() => {
+        checkDataSync();
+    }, 3000);
+}
+
+function showNotification(message) {
+    // 간단한 알림 표시 (필요시 UI 개선 가능)
+    console.log('🔔 알림:', message);
+}
     console.log('관리자 대시보드 초기화 완료');
 }
         // ==================== 이벤트 리스너 ====================
