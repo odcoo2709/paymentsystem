@@ -1187,11 +1187,6 @@
                     <div style="margin-bottom: 10px;">
                         <div class="time-input-group">
                             <label>입금확인 → 처리중 (초):</label>
-                            <input type="number" id="depositToProcessingTime" value="90" min="10" max="600"
-                                   style="width: 100px; padding: 8px; border: 2px solid #ddd; border-radius: 6px;">
-                        </div>
-                        <div class="time-input-group">
-                            <label>처리중 → 완료 (초):</label>
                             <input type="number" id="processingToCompleteTime" value="180" min="10" max="1200"
                                    style="width: 100px; padding: 8px; border: 2px solid #ddd; border-radius: 6px;">
                         </div>
@@ -1332,8 +1327,8 @@
                                 <th id="thAmount">금액 (THB)</th>
                                 <th id="thWallet">입금 지갑</th>
                                 <th id="thStatus">상태</th>
-                                <th id="thStep">진행 단계</th>
                                 <th id="thProof">유저 요청서</th>
+                                <th id="thReceipt">영수증</th>
                                 <th id="thAction">결제 작업</th>
                             </tr>
                         </thead>
@@ -2129,7 +2124,6 @@
             constructor() {
                 this.timers = new Map();
                 this.settings = {
-                    depositToProcessing: 90, // 1분 30초 (초 단위)
                     processingToComplete: 180, // 3분 (초 단위)
                     enabled: true
                 };
@@ -2782,8 +2776,8 @@
                 thAmount: "Amount (THB)",
                 thWallet: "Wallet",
                 thStatus: "Status",
-                thStep: "Step",
                 thProof: "Proof",
+                thReceipt: "Receipt",
                 thAction: "Action",
                 thWalletName: "Name",
                 thNetwork: "Network",
@@ -2864,8 +2858,8 @@
                 thAmount: "금액 (THB)",
                 thWallet: "지갑",
                 thStatus: "상태",
-                thStep: "단계",
                 thProof: "증명서",
+                thReceipt: "영수증",
                 thAction: "작업",
                 thWalletName: "이름",
                 thNetwork: "네트워크",
@@ -3061,7 +3055,6 @@
         function loadSettingsValues() {
             // 자동 전환 설정 로드
             document.getElementById('autoTransitionEnabled').checked = autoTransition.settings.enabled;
-            document.getElementById('depositToProcessingTime').value = autoTransition.settings.depositToProcessing;
             document.getElementById('processingToCompleteTime').value = autoTransition.settings.processingToComplete;
             
             // 바이낸스 설정 로드
@@ -3265,8 +3258,8 @@
                 { id: 'thAmount', value: trans.thAmount },
                 { id: 'thWallet', value: trans.thWallet },
                 { id: 'thStatus', value: trans.thStatus },
-                { id: 'thStep', value: trans.thStep },
                 { id: 'thProof', value: trans.thProof },
+                { id: 'thReceipt', value: trans.thReceipt },
                 { id: 'thAction', value: trans.thAction },
                 { id: 'thWalletName', value: trans.thWalletName },
                 { id: 'thNetwork', value: trans.thNetwork },
@@ -3543,12 +3536,10 @@
 
         function saveAutoTransitionSettings() {
             const enabled = document.getElementById('autoTransitionEnabled').checked;
-            const depositToProcessing = parseInt(document.getElementById('depositToProcessingTime').value) || 90;
             const processingToComplete = parseInt(document.getElementById('processingToCompleteTime').value) || 180;
             
             autoTransition.updateSettings({
                 enabled: enabled,
-                depositToProcessing: depositToProcessing,
                 processingToComplete: processingToComplete
             });
             
@@ -3767,30 +3758,26 @@
                     '취소': currentLang === 'en' ? 'Cancelled' : '취소'
                 }[order.status] || order.status;
                 
-                const stepProgress = Math.min(100, (order.step || 1) * 25);
-                
                 const hasProof = order.proof && order.proof.data;
                 const proofText = currentLang === 'en' ? 'View' : '보기';
                 const proofButton = hasProof ? 
                     `<button class="action-button action-view" onclick="event.stopPropagation(); viewProof('${order.id}')">${proofText}</button>` :
                     currentLang === 'en' ? 'None' : '없음';
                 
+                const hasReceipt = order.receipt && order.receipt.data;
+                const receiptText = currentLang === 'en' ? 'Receipt' : '영수증';
+                const receiptButton = hasReceipt ? 
+                    `<button class="action-button action-view" onclick="event.stopPropagation(); viewReceipt('${order.id}')" style="background: #9b59b6;">${receiptText}</button>` :
+                    `<button class="action-button action-edit" onclick="event.stopPropagation(); openReceiptUploadModal('${order.id}')">${currentLang === 'en' ? 'Add Receipt' : '영수증 추가'}</button>`;
+                
                 const walletInfo = order.wallet ? 
                     `${order.wallet.name} (${order.wallet.network})` : 
                     currentLang === 'en' ? 'Not specified' : '지정되지 않음';
                 
-                const stepText = getStepText(order.step || 1);
-                
                 const confirmText = currentLang === 'en' ? 'Confirm Deposit' : '입금 확인';
                 const cancelText = currentLang === 'en' ? 'Cancel' : '취소';
-                const processText = currentLang === 'en' ? 'Start Process' : '처리 시작';
-                const completeText = currentLang === 'en' ? 'Complete' : '완료';
+                const processText = currentLang === 'en' ? 'Complete' : '완료';
                 const resetText = currentLang === 'en' ? 'Reset' : '재설정';
-                
-                // 영수증 확인 버튼 추가
-                const receiptButton = order.receipt ? 
-                    `<button class="action-button action-view" onclick="event.stopPropagation(); showReceiptModal('${order.id}')" style="background: #9b59b6; margin-left: 5px;">영수증</button>` : 
-                    '';
                 
                 html += `
                     <tr onclick="showOrderDetail('${order.id}')" style="cursor: pointer;">
@@ -3810,13 +3797,10 @@
                             <span class="status-badge ${statusClass}">${statusText}</span>
                         </td>
                         <td>
-                            <div>${stepText}</div>
-                            <div class="progress-indicator">
-                                <div class="progress-bar" style="width: ${stepProgress}%"></div>
-                            </div>
+                            ${proofButton}
                         </td>
                         <td>
-                            ${proofButton}
+                            ${receiptButton}
                         </td>
                         <td>
                             <div class="action-buttons">
@@ -3825,16 +3809,12 @@
                                     <button class="action-button action-cancel" onclick="event.stopPropagation(); updateOrderStatus('${order.id}', '취소')">${cancelText}</button>
                                 ` : ''}
                                 ${order.status === '입금확인' ? `
-                                    <button class="action-button action-process" onclick="event.stopPropagation(); updateOrderStatus('${order.id}', '처리중')">${processText}</button>
+                                    <button class="action-button action-complete" onclick="event.stopPropagation(); updateOrderStatus('${order.id}', '완료')">${processText}</button>
                                     <button class="action-button action-cancel" onclick="event.stopPropagation(); updateOrderStatus('${order.id}', '취소')">${cancelText}</button>
-                                ` : ''}
-                                ${order.status === '처리중' ? `
-                                    <button class="action-button action-complete" onclick="event.stopPropagation(); updateOrderStatus('${order.id}', '완료')">${completeText}</button>
                                 ` : ''}
                                 ${['완료', '취소'].includes(order.status) ? `
                                     <button class="action-button action-reset" onclick="event.stopPropagation(); updateOrderStatus('${order.id}', '입금대기')">${resetText}</button>
                                 ` : ''}
-                                ${receiptButton}
                             </div>
                         </td>
                     </tr>
@@ -3842,157 +3822,6 @@
             });
             
             ordersTableBody.innerHTML = html;
-        }
-
-        function getStepText(step) {
-            if (currentLang === 'en') {
-                switch(step) {
-                    case 1: return 'Waiting USDT Transfer';
-                    case 2: return 'Verifying Deposit';
-                    case 3: return 'Processing THB';
-                    case 4: return 'Completed';
-                    default: return 'Waiting';
-                }
-            } else {
-                switch(step) {
-                    case 1: return 'USDT 전송 대기';
-                    case 2: return '입금 확인 중';
-                    case 3: return 'THB 처리 중';
-                    case 4: return '완료';
-                    default: return '대기중';
-                }
-            }
-        }
-
-        // ==================== 지갑 테이블 업데이트 ====================
-        function updateWallets() {
-            const statusFilter = document.getElementById('walletStatusFilter').value;
-            const networkFilter = document.getElementById('walletNetworkFilter').value;
-            
-            let filteredWallets = [...allWallets];
-            
-            if (statusFilter !== 'all') {
-                filteredWallets = filteredWallets.filter(w => 
-                    statusFilter === 'active' ? w.isActive : !w.isActive
-                );
-            }
-            
-            if (networkFilter !== 'all') {
-                filteredWallets = filteredWallets.filter(w => w.network === networkFilter);
-            }
-            
-            filteredWallets.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-            
-            const walletsTableBody = document.getElementById('walletsTableBody');
-            if (!walletsTableBody) return;
-            
-            if (filteredWallets.length === 0) {
-                const trans = translations[currentLang];
-                walletsTableBody.innerHTML = `
-                    <tr>
-                        <td colspan="7" class="no-wallets">${trans.noWalletsText}</td>
-                    </tr>
-                `;
-                return;
-            }
-            
-            let html = '';
-            filteredWallets.forEach(wallet => {
-                const networkClass = `network-${wallet.network.toLowerCase()}`;
-                const createdDate = new Date(wallet.createdAt).toLocaleDateString('ko-KR');
-                
-                const statusText = wallet.isActive ? 
-                    (currentLang === 'en' ? 'Active' : '활성') : 
-                    (currentLang === 'en' ? 'Inactive' : '비활성');
-                const statusClass = wallet.isActive ? 'wallet-active' : 'wallet-inactive';
-                
-                const defaultBadgeText = currentLang === 'en' ? 'Default' : '기본';
-                const defaultBadge = wallet.isDefault ? `<span class="default-wallet-badge">${defaultBadgeText}</span>` : '';
-                
-                let qrDisplay = '';
-                if (wallet.qrCode && 
-                    wallet.qrCode !== 'null' && 
-                    wallet.qrCode !== '' && 
-                    wallet.qrCode !== null &&
-                    typeof wallet.qrCode === 'string' && 
-                    wallet.qrCode.startsWith('data:image/')) {
-                    
-                    qrDisplay = `
-                        <div class="qr-code-small" style="position: relative;">
-                            <img src="${wallet.qrCode}" 
-                                 alt="Wallet QR Code" 
-                                 style="max-width: 80px; max-height: 80px; border-radius: 4px;"
-                                 onerror="this.onerror=null; this.style.display='none';
-                                          this.parentElement.innerHTML='<div style=\\\"position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 11px; background: #f8f9fa; border-radius: 8px;\\\">이미지 로드 실패</div>'">
-                            <div style="position: absolute; bottom: -15px; left: 0; right: 0; text-align: center; font-size: 10px; color: #666;">
-                                QR Code
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    qrDisplay = `
-                        <div class="qr-error-fallback">
-                            QR 없음
-                        </div>
-                    `;
-                }
-                
-                const shortAddress = wallet.address.length > 20 ? 
-                    wallet.address.substring(0, 10) + '...' + wallet.address.substring(wallet.address.length - 10) : 
-                    wallet.address;
-                
-                const editText = currentLang === 'en' ? 'Edit' : '수정';
-                const deleteText = currentLang === 'en' ? 'Delete' : '삭제';
-                const deactivateText = currentLang === 'en' ? 'Deactivate' : '비활성화';
-                const activateText = currentLang === 'en' ? 'Activate' : '활성화';
-                const setDefaultText = currentLang === 'en' ? 'Set Default' : '기본 설정';
-                
-                html += `
-                    <tr>
-                        <td>
-                            <div style="font-weight: bold; color: #2c3e50;">
-                                ${wallet.name} ${defaultBadge}
-                            </div>
-                            ${wallet.memo ? `<div style="font-size: 12px; color: #718096; margin-top: 5px;">${wallet.memo}</div>` : ''}
-                        </td>
-                        <td>
-                            <span class="network-badge ${networkClass}">${wallet.network}</span>
-                        </td>
-                        <td>
-                            <div style="font-size: 12px; color: #2c3e50;">${shortAddress}</div>
-                            <div class="wallet-address" title="${wallet.address}">
-                                ${wallet.address}
-                            </div>
-                        </td>
-                        <td>${qrDisplay}</td>
-                        <td>
-                            <span class="wallet-status ${statusClass}">
-                                ${wallet.isActive ? '<span class="active-wallet-indicator"></span>' : ''}
-                                ${statusText}
-                            </span>
-                        </td>
-                        <td>${createdDate}</td>
-                        <td>
-                            <div class="wallet-actions">
-                                <button class="action-button action-edit" onclick="editWallet('${wallet.id}')">${editText}</button>
-                                ${!wallet.isDefault ? `
-                                    <button class="action-button action-delete" onclick="deleteWallet('${wallet.id}')">${deleteText}</button>
-                                ` : ''}
-                                ${wallet.isActive ? 
-                                    `<button class="action-button action-deactivate" onclick="toggleWalletStatus('${wallet.id}', false)">${deactivateText}</button>` :
-                                    `<button class="action-button action-activate" onclick="toggleWalletStatus('${wallet.id}', true)">${activateText}</button>`
-                                }
-                                ${!wallet.isDefault ? 
-                                    `<button class="action-button action-setdefault" onclick="setDefaultWallet('${wallet.id}')">${setDefaultText}</button>` : 
-                                    ''
-                                }
-                            </div>
-                        </td>
-                    </tr>
-                `;
-            });
-            
-            walletsTableBody.innerHTML = html;
         }
 
         // ==================== 주문 상태 업데이트 ====================
@@ -4023,6 +3852,17 @@
             const oldStatus = allOrders[orderIndex].status;
             const newStep = getStepFromStatus(newStatus);
             
+            // 입금확인으로 변경되면 자동으로 처리중으로 전환될 타이머 설정
+            if (newStatus === '입금확인') {
+                const autoTime = autoTransition.settings.processingToComplete;
+                autoTransition.scheduleTransition(
+                    orderId, 
+                    '입금확인', 
+                    '처리중', 
+                    autoTime
+                );
+            }
+            
             allOrders[orderIndex] = {
                 ...allOrders[orderIndex],
                 status: newStatus,
@@ -4031,9 +3871,6 @@
             };
             
             dataManager.saveOrders(allOrders);
-            
-            // 자동 전환 타이머 관리
-            manageAutoTransitionTimers(orderId, oldStatus, newStatus);
             
             // 텔레그램 알림
             if (newStatus === '입금확인' && oldStatus !== '입금확인') {
@@ -4078,32 +3915,6 @@
             }
         }
 
-        // 자동 전환 타이머 관리 함수
-        function manageAutoTransitionTimers(orderId, oldStatus, newStatus) {
-            // 기존 타이머 취소
-            autoTransition.cancelTransition(orderId, '입금확인', '처리중');
-            autoTransition.cancelTransition(orderId, '처리중', '완료');
-            
-            // 새로운 타이머 설정
-            if (newStatus === '입금확인') {
-                autoTransition.scheduleTransition(
-                    orderId, 
-                    '입금확인', 
-                    '처리중', 
-                    autoTransition.settings.depositToProcessing
-                );
-            } else if (newStatus === '처리중') {
-                autoTransition.scheduleTransition(
-                    orderId, 
-                    '처리중', 
-                    '완료', 
-                    autoTransition.settings.processingToComplete
-                );
-            }
-            
-            updateSystemInfo();
-        }
-
         // ==================== 증명서 보기 ====================
         function viewProof(orderId) {
             const order = allOrders.find(o => o.id === orderId);
@@ -4139,6 +3950,125 @@
                         `<img src="${order.proof.data}" style="max-width: 100%; border: 1px solid #ddd; border-radius: 8px;">` : 
                         `<p>${currentLang === 'en' ? 'File Name:' : '파일명:'} ${order.proof.name}</p><p>${currentLang === 'en' ? 'File Size:' : '파일 크기:'} ${(order.proof.size / 1024).toFixed(1)}KB</p>`
                     }
+                </body>
+                </html>
+            `);
+        }
+
+        // ==================== 영수증 보기 ====================
+        function viewReceipt(orderId) {
+            const order = allOrders.find(o => o.id === orderId);
+            if (!order || !order.receipt) {
+                alert(currentLang === 'en' ? 'No receipt available' : '영수증이 없습니다');
+                return;
+            }
+
+            const receiptWindow = window.open('', '_blank');
+            const title = currentLang === 'en' ? 'Payment Receipt' : '결제 영수증';
+            
+            receiptWindow.document.write(`
+                <html>
+                <head>
+                    <title>${title} - ${order.id}</title>
+                    <style>
+                        body { 
+                            font-family: Arial, sans-serif; 
+                            padding: 20px;
+                            background: #f5f5f5;
+                        }
+                        .container {
+                            max-width: 800px;
+                            margin: 0 auto;
+                            background: white;
+                            padding: 30px;
+                            border-radius: 10px;
+                            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                        }
+                        .header { 
+                            text-align: center; 
+                            margin-bottom: 30px;
+                            border-bottom: 2px solid #3498db;
+                            padding-bottom: 20px;
+                        }
+                        .info { 
+                            margin: 20px 0; 
+                            padding: 20px; 
+                            background: #f8f9fa; 
+                            border-radius: 8px; 
+                        }
+                        .info-row {
+                            display: flex;
+                            justify-content: space-between;
+                            margin-bottom: 10px;
+                            padding: 8px 0;
+                            border-bottom: 1px solid #eee;
+                        }
+                        .label { font-weight: bold; color: #2c3e50; }
+                        .value { color: #34495e; }
+                        .receipt-image {
+                            margin-top: 30px;
+                            text-align: center;
+                        }
+                        .receipt-image img {
+                            max-width: 100%;
+                            border: 1px solid #ddd;
+                            border-radius: 8px;
+                            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+                        }
+                        .download-btn {
+                            display: inline-block;
+                            margin-top: 20px;
+                            padding: 10px 20px;
+                            background: #3498db;
+                            color: white;
+                            text-decoration: none;
+                            border-radius: 5px;
+                            font-weight: bold;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="header">
+                            <h1>${title}</h1>
+                            <h3>${order.id}</h3>
+                            <p>${new Date(order.receipt.uploadedAt).toLocaleString()}</p>
+                        </div>
+                        
+                        <div class="info">
+                            <div class="info-row">
+                                <span class="label">${currentLang === 'en' ? 'Order ID:' : '주문 ID:'}</span>
+                                <span class="value">${order.id}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">${currentLang === 'en' ? 'Amount:' : '금액:'}</span>
+                                <span class="value">${order.amount.toLocaleString()} THB</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">USDT:</span>
+                                <span class="value">${order.usdt.toFixed(4)} USDT</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">${currentLang === 'en' ? 'Status:' : '상태:'}</span>
+                                <span class="value">${order.status}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">${currentLang === 'en' ? 'Completed at:' : '완료 시간:'}</span>
+                                <span class="value">${new Date(order.updated).toLocaleString()}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="receipt-image">
+                            <h3>${currentLang === 'en' ? 'Payment Receipt' : '결제 영수증'}</h3>
+                            <img src="${order.receipt.data}" 
+                                 alt="Payment Receipt"
+                                 onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNGNUY1RjUiLz48dGV4dCB4PSI1MCIgeT0iNTUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+RXJyb3IgbG9hZGluZyBpbWFnZTwvdGV4dD48L3N2Zz4='">
+                            <br>
+                            <a href="${order.receipt.data}" download="receipt_${order.id}.${order.receipt.type.split('/')[1] || 'jpg'}" class="download-btn">
+                                ${currentLang === 'en' ? 'Download Receipt' : '영수증 다운로드'}
+                            </a>
+                        </div>
+                    </div>
                 </body>
                 </html>
             `);
@@ -4209,7 +4139,6 @@
             const amountLabel = currentLang === 'en' ? 'Payment Amount:' : '결제 금액:';
             const usdtLabel = currentLang === 'en' ? 'USDT Amount:' : 'USDT 금액:';
             const statusLabel = currentLang === 'en' ? 'Current Status:' : '현재 상태:';
-            const stepLabel = currentLang === 'en' ? 'Current Step:' : '현재 단계:';
             const walletLabel = currentLang === 'en' ? 'Deposit Wallet:' : '입금 지갑:';
             const proofLabel = currentLang === 'en' ? 'Payment Proof:' : '결제 증명서:';
             const receiptLabel = currentLang === 'en' ? 'Payment Receipt:' : '결제 영수증:';
@@ -4249,23 +4178,15 @@
                     </div>
                 </div>
                 
-                <div class="form-row">
-                    <div class="form-group">
-                        <label class="form-label">${statusLabel}</label>
-                        <div style="padding: 10px; background: #f8f9fa; border-radius: 6px;">
-                            <span class="status-badge ${order.status === '입금대기' ? 'status-waiting' : 
-                                order.status === '입금확인' ? 'status-confirmed' : 
-                                order.status === '처리중' ? 'status-processing' : 
-                                order.status === '완료' ? 'status-completed' : 'status-cancelled'}">
-                                ${statusText}
-                            </span>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">${stepLabel}</label>
-                        <div style="padding: 10px; background: #f8f9fa; border-radius: 6px;">
-                            ${getStepText(order.step || 1)}
-                        </div>
+                <div class="form-group">
+                    <label class="form-label">${statusLabel}</label>
+                    <div style="padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                        <span class="status-badge ${order.status === '입금대기' ? 'status-waiting' : 
+                            order.status === '입금확인' ? 'status-confirmed' : 
+                            order.status === '처리중' ? 'status-processing' : 
+                            order.status === '완료' ? 'status-completed' : 'status-cancelled'}">
+                            ${statusText}
+                        </span>
                     </div>
                 </div>
                 
@@ -4294,7 +4215,7 @@
                     <div style="padding: 10px; background: #f8f9fa; border-radius: 6px;">
                         ${receiptInfo}
                         ${order.receipt && order.receipt.data ? 
-                            `<button class="action-button action-view" style="margin-top: 5px;" onclick="showReceiptModal('${order.id}')">${viewReceiptText}</button>` :
+                            `<button class="action-button action-view" style="margin-top: 5px;" onclick="viewReceipt('${order.id}')">${viewReceiptText}</button>` :
                             (order.status === '완료' ? 
                                 `<button class="action-button action-edit" style="margin-top: 5px;" onclick="openReceiptUploadModal('${order.id}')">${uploadReceiptText}</button>` : 
                                 '')
@@ -4315,16 +4236,11 @@
                     <button class="modal-button secondary" onclick="updateOrderStatus('${order.id}', '취소')">${cancelText}</button>
                 `;
             } else if (order.status === '입금확인') {
-                const processText = currentLang === 'en' ? 'Start Process' : '처리 시작';
+                const processText = currentLang === 'en' ? 'Complete' : '완료';
                 const cancelText = currentLang === 'en' ? 'Cancel Process' : '처리 취소';
                 actionsHtml = `
-                    <button class="modal-button primary" onclick="updateOrderStatus('${order.id}', '처리중')">${processText}</button>
+                    <button class="modal-button primary" onclick="updateOrderStatus('${order.id}', '완료')">${processText}</button>
                     <button class="modal-button secondary" onclick="updateOrderStatus('${order.id}', '취소')">${cancelText}</button>
-                `;
-            } else if (order.status === '처리중') {
-                const completeText = currentLang === 'en' ? 'Complete Process' : '처리 완료';
-                actionsHtml = `
-                    <button class="modal-button success" onclick="updateOrderStatus('${order.id}', '완료')">${completeText}</button>
                 `;
             } else {
                 const resetText = currentLang === 'en' ? 'Reset Status' : '상태 재설정';
@@ -4843,125 +4759,6 @@
             selectedOrder = null;
         }
 
-        // 영수증 모달 표시 함수
-        function showReceiptModal(orderId) {
-            const order = allOrders.find(o => o.id === orderId);
-            if (!order || !order.receipt) {
-                alert(currentLang === 'en' ? 'No receipt available' : '영수증이 없습니다');
-                return;
-            }
-
-            const receiptWindow = window.open('', '_blank');
-            const title = currentLang === 'en' ? 'Payment Receipt' : '결제 영수증';
-            
-            receiptWindow.document.write(`
-                <html>
-                <head>
-                    <title>${title} - ${order.id}</title>
-                    <style>
-                        body { 
-                            font-family: Arial, sans-serif; 
-                            padding: 20px;
-                            background: #f5f5f5;
-                        }
-                        .container {
-                            max-width: 800px;
-                            margin: 0 auto;
-                            background: white;
-                            padding: 30px;
-                            border-radius: 10px;
-                            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                        }
-                        .header { 
-                            text-align: center; 
-                            margin-bottom: 30px;
-                            border-bottom: 2px solid #3498db;
-                            padding-bottom: 20px;
-                        }
-                        .info { 
-                            margin: 20px 0; 
-                            padding: 20px; 
-                            background: #f8f9fa; 
-                            border-radius: 8px; 
-                        }
-                        .info-row {
-                            display: flex;
-                            justify-content: space-between;
-                            margin-bottom: 10px;
-                            padding: 8px 0;
-                            border-bottom: 1px solid #eee;
-                        }
-                        .label { font-weight: bold; color: #2c3e50; }
-                        .value { color: #34495e; }
-                        .receipt-image {
-                            margin-top: 30px;
-                            text-align: center;
-                        }
-                        .receipt-image img {
-                            max-width: 100%;
-                            border: 1px solid #ddd;
-                            border-radius: 8px;
-                            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-                        }
-                        .download-btn {
-                            display: inline-block;
-                            margin-top: 20px;
-                            padding: 10px 20px;
-                            background: #3498db;
-                            color: white;
-                            text-decoration: none;
-                            border-radius: 5px;
-                            font-weight: bold;
-                        }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <div class="header">
-                            <h1>${title}</h1>
-                            <h3>${order.id}</h3>
-                            <p>${new Date(order.receipt.uploadedAt).toLocaleString()}</p>
-                        </div>
-                        
-                        <div class="info">
-                            <div class="info-row">
-                                <span class="label">${currentLang === 'en' ? 'Order ID:' : '주문 ID:'}</span>
-                                <span class="value">${order.id}</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="label">${currentLang === 'en' ? 'Amount:' : '금액:'}</span>
-                                <span class="value">${order.amount.toLocaleString()} THB</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="label">USDT:</span>
-                                <span class="value">${order.usdt.toFixed(4)} USDT</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="label">${currentLang === 'en' ? 'Status:' : '상태:'}</span>
-                                <span class="value">${order.status}</span>
-                            </div>
-                            <div class="info-row">
-                                <span class="label">${currentLang === 'en' ? 'Completed at:' : '완료 시간:'}</span>
-                                <span class="value">${new Date(order.updated).toLocaleString()}</span>
-                            </div>
-                        </div>
-                        
-                        <div class="receipt-image">
-                            <h3>${currentLang === 'en' ? 'Payment Receipt' : '결제 영수증'}</h3>
-                            <img src="${order.receipt.data}" 
-                                 alt="Payment Receipt"
-                                 onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNGNUY1RjUiLz48dGV4dCB4PSI1MCIgeT0iNTUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+RXJyb3IgbG9hZGluZyBpbWFnZTwvdGV4dD48L3N2Zz4='">
-                            <br>
-                            <a href="${order.receipt.data}" download="receipt_${order.id}.${order.receipt.type.split('/')[1] || 'jpg'}" class="download-btn">
-                                ${currentLang === 'en' ? 'Download Receipt' : '영수증 다운로드'}
-                            </a>
-                        </div>
-                    </div>
-                </body>
-                </html>
-            `);
-        }
-
         // ==================== 데이터 동기화 ====================
         function checkDataSync() {
             const syncKey = localStorage.getItem('payment_sync_flag');
@@ -5024,15 +4821,14 @@
                 let csv = '';
                 
                 if (currentLang === 'en') {
-                    csv = 'Order ID,Created Time,Amount(THB),USDT Amount,Status,Step,Wallet,Network,Proof,Receipt,Updated Time\n';
+                    csv = 'Order ID,Created Time,Amount(THB),USDT Amount,Status,Wallet,Network,Proof,Receipt,Updated Time\n';
                 } else {
-                    csv = '주문 ID,생성 시간,금액(THB),USDT 금액,상태,단계,지갑,네트워크,증명서,영수증,업데이트 시간\n';
+                    csv = '주문 ID,생성 시간,금액(THB),USDT 금액,상태,지갑,네트워크,증명서,영수증,업데이트 시간\n';
                 }
                 
                 allOrders.forEach(order => {
                     const time = new Date(order.time).toLocaleString('ko-KR');
                     const updated = order.updated ? new Date(order.updated).toLocaleString('ko-KR') : '';
-                    const stepText = getStepText(order.step || 1);
                     const walletInfo = order.wallet ? `${order.wallet.name} (${order.wallet.network})` : 
                         currentLang === 'en' ? 'Not specified' : '지정되지 않음';
                     const hasProof = order.proof && order.proof.data ? 
@@ -5042,7 +4838,7 @@
                         (currentLang === 'en' ? 'Yes' : '예') : 
                         (currentLang === 'en' ? 'No' : '아니오');
                     
-                    csv += `"${order.id}","${time}","${order.amount}","${order.usdt || 0}","${order.status}","${stepText}","${walletInfo}","${order.wallet?.network || ''}","${hasProof}","${hasReceipt}","${updated}"\n`;
+                    csv += `"${order.id}","${time}","${order.amount}","${order.usdt || 0}","${order.status}","${walletInfo}","${order.wallet?.network || ''}","${hasProof}","${hasReceipt}","${updated}"\n`;
                 });
                 
                 const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
