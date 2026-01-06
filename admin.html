@@ -2014,7 +2014,7 @@ initializeSentOrders() {
         }
     }
 
-    async function sendDepositConfirmedNotification(order) {
+    async function sendNewOrderNotification(order) {
         // 이미 알림 보낸 주문인지 확인
         if (this.hasOrderBeenSent(order.id)) {
             console.log(`⏭️ 이미 알림 보낸 주문: ${order.id}`);
@@ -3275,30 +3275,30 @@ function initializeAdminDashboard() {
 
         // ==================== 주문 상태 업데이트 ====================
         async function updateOrderStatus(orderId, newStatus) {
-            const statusText = {
-                '입금대기': currentLang === 'en' ? 'Waiting Deposit' : '입금대기',
-                '입금확인': currentLang === 'en' ? 'Deposit Confirmed' : '입금확인',
-                '처리중': currentLang === 'en' ? 'Processing' : '처리중',
-                '완료': currentLang === 'en' ? 'Completed' : '완료',
-                '취소': currentLang === 'en' ? 'Cancelled' : '취소'
-            }[newStatus] || newStatus;
-            
-            const confirmMessage = currentLang === 'en' ?
-                `Change order ${orderId} status to "${statusText}"?` :
-                `주문 ${orderId}의 상태를 "${statusText}"로 변경하시겠습니까?`;
-            
-            if (!confirm(confirmMessage)) {
-                return;
-            }
-            
-            let orderIndex = allOrders.findIndex(o => o.id === orderId);
-            
-            if (orderIndex === -1) {
-                alert(currentLang === 'en' ? 'Order not found' : '주문을 찾을 수 없습니다');
-                return;
-            }
-            
-            const oldStatus = allOrders[orderIndex].status;
+    const statusText = {
+        '입금대기': currentLang === 'en' ? 'Waiting Deposit' : '입금대기',
+        '입금확인': currentLang === 'en' ? 'Deposit Confirmed' : '입금확인',
+        '처리중': currentLang === 'en' ? 'Processing' : '처리중',
+        '완료': currentLang === 'en' ? 'Completed' : '완료',
+        '취소': currentLang === 'en' ? 'Cancelled' : '취소'
+    }[newStatus] || newStatus;
+    
+    const confirmMessage = currentLang === 'en' ?
+        `Change order ${orderId} status to "${statusText}"?` :
+        `주문 ${orderId}의 상태를 "${statusText}"로 변경하시겠습니까?`;
+    
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+    
+    let orderIndex = allOrders.findIndex(o => o.id === orderId);
+    
+    if (orderIndex === -1) {
+        alert(currentLang === 'en' ? 'Order not found' : '주문을 찾을 수 없습니다');
+        return;
+    }
+    
+    const oldStatus = allOrders[orderIndex].status;
     const newStep = getStepFromStatus(newStatus);
     
     // ✅ 주문 상태 업데이트
@@ -3311,8 +3311,8 @@ function initializeAdminDashboard() {
     
     dataManager.saveOrders(allOrders);
     
-    // ✅ 입금확인 상태로 변경될 때만 텔레그램 알림
-    if (newStatus === '입금확인') {
+    // ✅ 입금확인 상태로 변경될 때만 텔레그램 알림 (한 번만)
+    if (newStatus === '입금확인' && oldStatus !== '입금확인') {
         console.log(`📨 주문 ${orderId} 입금확인 - 텔레그램 알림 전송`);
         
         try {
@@ -3323,19 +3323,34 @@ function initializeAdminDashboard() {
     }
     
     // ✅ 상태 변경 알림 (입금확인 외의 상태 변경시)
-    if (oldStatus !== newStatus) {
+    if (oldStatus !== newStatus && newStatus !== '입금확인') {
         await telegramNotifier.sendStatusChangeNotification(orderId, oldStatus, newStatus);
     }
-        function getStepFromStatus(status) {
-            switch(status) {
-                case '입금대기': return 1;
-                case '입금확인': return 2;
-                case '처리중': return 3;
-                case '완료': return 4;
-                case '취소': return 1;
-                default: return 1;
-            }
+    
+    updateStats();
+    updateOrders();
+    dataManager.notifyUserPage(orderId, newStatus);
+    
+    const successMessage = currentLang === 'en' ?
+        `Order status changed to "${statusText}"` :
+        `주문 상태가 "${statusText}"로 변경되었습니다`;
+    alert(successMessage);
+    
+    if (selectedOrder && selectedOrder.id === orderId) {
+        closeOrderDetail();
+    }
+    
+    function getStepFromStatus(status) {
+        switch(status) {
+            case '입금대기': return 1;
+            case '입금확인': return 2;
+            case '처리중': return 3;
+            case '완료': return 4;
+            case '취소': return 1;
+            default: return 1;
         }
+    }
+}
 
         // ==================== 증명서 보기 ====================
         function viewProof(orderId) {
@@ -3883,18 +3898,6 @@ function initializeAdminDashboard() {
         }
 
         // ==================== 데이터 동기화 ====================
-        function startSyncCheck() {
-            if (syncCheckInterval) clearInterval(syncCheckInterval);
-            
-            console.log('관리자: 실시간 동기화 시작 (1초 간격)');
-            
-            checkDataSync();
-            
-            syncCheckInterval = setInterval(() => {
-                checkDataSync();
-            }, 1000);
-        }
-
         function checkDataSync() {
     const syncKey = localStorage.getItem('payment_sync_flag');
     const lastCheck = localStorage.getItem('admin_last_check') || '0';
@@ -3911,7 +3914,7 @@ function initializeAdminDashboard() {
         
         localStorage.setItem('admin_last_check', syncKey || '0');
         
-        // ✨ 여기서 알림 전송 코드 제거
+        // ⚠️ 여기서 알림 전송 코드 제거 - 관리자가 수동으로 입금 확인할 때만 알림 전송
         // 새 주문 알림은 checkNewOrders()에서만 처리
     }
 }
@@ -3936,7 +3939,7 @@ async function checkNewOrders() {
         if (newOrders.length > 0) {
             console.log(`📢 ${newOrders.length}개의 새로운 주문 발견!`);
             
-            // ❌ 여기서 알림을 보내지 않음
+            // ⚠️ 여기서는 알림을 보내지 않음
             // 그냥 마지막 알림 시간만 업데이트
             
             dataManager.saveLastNotificationTime();
