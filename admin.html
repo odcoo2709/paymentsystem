@@ -2025,7 +2025,7 @@ initializeSentOrders() {
         }
     }
 
-    async function sendNewOrderNotification(order) {
+    sync sendNewOrderNotification(order) {  // ✅ async 추가, function 제거
         // 이미 알림 보낸 주문인지 확인
         if (this.hasOrderBeenSent(order.id)) {
             console.log(`⏭️ 이미 알림 보낸 주문: ${order.id}`);
@@ -2068,7 +2068,7 @@ initializeSentOrders() {
 
         console.log('📨 새 주문 알림 준비:', order.id);
         
-        const results = await this.sendToAllBots(message, { notificationType: 'newOrder' });
+        const results = await this.sendToAllBots(message, { notificationType: 'newOrder' });  // ✅ this. 추가
         
         if (order.proof && order.proof.data && order.proof.type.startsWith('image/')) {
             const imageCaption = `
@@ -2082,7 +2082,7 @@ initializeSentOrders() {
                     `.trim();
             
             console.log('🖼️ 결제 증명서 이미지 전송 시도:', order.id);
-            const imageResults = await this.sendToAllBots(imageCaption, { 
+            const imageResults = await this.sendToAllBots(imageCaption, {  // ✅ this. 추가
                 notificationType: 'newOrder',
                 imageData: order.proof.data,
                 imageCaption: imageCaption
