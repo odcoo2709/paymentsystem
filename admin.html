@@ -1905,7 +1905,7 @@
                         
                         for (const order of unmatchedOrders) {
                             // USDT 금액 비교 (소수점 2자리까지)
-                            const orderUSDT = order.usdt.toFixed(2);
+                            const orderUSDT = order.usdt ? order.usdt.toFixed(2) : '0.00';
                             const depositAmount = parseFloat(deposit.amount).toFixed(2);
                             
                             // 네트워크 확인 (TRC20, ERC20 등)
@@ -2077,7 +2077,7 @@
                 this.CURRENT_ADMIN_KEY = 'current_admin';
                 this.DEFAULT_ADMIN = {
                     username: 'admin',
-                    password: '1234!@!@',
+                    password: '1234',
                     isDefault: true
                 };
             }
@@ -3050,6 +3050,57 @@
             }
         };
 
+        // ==================== 시간대 유틸리티 ====================
+        class TimeZoneManager {
+            constructor() {
+                this.THAILAND_TIMEZONE_OFFSET = 7 * 60 * 60 * 1000; // UTC+7
+            }
+
+            // 모든 시간을 태국시간(UTC+7)으로 변환
+            toThailandTime(date) {
+                if (!date) return null;
+                
+                const d = new Date(date);
+                const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+                return new Date(utc + this.THAILAND_TIMEZONE_OFFSET);
+            }
+
+            // 태국시간으로 날짜 문자열 생성 (YYYY-MM-DD)
+            getThailandDateString(date) {
+                const thailandTime = this.toThailandTime(date);
+                if (!thailandTime) return '';
+                
+                const year = thailandTime.getFullYear();
+                const month = String(thailandTime.getMonth() + 1).padStart(2, '0');
+                const day = String(thailandTime.getDate()).padStart(2, '0');
+                
+                return `${year}-${month}-${day}`;
+            }
+
+            // 태국시간으로 날짜 비교
+            isSameThailandDate(date1, date2) {
+                const thaiDate1 = this.getThailandDateString(date1);
+                const thaiDate2 = this.getThailandDateString(date2);
+                return thaiDate1 === thaiDate2;
+            }
+
+            // 태국시간 범위 내에 있는지 확인
+            isBetweenThailandDates(date, from, to) {
+                const thaiDate = this.getThailandDateString(date);
+                const thaiFrom = this.getThailandDateString(from);
+                const thaiTo = this.getThailandDateString(to);
+                
+                return thaiDate >= thaiFrom && thaiDate <= thaiTo;
+            }
+
+            // 현재 태국시간 가져오기
+            getCurrentThailandTime() {
+                return this.toThailandTime(new Date());
+            }
+        }
+
+        const timeZoneManager = new TimeZoneManager();
+
         // ==================== 페이지 초기화 ====================
         document.addEventListener('DOMContentLoaded', function() {
             console.log('관리자 페이지 로드됨');
@@ -3134,7 +3185,10 @@
                 return;
             }
             
-            const today = new Date().toISOString().split('T')[0];
+            // 현재 태국시간으로 날짜 필터 설정
+            const currentThailandTime = timeZoneManager.getCurrentThailandTime();
+            const today = timeZoneManager.getThailandDateString(currentThailandTime);
+            
             const dateFrom = document.getElementById('dateFrom');
             const dateTo = document.getElementById('dateTo');
             
@@ -3937,11 +3991,12 @@
             const waitingOrders = allOrders.filter(o => o.status === '입금대기').length;
             const activeWallets = allWallets.filter(w => w.isActive).length;
             
-            const today = new Date().toISOString().split('T')[0];
+            const todayThailandTime = timeZoneManager.getCurrentThailandTime();
+            const today = timeZoneManager.getThailandDateString(todayThailandTime);
             
             const todayOrders = allOrders.filter(o => {
-                const orderDate = o.time.split('T')[0];
-                return orderDate === today && o.status === '완료';
+                const orderThailandDate = timeZoneManager.getThailandDateString(o.time);
+                return orderThailandDate === today && o.status === '완료';
             });
             
             let todayAmountTHB = 0;
@@ -3950,8 +4005,8 @@
             
             todayOrders.forEach(order => {
                 todayAmountTHB += order.amount;
-                todayAmountUSDT += order.usdt;
-                const feeUSDT = order.usdt * 0.03;
+                todayAmountUSDT += order.usdt || 0;
+                const feeUSDT = (order.usdt || 0) * 0.03;
                 todayRevenueUSDT += feeUSDT;
             });
             
@@ -4015,7 +4070,7 @@
             }
         }
 
-        // ==================== 주문 테이블 업데이트 ====================
+        // ==================== 주문 테이블 업데이트 (수정된 날짜 필터링) ====================
         function updateOrders() {
             currentFilter = document.getElementById('statusFilter').value;
             const searchTerm = document.getElementById('searchOrder').value.toLowerCase();
@@ -4036,8 +4091,7 @@
             
             if (dateFrom && dateTo) {
                 filteredOrders = filteredOrders.filter(o => {
-                    const orderDate = o.time.split('T')[0];
-                    return orderDate >= dateFrom && orderDate <= dateTo;
+                    return timeZoneManager.isBetweenThailandDates(o.time, dateFrom, dateTo);
                 });
             }
             
@@ -4059,7 +4113,9 @@
             
             let html = '';
             filteredOrders.forEach(order => {
-                const time = new Date(order.time).toLocaleString('ko-KR', {
+                // 태국시간으로 표시
+                const thailandTime = timeZoneManager.toThailandTime(order.time);
+                const time = thailandTime.toLocaleString('ko-KR', {
                     month: '2-digit',
                     day: '2-digit',
                     hour: '2-digit',
@@ -4208,7 +4264,10 @@
             let html = '';
             filteredWallets.forEach(wallet => {
                 const networkClass = `network-${wallet.network.toLowerCase()}`;
-                const createdDate = new Date(wallet.createdAt).toLocaleDateString('ko-KR');
+                
+                // 태국시간으로 생성일 표시
+                const thailandTime = timeZoneManager.toThailandTime(wallet.createdAt);
+                const createdDate = thailandTime.toLocaleDateString('ko-KR');
                 
                 const statusText = wallet.isActive ? 
                     (currentLang === 'en' ? 'Active' : '활성') : 
@@ -4410,7 +4469,7 @@
                     </div>
                     <div class="info">
                         <p><strong>${currentLang === 'en' ? 'Amount:' : '금액:'}</strong> ${order.amount.toLocaleString()} THB</p>
-                        <p><strong>USDT:</strong> ${order.usdt.toFixed(4)} USDT</p>
+                        <p><strong>USDT:</strong> ${order.usdt ? order.usdt.toFixed(4) : '0.0000'} USDT</p>
                         <p><strong>${currentLang === 'en' ? 'Upload Time:' : '업로드 시간:'}</strong> ${new Date(order.time).toLocaleString()}</p>
                     </div>
                     ${order.proof.type.startsWith('image/') ? 
@@ -4452,8 +4511,10 @@
             
             selectedOrder = order;
             
-            const createdTime = new Date(order.time).toLocaleString('ko-KR');
-            const updatedTime = order.updated ? new Date(order.updated).toLocaleString('ko-KR') : 
+            // 태국시간으로 표시
+            const thailandTime = timeZoneManager.toThailandTime(order.time);
+            const createdTime = thailandTime.toLocaleString('ko-KR');
+            const updatedTime = order.updated ? timeZoneManager.toThailandTime(order.updated).toLocaleString('ko-KR') : 
                 (currentLang === 'en' ? 'None' : '없음');
             
             let proofInfo = currentLang === 'en' ? 'None' : '없음';
@@ -4509,7 +4570,7 @@
                     <div class="form-group">
                         <label class="form-label">${usdtLabel}</label>
                         <div style="padding: 10px; background: #f8f9fa; border-radius: 6px;">
-                            ${order.usdt.toFixed(4)} USDT
+                            ${order.usdt ? order.usdt.toFixed(4) : '0.0000'} USDT
                         </div>
                     </div>
                 </div>
@@ -5044,8 +5105,11 @@
                 }
                 
                 allOrders.forEach(order => {
-                    const time = new Date(order.time).toLocaleString('ko-KR');
-                    const updated = order.updated ? new Date(order.updated).toLocaleString('ko-KR') : '';
+                    // 태국시간으로 표시
+                    const thailandTime = timeZoneManager.toThailandTime(order.time);
+                    const time = thailandTime.toLocaleString('ko-KR');
+                    
+                    const updated = order.updated ? timeZoneManager.toThailandTime(order.updated).toLocaleString('ko-KR') : '';
                     const stepText = getStepText(order.step || 1);
                     const walletInfo = order.wallet ? `${order.wallet.name} (${order.wallet.network})` : 
                         currentLang === 'en' ? 'Not specified' : '지정되지 않음';
