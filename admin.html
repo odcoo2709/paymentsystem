@@ -1722,57 +1722,68 @@
         }, 24 * 60 * 60 * 1000);
     }
 
-    async sendToAllBots(message, options = {}) {
-        const results = [];
-        const activeBots = this.bots.filter(bot => bot.enabled);
-        
-        if (activeBots.length === 0) {
-            console.warn('활성화된 텔레그램 봇이 없습니다');
-            return [];
+    // TelegramMultiNotifier 클래스 내부의 sendToAllBots 함수 수정
+async sendToAllBots(message, options = {}) {
+    const results = [];
+    const activeBots = this.bots.filter(bot => bot.enabled);
+    
+    if (activeBots.length === 0) {
+        console.warn('활성화된 텔레그램 봇이 없습니다');
+        return [];
+    }
+
+    for (const bot of activeBots) {
+        // 알림 타입 필터링
+        if (options.notificationType === 'newOrder' && !bot.notifyNewOrders) {
+            continue;
+        }
+        if (options.notificationType === 'statusChange' && !bot.notifyStatusChanges) {
+            continue;
+        }
+        if (options.notificationType === 'test' && !bot.notifyTestMessages) {
+            continue;
         }
 
-        for (const bot of activeBots) {
-            if (options.notificationType === 'newOrder' && !bot.notifyNewOrders) {
-                continue;
-            }
-            if (options.notificationType === 'statusChange' && !bot.notifyStatusChanges) {
-                continue;
-            }
-            if (options.notificationType === 'test' && !bot.notifyTestMessages) {
-                continue;
-            }
-
-            try {
-                let imageResult = null;
-                if (options.imageData) {
-                    console.log(`📤 ${bot.name}에 이미지 전송 시도...`);
-                    imageResult = await this.sendImageToBot(bot, options.imageData, options.imageCaption || message);
-                    console.log(`🖼️ ${bot.name} 이미지 전송 결과:`, imageResult.success ? '성공' : '실패');
-                }
+        try {
+            if (options.imageData) {
+                // 이미지가 있으면 이미지와 함께 메시지 전송 (텍스트 메시지는 별도로 보내지 않음)
+                console.log(`📤 ${bot.name}에 이미지와 함께 메시지 전송...`);
+                const imageResult = await this.sendImageToBot(bot, options.imageData, options.imageCaption || message);
+                console.log(`🖼️ ${bot.name} 이미지+메시지 전송 결과:`, imageResult.success ? '성공' : '실패');
                 
+                results.push({
+                    botName: bot.name,
+                    textSuccess: false, // 텍스트는 이미지 caption으로 전송됨
+                    imageSuccess: imageResult.success,
+                    error: imageResult.error,
+                    data: { image: imageResult.data }
+                });
+            } else {
+                // 이미지가 없으면 텍스트 메시지만 전송
                 const textResult = await this.sendMessageToBot(bot, message);
-                console.log(`💬 ${bot.name} 텍스트 전송 결과:`, textResult.success ? '성공' : '실패');
+                console.log(`💬 ${bot.name} 텍스트 메시지 전송 결과:`, textResult.success ? '성공' : '실패');
                 
                 results.push({
                     botName: bot.name,
                     textSuccess: textResult.success,
-                    imageSuccess: imageResult ? imageResult.success : null,
-                    error: textResult.error || (imageResult ? imageResult.error : null),
-                    data: { text: textResult.data, image: imageResult ? imageResult.data : null }
-                });
-            } catch (error) {
-                console.error(`❌ ${bot.name} 알림 전송 실패:`, error);
-                results.push({
-                    botName: bot.name,
-                    textSuccess: false,
-                    imageSuccess: false,
-                    error: error.message
+                    imageSuccess: null,
+                    error: textResult.error,
+                    data: { text: textResult.data }
                 });
             }
+        } catch (error) {
+            console.error(`❌ ${bot.name} 알림 전송 실패:`, error);
+            results.push({
+                botName: bot.name,
+                textSuccess: false,
+                imageSuccess: false,
+                error: error.message
+            });
         }
-
-        return results;
     }
+
+    return results;
+}
 
     async sendMessageToBot(bot, message) {
         if (!bot.token || !bot.chatIds || bot.chatIds.length === 0) {
@@ -2028,145 +2039,81 @@
     }
 
     async sendNewOrderNotification(order) {
-        // 이미 알림 보낸 주문인지 확인
-        if (this.hasOrderBeenSent(order.id)) {
-            console.log('⏭️ 이미 알림 보낸 주문: ' + order.id);
-            return {
-                alreadySent: true,
-                message: '이미 알림을 보낸 주문입니다'
-            };
-        }
-
-        const statusText = {
-            '입금대기': '입금 대기',
-            '입금확인': '입금 확인',
-            '처리중': '처리 중',
-            '완료': '완료',
-            '취소': '취소'
-        }[order.status] || order.status;
-
-        const fee = order.usdt * 0.03;
-        const netAmount = order.usdt - fee;
-        
-        const message = 
-            '<b>🚨 새로운 주문이 접수되었습니다!</b>\n\n' +
-            '📋 <b>주문 ID:</b> ' + order.id + '\n' +
-            '💰 <b>결제 금액:</b> ' + order.amount.toLocaleString() + ' THB\n' +
-            '💵 <b>USDT 금액:</b> ' + netAmount.toFixed(4) + ' USDT\n' +
-            '📊 <b>수수료 (3%):</b> ' + fee.toFixed(4) + ' USDT\n' +
-            '⏰ <b>요청 시간:</b> ' + new Date(order.time).toLocaleString('ko-KR') + '\n' +
-            '📈 <b>상태:</b> ' + statusText + '\n\n' +
-            '👛 <b>입금 지갑:</b> ' + (order.wallet ? order.wallet.name : '지정되지 않음') + '\n' +
-            '🔗 <b>주소:</b> ' + (order.wallet ? (order.wallet.address.length > 30 ? 
-                order.wallet.address.substring(0, 15) + '...' + order.wallet.address.substring(order.wallet.address.length - 15) : 
-                order.wallet.address) : '없음') + '\n\n' +
-            '✅ <b>빠른 처리 요망</b>';
-
-        console.log('📨 새 주문 알림 준비:', order.id);
-        
-        if (order.proof && order.proof.data && order.proof.type.startsWith('image/')) {
-            // 이미지가 있을 경우: 이미지와 함께 메시지 전송 (한 번만)
-            console.log('🖼️ 결제 증명서 이미지 있음 - 이미지와 함께 메시지 전송');
-            
-            const results = await this.sendToAllBots(message, {
-                notificationType: 'newOrder',
-                imageData: order.proof.data,
-                imageCaption: message // 이미지 caption으로 메시지 내용을 함께 전송
-            });
-            
-            // 알림 보낸 기록 저장
-            if (results.length > 0 && results.some(r => r.imageSuccess || r.textSuccess)) {
-                this.markOrderAsSent(order.id);
-            }
-            
-            return {
-                results: results,
-                hasImage: true,
-                sentWithImage: true,
-                alreadySent: false
-            };
-        } else {
-            // 이미지가 없을 경우: 텍스트 메시지만 전송
-            console.log('📄 결제 증명서 없음 - 텍스트 메시지만 전송');
-            
-            const results = await this.sendToAllBots(message, { notificationType: 'newOrder' });
-            
-            // 알림 보낸 기록 저장
-            if (results.length > 0 && results.some(r => r.textSuccess)) {
-                this.markOrderAsSent(order.id);
-            }
-
-            return {
-                results: results,
-                hasImage: false,
-                sentWithImage: false,
-                alreadySent: false
-            };
-        }
+    // 이미 알림 보낸 주문인지 확인
+    if (this.hasOrderBeenSent(order.id)) {
+        console.log('⏭️ 이미 알림 보낸 주문: ' + order.id);
+        return {
+            alreadySent: true,
+            message: '이미 알림을 보낸 주문입니다'
+        };
     }
-}
 
-// sendToAllBots 함수도 수정 필요 (이미지와 텍스트를 같이 보내지 않도록)
-async sendToAllBots(message, options = {}) {
-    const results = [];
-    const activeBots = this.bots.filter(bot => bot.enabled);
+    const statusText = {
+        '입금대기': '입금 대기',
+        '입금확인': '입금 확인',
+        '처리중': '처리 중',
+        '완료': '완료',
+        '취소': '취소'
+    }[order.status] || order.status;
+
+    const fee = order.usdt * 0.03;
+    const netAmount = order.usdt - fee;
     
-    if (activeBots.length === 0) {
-        console.warn('활성화된 텔레그램 봇이 없습니다');
-        return [];
+    const message = 
+        '<b>🚨 새로운 주문이 접수되었습니다!</b>\n\n' +
+        '📋 <b>주문 ID:</b> ' + order.id + '\n' +
+        '💰 <b>결제 금액:</b> ' + order.amount.toLocaleString() + ' THB\n' +
+        '💵 <b>USDT 금액:</b> ' + netAmount.toFixed(4) + ' USDT\n' +
+        '📊 <b>수수료 (3%):</b> ' + fee.toFixed(4) + ' USDT\n' +
+        '⏰ <b>요청 시간:</b> ' + new Date(order.time).toLocaleString('ko-KR') + '\n' +
+        '📈 <b>상태:</b> ' + statusText + '\n\n' +
+        '👛 <b>입금 지갑:</b> ' + (order.wallet ? order.wallet.name : '지정되지 않음') + '\n' +
+        '🔗 <b>주소:</b> ' + (order.wallet ? (order.wallet.address.length > 30 ? 
+            order.wallet.address.substring(0, 15) + '...' + order.wallet.address.substring(order.wallet.address.length - 15) : 
+            order.wallet.address) : '없음') + '\n\n' +
+        '✅ <b>빠른 처리 요망</b>';
+
+    console.log('📨 새 주문 알림 준비:', order.id);
+    
+    if (order.proof && order.proof.data && order.proof.type.startsWith('image/')) {
+        // 이미지가 있을 경우: 이미지와 함께 메시지 전송 (한 번만)
+        console.log('🖼️ 결제 증명서 이미지 있음 - 이미지와 함께 메시지 전송');
+        
+        const results = await this.sendToAllBots(message, {
+            notificationType: 'newOrder',
+            imageData: order.proof.data,
+            imageCaption: message // 이미지 caption으로 메시지 내용을 함께 전송
+        });
+        
+        // 알림 보낸 기록 저장
+        if (results.length > 0 && results.some(r => r.imageSuccess || r.textSuccess)) {
+            this.markOrderAsSent(order.id);
+        }
+        
+        return {
+            results: results,
+            hasImage: true,
+            sentWithImage: true,
+            alreadySent: false
+        };
+    } else {
+        // 이미지가 없을 경우: 텍스트 메시지만 전송
+        console.log('📄 결제 증명서 없음 - 텍스트 메시지만 전송');
+        
+        const results = await this.sendToAllBots(message, { notificationType: 'newOrder' });
+        
+        // 알림 보낸 기록 저장
+        if (results.length > 0 && results.some(r => r.textSuccess)) {
+            this.markOrderAsSent(order.id);
+        }
+
+        return {
+            results: results,
+            hasImage: false,
+            sentWithImage: false,
+            alreadySent: false
+        };
     }
-
-    for (const bot of activeBots) {
-        // 알림 타입 필터링
-        if (options.notificationType === 'newOrder' && !bot.notifyNewOrders) {
-            continue;
-        }
-        if (options.notificationType === 'statusChange' && !bot.notifyStatusChanges) {
-            continue;
-        }
-        if (options.notificationType === 'test' && !bot.notifyTestMessages) {
-            continue;
-        }
-
-        try {
-            if (options.imageData) {
-                // 이미지가 있으면 이미지와 함께 메시지 전송 (텍스트 메시지는 별도로 보내지 않음)
-                console.log(`📤 ${bot.name}에 이미지와 함께 메시지 전송...`);
-                const imageResult = await this.sendImageToBot(bot, options.imageData, options.imageCaption || message);
-                console.log(`🖼️ ${bot.name} 이미지+메시지 전송 결과:`, imageResult.success ? '성공' : '실패');
-                
-                results.push({
-                    botName: bot.name,
-                    textSuccess: false, // 텍스트는 이미지 caption으로 전송됨
-                    imageSuccess: imageResult.success,
-                    error: imageResult.error,
-                    data: { image: imageResult.data }
-                });
-            } else {
-                // 이미지가 없으면 텍스트 메시지만 전송
-                const textResult = await this.sendMessageToBot(bot, message);
-                console.log(`💬 ${bot.name} 텍스트 메시지 전송 결과:`, textResult.success ? '성공' : '실패');
-                
-                results.push({
-                    botName: bot.name,
-                    textSuccess: textResult.success,
-                    imageSuccess: null,
-                    error: textResult.error,
-                    data: { text: textResult.data }
-                });
-            }
-        } catch (error) {
-            console.error(`❌ ${bot.name} 알림 전송 실패:`, error);
-            results.push({
-                botName: bot.name,
-                textSuccess: false,
-                imageSuccess: false,
-                error: error.message
-            });
-        }
-    }
-
-    return results;
 }
 
         // ==================== 전역 변수 ====================
