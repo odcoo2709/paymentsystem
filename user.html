@@ -1220,6 +1220,9 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('사용자 페이지 로드됨');
             
+            // ⭐⭐⭐ 페이지 로드 시 결제 폼 초기화
+            resetPaymentForm();
+            
             currentLang = 'ko';
             
             initLanguageButton();
@@ -1234,6 +1237,28 @@
             setupEventListeners();
             
             startSyncCheck();
+            
+            // ⭐⭐⭐ 모달 오버레이 클릭 이벤트 추가
+            document.getElementById('qrModal').addEventListener('click', function(e) {
+                if (e.target === this) { // 모달 배경(오버레이) 클릭 시
+                    if (confirm(currentLang === 'en' ? 
+                        'Cancel payment?\n\nCurrent payment will be cancelled and form will be reset.' : 
+                        '결제를 취소하시겠습니까?\n\n현재 결제가 취소되고 폼이 초기화됩니다.')) {
+                        cancelPayment();
+                    }
+                }
+            });
+            
+            // ⭐⭐⭐ ESC 키로 모달 닫을 때도 처리
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && !document.getElementById('qrModal').classList.contains('hidden')) {
+                    if (confirm(currentLang === 'en' ? 
+                        'Cancel payment?\n\nCurrent payment will be cancelled and form will be reset.' : 
+                        '결제를 취소하시겠습니까?\n\n현재 결제가 취소되고 폼이 초기화됩니다.')) {
+                        cancelPayment();
+                    }
+                }
+            });
             
             console.log('사용자 페이지 초기화 완료');
         });
@@ -1498,12 +1523,26 @@
                 }
             });
             
-            document.getElementById('payButton').addEventListener('click', startPayment);
+            document.getElementById('payButton').addEventListener('click', function() {
+                // ⭐⭐⭐ 이미 진행 중인 결제가 있는지 확인
+                const modal = document.getElementById('qrModal');
+                if (!modal.classList.contains('hidden')) {
+                    if (confirm(currentLang === 'en' ? 
+                        'There is a payment in progress.\n\nDo you want to cancel it and start a new payment?' : 
+                        '진행 중인 결제가 있습니다.\n\n취소하고 새 결제를 시작하시겠습니까?')) {
+                        cancelPayment();
+                        // 잠시 후 새 결제 시작
+                        setTimeout(() => startPayment(), 100);
+                    }
+                    return;
+                }
+                startPayment();
+            });
             
             document.getElementById('closeModal').addEventListener('click', function() {
                 if (confirm(currentLang === 'en' ? 
-                    'Cancel payment?\n\nCurrent payment will be cancelled.' : 
-                    '결제를 취소하시겠습니까?\n\n현재 결제가 취소됩니다.')) {
+                    'Cancel payment?\n\nCurrent payment will be cancelled and form will be reset.' : 
+                    '결제를 취소하시겠습니까?\n\n현재 결제가 취소되고 폼이 초기화됩니다.')) {
                     cancelPayment();
                 }
             });
@@ -1546,6 +1585,42 @@
                 updateToggleButtonText();
                 updateOrdersList();
             });
+        }
+
+        // ⭐⭐⭐ 새로 추가할 함수: 결제 폼 초기화
+        function resetPaymentForm() {
+            // 금액 입력 초기화
+            document.getElementById('thbAmount').value = '';
+            
+            // 파일 입력 초기화
+            document.getElementById('paymentProof').value = '';
+            
+            // 업로드된 파일 변수 초기화
+            uploadedFile = null;
+            
+            // 업로드 버튼 텍스트 복원
+            const trans = translations[currentLang];
+            const uploadButtonText = document.getElementById('uploadButtonText');
+            if (uploadButtonText) {
+                uploadButtonText.textContent = `📎 ${trans.uploadText}`;
+            }
+            
+            // 업로드 미리보기 초기화
+            const uploadPreview = document.getElementById('uploadPreview');
+            if (uploadPreview) {
+                uploadPreview.innerHTML = '';
+            }
+            
+            // 계산 미리보기 숨기기
+            const calcPreview = document.getElementById('calcPreview');
+            if (calcPreview) {
+                calcPreview.style.display = 'none';
+            }
+            
+            // 결제 버튼 비활성화
+            document.getElementById('payButton').disabled = true;
+            
+            console.log('결제 폼이 초기화되었습니다.');
         }
 
         function updateToggleButtonText() {
@@ -2071,6 +2146,9 @@
             document.getElementById('qrModal').classList.add('hidden');
             resetSteps();
             
+            // ⭐⭐⭐ 폼 초기화 추가
+            resetPaymentForm();
+            
             alert(currentLang === 'en' ? 'Payment cancelled' : '결제가 취소되었습니다');
         }
 
@@ -2090,18 +2168,10 @@
             
             currentOrderId = '';
             
-            alert(currentLang === 'en' ? 'Payment completed!' : '결제가 완료되었습니다!');
+            // ⭐⭐⭐ 폼 초기화 추가
+            resetPaymentForm();
             
-            document.getElementById('thbAmount').value = '';
-            document.getElementById('paymentProof').value = '';
-            const trans = translations[currentLang];
-            const uploadButtonText = document.getElementById('uploadButtonText');
-            if (uploadButtonText) {
-                uploadButtonText.textContent = `📎 ${trans.uploadText}`;
-            }
-            document.getElementById('uploadPreview').innerHTML = '';
-            uploadedFile = null;
-            updateCalculation();
+            alert(currentLang === 'en' ? 'Payment completed!' : '결제가 완료되었습니다!');
         }
 
         function resetSteps() {
@@ -2342,6 +2412,23 @@
             };
             
             dataManager.saveOrders(allOrders);
+            
+            // ⭐⭐⭐ 관리자가 취소 처리했을 때 모달 닫기 및 폼 초기화
+            if (newStatus === '취소' && currentOrderId === orderId) {
+                // 모달이 열려있다면 닫기
+                const modal = document.getElementById('qrModal');
+                if (!modal.classList.contains('hidden')) {
+                    modal.classList.add('hidden');
+                    resetSteps();
+                    resetPaymentForm(); // 폼 초기화
+                    currentOrderId = '';
+                    
+                    // 알림 메시지
+                    alert(currentLang === 'en' ? 
+                        'Payment has been cancelled by administrator.' : 
+                        '관리자에 의해 결제가 취소되었습니다.');
+                }
+            }
             
             if (currentOrderId === orderId && currentStep !== step) {
                 goToStep(step);
