@@ -1430,21 +1430,20 @@
             }
 
             getAdminCredentials() {
-                try {
-                    const admins = JSON.parse(localStorage.getItem(this.ADMIN_CREDENTIALS_KEY) || '[]');
-                    
-                    if (!admins.some(a => a.username === this.DEFAULT_ADMIN.username)) {
-                        admins.push(this.DEFAULT_ADMIN);
-                        this.saveAdminCredentials(this.DEFAULT_ADMIN);
-                    }
-                    
-                    return admins;
-                } catch (error) {
-                    console.error('Error loading admin credentials:', error);
-                    return [this.DEFAULT_ADMIN];
-                }
-            }
-
+    try {
+        const admins = JSON.parse(localStorage.getItem(this.ADMIN_CREDENTIALS_KEY) || '[]');
+        
+        if (!admins.some(a => a.username === this.DEFAULT_ADMIN.username)) {
+            admins.push(this.DEFAULT_ADMIN);
+            this.saveAdminCredentials(this.DEFAULT_ADMIN);
+        }
+        
+        return admins;
+    } catch (error) {
+        console.error('Error loading admin credentials:', error);
+        return [this.DEFAULT_ADMIN];
+    }
+}
             login(username, password) {
                 const admins = this.getAdminCredentials();
                 const admin = admins.find(a => a.username === username && a.password === password);
