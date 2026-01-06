@@ -2025,15 +2025,15 @@ initializeSentOrders() {
         }
     }
 
-    sync sendNewOrderNotification(order) {  // ✅ async 추가, function 제거
-        // 이미 알림 보낸 주문인지 확인
-        if (this.hasOrderBeenSent(order.id)) {
-            console.log(`⏭️ 이미 알림 보낸 주문: ${order.id}`);
-            return {
-                alreadySent: true,
-                message: '이미 알림을 보낸 주문입니다'
-            };
-        }
+    async sendNewOrderNotification(order) {  // ✅ async로 수정
+    // 이미 알림 보낸 주문인지 확인
+    if (this.hasOrderBeenSent(order.id)) {
+        console.log(`⏭️ 이미 알림 보낸 주문: ${order.id}`);
+        return {
+            alreadySent: true,
+            message: '이미 알림을 보낸 주문입니다'
+        };
+    }
 
         const statusText = {
             '입금대기': '입금 대기',
