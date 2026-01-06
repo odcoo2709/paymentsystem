@@ -431,22 +431,12 @@
             justify-content: center;
             border: 1px solid #dee2e6;
             margin: 0 auto;
-            transition: all 0.3s ease;
-            overflow: hidden;
-        }
-
-        .qr-code-small:hover {
-            border-color: #3498db;
-            box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
-            transform: scale(1.05);
         }
 
         .qr-code-small img {
             max-width: 100%;
             max-height: 100%;
             border-radius: 4px;
-            transition: opacity 0.3s ease;
-            object-fit: contain;
         }
 
         .modal-overlay {
@@ -1008,8 +998,8 @@
             border: 1px solid #fc8181;
         }
 
-        /* 바이낸스 API 설정 섹션 스타일 */
-        #binanceSettingsSection {
+        /* 설정 패널 스타일 */
+        .settings-panel {
             background: white;
             padding: 25px;
             border-radius: 15px;
@@ -1018,87 +1008,84 @@
             border: 2px solid #e2e8f0;
         }
 
-        #binanceSettingsSection h3 {
-            color: #2c3e50;
-            margin-bottom: 20px;
-            font-size: 18px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        #binanceSettingsSection h3::before {
-            content: "🔗";
-            font-size: 20px;
-        }
-
-        /* 정보 표시 스타일 */
-        .info-status {
-            margin-top: 15px;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 14px;
-            display: none;
-        }
-
-        .info-status.info {
-            background: #e3f2fd;
-            color: #1565c0;
-            border: 1px solid #bbdefb;
-            display: block;
-        }
-
-        .info-status.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-            display: block;
-        }
-
-        .info-status.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-            display: block;
-        }
-
-        /* 결제 내역 업로드 버튼 */
-        .action-upload {
-            background: #9b59b6;
-            color: white;
-        }
-
-        .action-upload:hover {
-            background: #8e44ad;
-        }
-
-        /* 자동 처리 타이머 설정 */
-        .timer-settings {
+        .setting-group {
             background: #f8f9fa;
             padding: 15px;
             border-radius: 10px;
-            margin-top: 15px;
-            border: 1px solid #e2e8f0;
+            margin-bottom: 15px;
         }
 
-        .timer-input-group {
+        .setting-group h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .time-input-group {
             display: flex;
             align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .time-input-group label {
+            min-width: 150px;
+            font-weight: 600;
+        }
+
+        .binance-status {
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .binance-status.connected {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .binance-status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        /* 영수증 업로드 스타일 */
+        .receipt-upload-container {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 2px dashed #ddd;
+        }
+
+        .receipt-preview {
+            max-width: 200px;
+            max-height: 200px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+
+        .receipt-actions {
+            display: flex;
             gap: 10px;
             margin-top: 10px;
         }
 
-        .timer-input {
+        /* QR 코드 오류 처리 */
+        .qr-error-fallback {
             width: 80px;
-            padding: 8px 12px;
-            border: 2px solid #ddd;
-            border-radius: 6px;
-            font-size: 14px;
-        }
-
-        .timer-unit {
-            color: #718096;
-            font-size: 14px;
+            height: 80px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #999;
+            font-size: 11px;
+            border: 1px solid #dee2e6;
         }
     </style>
 </head>
@@ -1165,65 +1152,89 @@
             <p class="admin-subtitle" id="adminSubtitle">한 곳에서 사용자 주문과 지갑 설정을 관리하세요</p>
         </div>
 
-        <!-- 바이낸스 API 설정 -->
-        <div class="telegram-settings" id="binanceSettingsSection">
-            <h3>🔗 바이낸스 API 설정 및 자동 입금 확인</h3>
+        <!-- 설정 패널 -->
+        <div id="settingsPanel" class="settings-panel" style="display: none;">
+            <h3 style="color: #2c3e50; margin-bottom: 20px; font-size: 18px; display: flex; align-items: center; gap: 10px;">
+                ⚙️ 자동화 설정
+            </h3>
             
-            <div class="form-group" style="margin-bottom: 15px;">
-                <label class="form-label">API Key</label>
-                <input type="password" 
-                       class="form-input" 
-                       id="binanceApiKey" 
-                       placeholder="바이낸스 API Key를 입력하세요">
-            </div>
-            
-            <div class="form-group" style="margin-bottom: 15px;">
-                <label class="form-label">Secret Key</label>
-                <input type="password" 
-                       class="form-input" 
-                       id="binanceSecretKey" 
-                       placeholder="바이낸스 Secret Key를 입력하세요">
-            </div>
-            
-            <!-- 자동 처리 타이머 설정 -->
-            <div class="timer-settings">
-                <label class="form-label">자동 처리 타이머 설정</label>
-                <div class="timer-input-group">
-                    <label>입금 확인 후:</label>
-                    <input type="number" 
-                           class="timer-input" 
-                           id="autoProcessTimer" 
-                           value="90"
-                           min="1"
-                           max="600">
-                    <span class="timer-unit">초 후 자동 처리중으로 변경</span>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+                <div class="setting-group">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">
+                        바이낸스 API 설정
+                    </label>
+                    <input type="text" id="binanceApiKey" placeholder="바이낸스 API 키" 
+                           style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 6px; margin-bottom: 10px;">
+                    <input type="password" id="binanceApiSecret" placeholder="바이낸스 API Secret" 
+                           style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 6px;">
+                    <button onclick="saveBinanceCredentials()" 
+                            style="margin-top: 10px; padding: 8px 16px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                        API 키 저장
+                    </button>
+                    <div id="binanceStatus" class="binance-status" style="margin-top: 10px; display: none;"></div>
                 </div>
-                <small style="color: #718096; display: block; margin-top: 8px;">
-                    * 입금 확인 상태에서 설정한 시간 후 자동으로 처리중 상태로 변경됩니다.
-                </small>
+                
+                <div class="setting-group">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">
+                        자동 상태 전환 설정
+                    </label>
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="autoTransitionEnabled" checked>
+                            자동 상태 전환 활성화
+                        </label>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <div class="time-input-group">
+                            <label>입금확인 → 처리중 (초):</label>
+                            <input type="number" id="depositToProcessingTime" value="90" min="10" max="600"
+                                   style="width: 100px; padding: 8px; border: 2px solid #ddd; border-radius: 6px;">
+                        </div>
+                        <div class="time-input-group">
+                            <label>처리중 → 완료 (초):</label>
+                            <input type="number" id="processingToCompleteTime" value="180" min="10" max="1200"
+                                   style="width: 100px; padding: 8px; border: 2px solid #ddd; border-radius: 6px;">
+                        </div>
+                    </div>
+                    <button onclick="saveAutoTransitionSettings()" 
+                            style="padding: 8px 16px; background: #2ecc71; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                        설정 저장
+                    </button>
+                </div>
+                
+                <div class="setting-group">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600;">
+                        바이낸스 모니터링
+                    </label>
+                    <div style="margin-bottom: 10px;">
+                        현재 모니터링: <span id="monitoringStatus" style="color: #e74c3c;">정지됨</span>
+                    </div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button onclick="startBinanceMonitoring()" 
+                                style="padding: 8px 16px; background: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            모니터링 시작
+                        </button>
+                        <button onclick="stopBinanceMonitoring()" 
+                                style="padding: 8px 16px; background: #e74c3c; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            모니터링 중지
+                        </button>
+                        <button onclick="testBinanceConnection()" 
+                                style="padding: 8px 16px; background: #f39c12; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                            연결 테스트
+                        </button>
+                    </div>
+                </div>
             </div>
             
-            <div style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="save-telegram-btn" id="saveBinanceConfig">
-                    💾 API 설정 저장
-                </button>
-                <button class="test-telegram-btn" id="testBinanceConnection">
-                    🔄 연결 테스트
-                </button>
-                <button class="test-telegram-btn" style="background: #f39c12;" 
-                        id="startAutoDepositCheck">
-                    ⚡ 입금 자동 확인 시작
-                </button>
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #eee;">
+                <h4 style="color: #2c3e50; margin-bottom: 10px;">시스템 정보</h4>
+                <div style="font-size: 12px; color: #666; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px;">
+                    <div>주문 수: <span id="sysOrderCount">0</span>개</div>
+                    <div>활성 지갑: <span id="sysWalletCount">0</span>개</div>
+                    <div>활성 타이머: <span id="sysTimerCount">0</span>개</div>
+                    <div>텔레그램 봇: <span id="sysBotCount">0</span>개</div>
+                </div>
             </div>
-            
-            <div class="telegram-status" id="binanceStatus"></div>
-            
-            <small>
-                * 실제 거래에는 사용되지 않으며, 입금 확인용으로만 사용됩니다.<br>
-                * API Key는 Read-Only 권한만 부여해주세요.<br>
-                * 자동 입금 확인은 30초마다 실행됩니다.<br>
-                * 타이머 설정은 모든 주문에 적용됩니다.
-            </small>
         </div>
 
         <!-- 텔레그램 설정 -->
@@ -1252,6 +1263,7 @@
         <div class="tabs">
             <button class="tab-button active" data-tab="orders">📋 주문 관리</button>
             <button class="tab-button" data-tab="wallets">👛 지갑 관리</button>
+            <button class="tab-button" data-tab="settings">⚙️ 시스템 설정</button>
         </div>
 
         <!-- 통계 카드 -->
@@ -1307,6 +1319,7 @@
                         </div>
                         <button class="export-button" id="exportOrders">📥 저장하기</button>
                         <button class="refresh-button" id="refreshOrders">🔄 새로고침</button>
+                        <button class="refresh-button" onclick="window.createTestOrder()" style="background: #9b59b6;">테스트 주문</button>
                     </div>
                 </div>
 
@@ -1391,6 +1404,11 @@
                 </div>
             </div>
         </div>
+
+        <!-- 시스템 설정 탭 -->
+        <div id="settingsTab" class="tab-content">
+            <!-- 설정 패널이 여기에 표시됩니다 -->
+        </div>
     </div>
 
     <!-- 저장 상태 표시 -->
@@ -1465,8 +1483,10 @@
                         <input type="file" class="form-input" id="walletQRCode" 
                                accept="image/*">
                         <small style="color: #718096; font-size: 12px;" id="qrCodeHelp">
-                            * 지갑 주소에 대한 QR 코드 이미지를 업로드하세요. (권장 크기: 200x200px)
+                            * 지갑 주소에 대한 QR 코드 이미지를 업로드하세요. (권장 크기: 200x200px)<br>
+                            * 지원 형식: JPEG, PNG, GIF, WebP (최대 2MB)
                         </small>
+                        <div id="qrCodePreview" style="margin-top: 10px;"></div>
                     </div>
 
                     <div class="form-group">
@@ -1548,6 +1568,48 @@
             <div class="modal-actions">
                 <button class="modal-button secondary" id="cancelTelegramBotModal">취소</button>
                 <button class="modal-button primary" id="saveTelegramBot">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 영수증 업로드 모달 -->
+    <div class="modal-overlay hidden" id="receiptModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">🧾 영수증 업로드</h3>
+                <button class="modal-close" id="closeReceiptModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div id="receiptOrderInfo" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                    <!-- 주문 정보 -->
+                </div>
+                
+                <div class="receipt-upload-container">
+                    <label style="display: block; margin-bottom: 10px; font-weight: 600;">
+                        영수증 이미지 선택
+                    </label>
+                    <input type="file" id="receiptFile" accept="image/*" 
+                           style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 6px; margin-bottom: 15px;">
+                    
+                    <div id="receiptPreviewContainer" style="display: none;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: 600;">
+                            미리보기
+                        </label>
+                        <img id="receiptPreview" class="receipt-preview" alt="영수증 미리보기">
+                    </div>
+                    
+                    <div class="receipt-actions">
+                        <button class="modal-button primary" onclick="uploadReceipt()">업로드</button>
+                        <button class="modal-button secondary" onclick="closeReceiptModal()">취소</button>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px; padding: 10px; background: #e8f4f8; border-radius: 6px; font-size: 14px; color: #2c3e50;">
+                    <strong>참고:</strong><br>
+                    - 고객에게 제공할 결제 영수증을 업로드하세요.<br>
+                    - 이미지 파일만 업로드 가능합니다 (JPEG, PNG, WebP).<br>
+                    - 업로드 후 고객 페이지에서 확인할 수 있습니다.
+                </div>
             </div>
         </div>
     </div>
@@ -1667,11 +1729,8 @@
                 this.ADMIN_SYNC_KEY = 'admin_sync_check';
                 this.TELEGRAM_BOTS_KEY = 'telegram_bots';
                 this.LAST_NOTIFICATION_KEY = 'last_notification_time';
-                this.BINANCE_API_KEY = 'binance_api_key';
-                this.BINANCE_SECRET_KEY = 'binance_api_secret';
-                this.AUTO_PROCESS_TIMER = 'auto_process_timer';
-                this.binanceAPI = null;
-                this.autoProcessTimer = 90; // 기본 90초 (1분 30초)
+                this.BINANCE_SETTINGS_KEY = 'binance_settings';
+                this.AUTO_TRANSITION_KEY = 'auto_transition_settings';
             }
 
             getOrders() {
@@ -1774,6 +1833,44 @@
                 }
             }
 
+            getBinanceSettings() {
+                try {
+                    return JSON.parse(localStorage.getItem(this.BINANCE_SETTINGS_KEY) || '{}');
+                } catch (error) {
+                    console.error('Error loading binance settings:', error);
+                    return {};
+                }
+            }
+
+            saveBinanceSettings(settings) {
+                try {
+                    localStorage.setItem(this.BINANCE_SETTINGS_KEY, JSON.stringify(settings));
+                    return true;
+                } catch (error) {
+                    console.error('Error saving binance settings:', error);
+                    return false;
+                }
+            }
+
+            getAutoTransitionSettings() {
+                try {
+                    return JSON.parse(localStorage.getItem(this.AUTO_TRANSITION_KEY) || '{}');
+                } catch (error) {
+                    console.error('Error loading auto transition settings:', error);
+                    return {};
+                }
+            }
+
+            saveAutoTransitionSettings(settings) {
+                try {
+                    localStorage.setItem(this.AUTO_TRANSITION_KEY, JSON.stringify(settings));
+                    return true;
+                } catch (error) {
+                    console.error('Error saving auto transition settings:', error);
+                    return false;
+                }
+            }
+
             saveLastNotificationTime() {
                 localStorage.setItem(this.LAST_NOTIFICATION_KEY, Date.now().toString());
             }
@@ -1810,10 +1907,10 @@
                 return lastSync !== lastAdminSync;
             }
 
-            notifyUserPage(orderId, newStatus) {
+            notifyUserPage(orderId, newStatus, receipt = null) {
                 try {
                     if (window.updateOrderStatusFromAdmin) {
-                        window.updateOrderStatusFromAdmin(orderId, newStatus);
+                        window.updateOrderStatusFromAdmin(orderId, newStatus, receipt);
                     }
                 } catch (e) {
                     console.log('사용자 페이지 알림 실패');
@@ -1829,167 +1926,300 @@
                     console.log('사용자 페이지 지갑 알림 실패');
                 }
             }
+        }
 
-            // 바이낸스 API 연동 (WebSocket을 통한 입금 확인)
-            setupBinanceAPI() {
-                // 실제 API 키는 환경변수나 안전한 방식으로 관리해야 합니다
-                const API_KEY = localStorage.getItem(this.BINANCE_API_KEY) || '';
-                const API_SECRET = localStorage.getItem(this.BINANCE_SECRET_KEY) || '';
-                this.autoProcessTimer = parseInt(localStorage.getItem(this.AUTO_PROCESS_TIMER) || '90');
-                
-                return {
-                    checkDeposit: async (address, network, amount) => {
-                        console.log(`바이낸스 입금 확인 요청: ${address}, ${network}, ${amount} USDT`);
-                        
-                        // 실제 구현에서는 바이낸스 WebSocket API를 사용해야 함
-                        // 여기서는 시뮬레이션만 구현
-                        return new Promise((resolve) => {
-                            setTimeout(() => {
-                                // 70% 확률로 입금 확인
-                                const isConfirmed = Math.random() > 0.3;
-                                resolve({
-                                    success: true,
-                                    confirmed: isConfirmed,
-                                    transactionId: isConfirmed ? '0x' + Math.random().toString(36).substr(2, 32) : null,
-                                    amount: amount,
-                                    timestamp: new Date().toISOString()
-                                });
-                            }, 2000);
-                        });
-                    },
-                    
-                    // 주기적으로 입금 확인
-                    startDepositMonitor: function(orders) {
-                        const pendingOrders = orders.filter(order => 
-                            order.status === '입금대기' && 
-                            order.wallet && 
-                            order.usdt > 0
-                        );
-                        
-                        console.log(`🔍 바이낸스 입금 확인 모니터링: ${pendingOrders.length}개의 대기 주문`);
-                        
-                        pendingOrders.forEach(async (order) => {
-                            try {
-                                const result = await this.checkDeposit(
-                                    order.wallet.address,
-                                    order.wallet.network,
-                                    order.usdt
-                                );
-                                
-                                if (result.confirmed) {
-                                    // 입금 확인된 주문 업데이트
-                                    const orderIndex = orders.findIndex(o => o.id === order.id);
-                                    if (orderIndex > -1) {
-                                        orders[orderIndex].status = '입금확인';
-                                        orders[orderIndex].depositTxId = result.transactionId;
-                                        orders[orderIndex].depositTime = result.timestamp;
-                                        orders[orderIndex].binanceCheck = true;
-                                        orders[orderIndex].binanceCheckTime = new Date().toISOString();
-                                        
-                                        // 저장하고 알림
-                                        this.saveOrders(orders);
-                                        
-                                        // 자동 처리 타이머 가져오기
-                                        const autoProcessTime = parseInt(localStorage.getItem('auto_process_timer') || '90');
-                                        
-                                        // 설정된 시간 후 처리중으로 자동 변경
-                                        setTimeout(() => {
-                                            this.autoProcessOrder(order.id);
-                                        }, autoProcessTime * 1000); // 초를 밀리초로 변환
-                                        
-                                        console.log(`✅ 주문 ${order.id} 입금 확인 완료. ${autoProcessTime}초 후 자동 처리 시작`);
-                                        
-                                        // 텔레그램 알림
-                                        if (window.telegramNotifier) {
-                                            const message = 
-                                                `💰 <b>바이낸스 입금 확인 완료!</b>\n\n` +
-                                                `📋 <b>주문 ID:</b> ${order.id}\n` +
-                                                `💵 <b>금액:</b> ${order.usdt.toFixed(4)} USDT\n` +
-                                                `🔗 <b>트랜잭션:</b> ${result.transactionId?.substring(0, 20)}...\n` +
-                                                `⏰ <b>입금 시간:</b> ${new Date(result.timestamp).toLocaleString('ko-KR')}\n` +
-                                                `⏳ <b>자동 처리:</b> ${autoProcessTime}초 후 처리중으로 변경`;
-                                            
-                                            telegramNotifier.sendToAllBots(message, { notificationType: 'statusChange' });
-                                        }
-                                        
-                                        // 사용자 페이지에 알림
-                                        this.notifyUserPage(order.id, '입금확인');
-                                    }
-                                }
-                            } catch (error) {
-                                console.error(`❌ 주문 ${order.id} 입금 확인 오류:`, error);
-                            }
-                        });
-                    },
-                    
-                    // 자동으로 처리중으로 변경
-                    autoProcessOrder: function(orderId) {
-                        const orders = this.getOrders();
-                        const orderIndex = orders.findIndex(o => o.id === orderId);
-                        
-                        if (orderIndex > -1 && orders[orderIndex].status === '입금확인') {
-                            orders[orderIndex].status = '처리중';
-                            orders[orderIndex].step = 3;
-                            orders[orderIndex].autoProcessedAt = new Date().toISOString();
-                            orders[orderIndex].autoProcessed = true;
-                            
-                            this.saveOrders(orders);
-                            this.notifyUserPage(orderId, '처리중');
-                            
-                            console.log(`⚡ 주문 ${orderId} 자동 처리중으로 변경`);
-                            
-                            // 텔레그램 알림
-                            if (window.telegramNotifier) {
-                                const order = orders[orderIndex];
-                                const message = 
-                                    `⚡ <b>자동 처리 시작!</b>\n\n` +
-                                    `📋 <b>주문 ID:</b> ${orderId}\n` +
-                                    `💰 <b>금액:</b> ${order.amount.toLocaleString()} THB\n` +
-                                    `⏰ <b>자동 처리 시간:</b> ${new Date().toLocaleString('ko-KR')}\n\n` +
-                                    `✅ <b>이제 수동으로 완료 처리를 해주세요.</b>`;
-                                
-                                telegramNotifier.sendToAllBots(message, { notificationType: 'statusChange' });
-                            }
-                        }
-                    },
-                    
-                    // 바이낸스 API 설정 저장
-                    saveBinanceConfig: function(apiKey, apiSecret) {
-                        try {
-                            localStorage.setItem('binance_api_key', apiKey);
-                            localStorage.setItem('binance_api_secret', apiSecret);
-                            return true;
-                        } catch (error) {
-                            console.error('바이낸스 API 설정 저장 오류:', error);
-                            return false;
-                        }
-                    },
-                    
-                    // 바이낸스 API 설정 가져오기
-                    getBinanceConfig: function() {
-                        return {
-                            apiKey: localStorage.getItem('binance_api_key') || '',
-                            apiSecret: localStorage.getItem('binance_api_secret') || ''
-                        };
-                    }
-                };
+        // ==================== 바이낸스 API 관리자 클래스 ====================
+        class BinanceWalletMonitor {
+            constructor() {
+                this.apiKey = '';
+                this.apiSecret = '';
+                this.checkInterval = 30000; // 30초마다 체크
+                this.checkTimer = null;
+                this.isMonitoring = false;
+                this.dataManager = new DataManager();
+                this.loadCredentials();
             }
 
-            // 자동 처리 타이머 설정 저장
-            saveAutoProcessTimer(timerSeconds) {
-                try {
-                    localStorage.setItem('auto_process_timer', timerSeconds.toString());
-                    this.autoProcessTimer = timerSeconds;
-                    return true;
-                } catch (error) {
-                    console.error('자동 처리 타이머 저장 오류:', error);
-                    return false;
+            loadCredentials() {
+                const settings = this.dataManager.getBinanceSettings();
+                if (settings.apiKey && settings.apiSecret) {
+                    this.apiKey = settings.apiKey;
+                    this.apiSecret = settings.apiSecret;
                 }
             }
 
-            // 자동 처리 타이머 가져오기
-            getAutoProcessTimer() {
-                return parseInt(localStorage.getItem('auto_process_timer') || '90');
+            setCredentials(apiKey, apiSecret) {
+                this.apiKey = apiKey;
+                this.apiSecret = apiSecret;
+                
+                this.dataManager.saveBinanceSettings({
+                    apiKey: apiKey,
+                    apiSecret: apiSecret,
+                    lastUpdated: new Date().toISOString()
+                });
+                
+                return this;
+            }
+
+            async checkDepositForOrder(orderId, walletAddress, expectedAmount, coin = 'USDT') {
+                try {
+                    console.log(`🔍 바이낸스 입금 확인: 주문 ${orderId}, 지갑 ${walletAddress}, 금액 ${expectedAmount} ${coin}`);
+                    
+                    // 실제 바이낸스 API 연동 부분
+                    // 여기서는 예시로 구현합니다
+                    const depositFound = await this.simulateDepositCheck(orderId, walletAddress, expectedAmount, coin);
+                    
+                    if (depositFound) {
+                        console.log(`✅ 바이낸스 입금 확인됨: 주문 ${orderId}`);
+                        return {
+                            success: true,
+                            found: true,
+                            amount: expectedAmount,
+                            transactionId: 'BINANCE_TX_' + Date.now()
+                        };
+                    }
+                    
+                    return {
+                        success: true,
+                        found: false
+                    };
+                    
+                } catch (error) {
+                    console.error('❌ 바이낸스 API 오류:', error);
+                    return {
+                        success: false,
+                        error: error.message
+                    };
+                }
+            }
+
+            async simulateDepositCheck(orderId, walletAddress, expectedAmount, coin) {
+                // 시뮬레이션: 실제로는 바이낸스 API 호출
+                // 실제 구현시에는 아래 API를 사용해야 합니다:
+                // GET /sapi/v1/capital/deposit/hisrec
+                // 또는 WebSocket stream
+                
+                // 현재는 30% 확률로 입금 확인되는 시뮬레이션
+                const randomCheck = Math.random() > 0.7;
+                
+                if (randomCheck) {
+                    console.log(`🎯 시뮬레이션 입금 발견: ${orderId}`);
+                    return true;
+                }
+                
+                return false;
+            }
+
+            startMonitoring(ordersToCheck) {
+                if (this.isMonitoring) {
+                    console.log('⚠️ 이미 모니터링 중입니다');
+                    return;
+                }
+
+                if (!this.apiKey || !this.apiSecret) {
+                    alert('바이낸스 API 키를 먼저 설정해주세요.');
+                    return;
+                }
+
+                console.log(`🚀 바이낸스 입금 모니터링 시작: ${ordersToCheck.length}개 주문`);
+                this.isMonitoring = true;
+                
+                this.checkTimer = setInterval(async () => {
+                    console.log('🔄 바이낸스 주기적 입금 확인 실행');
+                    
+                    for (const order of ordersToCheck) {
+                        if (order.status === '입금대기' && order.wallet) {
+                            const result = await this.checkDepositForOrder(
+                                order.id,
+                                order.wallet.address,
+                                order.usdt,
+                                this.getCoinFromNetwork(order.wallet.network)
+                            );
+                            
+                            if (result.success && result.found) {
+                                // 입금 확인됨 - 상태 변경
+                                updateOrderStatus(order.id, '입금확인');
+                                
+                                // 사용자 페이지에 알림
+                                dataManager.notifyUserPage(order.id, '입금확인');
+                                
+                                console.log(`✅ 자동 입금 확인 완료: ${order.id}`);
+                            }
+                        }
+                    }
+                }, this.checkInterval);
+            }
+
+            stopMonitoring() {
+                if (this.checkTimer) {
+                    clearInterval(this.checkTimer);
+                    this.checkTimer = null;
+                }
+                this.isMonitoring = false;
+                console.log('🛑 바이낸스 입금 모니터링 중지');
+            }
+
+            getCoinFromNetwork(network) {
+                const networkToCoin = {
+                    'TRC20': 'USDT',
+                    'ERC20': 'USDT',
+                    'BEP20': 'USDT',
+                    'Solana': 'SOL',
+                    'Polygon': 'MATIC'
+                };
+                return networkToCoin[network] || 'USDT';
+            }
+
+            // 실제 바이낸스 API 연동 메서드 (예시)
+            async getBinanceDepositHistory() {
+                // 실제 구현 예시:
+                /*
+                const timestamp = Date.now();
+                const queryString = `timestamp=${timestamp}`;
+                const signature = this.generateSignature(queryString);
+                
+                const response = await fetch(`https://api.binance.com/sapi/v1/capital/deposit/hisrec?${queryString}&signature=${signature}`, {
+                    headers: {
+                        'X-MBX-APIKEY': this.apiKey
+                    }
+                });
+                
+                return await response.json();
+                */
+            }
+
+            generateSignature(queryString) {
+                // HMAC SHA256 서명 생성
+                // 실제 구현 필요
+                return '';
+            }
+
+            async testConnection() {
+                if (!this.apiKey || !this.apiSecret) {
+                    return { success: false, error: 'API 키가 설정되지 않았습니다' };
+                }
+
+                try {
+                    // 실제 바이낸스 연결 테스트
+                    // 여기서는 시뮬레이션
+                    const success = Math.random() > 0.3; // 70% 성공률
+                    
+                    if (success) {
+                        return { 
+                            success: true, 
+                            message: '바이낸스 API 연결 테스트 성공' 
+                        };
+                    } else {
+                        return { 
+                            success: false, 
+                            error: '바이낸스 API 연결 실패. API 키를 확인해주세요.' 
+                        };
+                    }
+                } catch (error) {
+                    return { 
+                        success: false, 
+                        error: `연결 오류: ${error.message}` 
+                    };
+                }
+            }
+        }
+
+        // ==================== 자동 상태 전환 타이머 클래스 ====================
+        class AutoStatusTransition {
+            constructor() {
+                this.timers = new Map();
+                this.settings = {
+                    depositToProcessing: 90, // 1분 30초 (초 단위)
+                    processingToComplete: 180, // 3분 (초 단위)
+                    enabled: true
+                };
+                this.loadSettings();
+            }
+
+            loadSettings() {
+                const saved = dataManager.getAutoTransitionSettings();
+                if (saved && Object.keys(saved).length > 0) {
+                    this.settings = { ...this.settings, ...saved };
+                }
+            }
+
+            saveSettings() {
+                dataManager.saveAutoTransitionSettings(this.settings);
+            }
+
+            updateSettings(newSettings) {
+                this.settings = { ...this.settings, ...newSettings };
+                this.saveSettings();
+                console.log('⚙️ 자동 전환 설정 업데이트:', this.settings);
+            }
+
+            scheduleTransition(orderId, fromStatus, toStatus, delaySeconds) {
+                if (!this.settings.enabled) return;
+
+                const timerKey = `${orderId}_${fromStatus}_${toStatus}`;
+                
+                // 이미 예약된 타이머 취소
+                if (this.timers.has(timerKey)) {
+                    clearTimeout(this.timers.get(timerKey));
+                }
+
+                console.log(`⏰ 자동 상태 전환 예약: ${orderId} ${fromStatus} → ${toStatus} (${delaySeconds}초 후)`);
+                
+                const timer = setTimeout(() => {
+                    this.executeTransition(orderId, fromStatus, toStatus);
+                    this.timers.delete(timerKey);
+                }, delaySeconds * 1000);
+
+                this.timers.set(timerKey, timer);
+                
+                // 타이머 정보 저장
+                this.saveTimerInfo(orderId, fromStatus, toStatus, Date.now() + delaySeconds * 1000);
+            }
+
+            cancelTransition(orderId, fromStatus, toStatus) {
+                const timerKey = `${orderId}_${fromStatus}_${toStatus}`;
+                if (this.timers.has(timerKey)) {
+                    clearTimeout(this.timers.get(timerKey));
+                    this.timers.delete(timerKey);
+                    console.log(`❌ 자동 전환 취소: ${orderId} ${fromStatus} → ${toStatus}`);
+                }
+            }
+
+            executeTransition(orderId, fromStatus, toStatus) {
+                console.log(`🔄 자동 상태 전환 실행: ${orderId} ${fromStatus} → ${toStatus}`);
+                
+                // 실제 상태 변경
+                updateOrderStatus(orderId, toStatus);
+                
+                // 텔레그램 알림
+                const order = allOrders.find(o => o.id === orderId);
+                if (order) {
+                    telegramNotifier.sendStatusChangeNotification(orderId, fromStatus, toStatus);
+                }
+            }
+
+            saveTimerInfo(orderId, fromStatus, toStatus, executeTime) {
+                const timers = JSON.parse(localStorage.getItem('auto_transition_timers') || '{}');
+                timers[`${orderId}_${fromStatus}_${toStatus}`] = {
+                    orderId,
+                    fromStatus,
+                    toStatus,
+                    executeTime,
+                    scheduledAt: Date.now()
+                };
+                localStorage.setItem('auto_transition_timers', JSON.stringify(timers));
+            }
+
+            clearAllTimers() {
+                for (const timer of this.timers.values()) {
+                    clearTimeout(timer);
+                }
+                this.timers.clear();
+                console.log('🧹 모든 자동 전환 타이머 초기화');
+            }
+
+            getActiveTimerCount() {
+                return this.timers.size;
             }
         }
 
@@ -2362,7 +2592,7 @@
                     
                     return {
                         success: true,
-                        message: '테스트 알림 전송 완료 (텍스트 + 이미지)'
+                        message: '테스트 알림 전송 완료 (텔스트 + 이미지)'
                     };
                 }
             }
@@ -2518,6 +2748,8 @@
         const dataManager = new DataManager();
         const telegramNotifier = new TelegramMultiNotifier();
         const loginManager = new LoginManager();
+        const binanceMonitor = new BinanceWalletMonitor();
+        const autoTransition = new AutoStatusTransition();
         
         let allOrders = [];
         let allWallets = [];
@@ -2530,7 +2762,6 @@
         let currentLang = 'ko';
         let syncCheckInterval = null;
         let notificationCheckInterval = null;
-        let binanceDepositInterval = null;
 
         // 번역 데이터
         const translations = {
@@ -2614,10 +2845,7 @@
                 botDeleteButton: "Delete",
                 botActiveStatus: "Active",
                 botInactiveStatus: "Inactive",
-                noBotsText: "No Telegram bots added. Add a new bot to receive notifications.",
-                paymentHistoryLabel: "Payment History (Thailand)",
-                uploadPaymentHistoryLabel: "Upload Payment History",
-                viewPaymentHistoryLabel: "View Payment History"
+                noBotsText: "No Telegram bots added. Add a new bot to receive notifications."
             },
             ko: {
                 adminTitle: "📊 주문 및 지갑 관리 시스템",
@@ -2699,10 +2927,7 @@
                 botDeleteButton: "삭제",
                 botActiveStatus: "활성",
                 botInactiveStatus: "비활성",
-                noBotsText: "텔레그램 봇이 없습니다. 알림을 받으려면 새 봇을 추가하세요.",
-                paymentHistoryLabel: "결제 내역 (태국)",
-                uploadPaymentHistoryLabel: "결제 내역 업로드",
-                viewPaymentHistoryLabel: "결제 내역 보기"
+                noBotsText: "텔레그램 봇이 없습니다. 알림을 받으려면 새 봇을 추가하세요."
             }
         };
 
@@ -2799,6 +3024,9 @@
             
             currentLang = 'ko';
             
+            // 설정 패널 초기화
+            initializeSettingsPanel();
+            
             updateTelegramBotsList();
             
             setupEventListeners();
@@ -2814,10 +3042,60 @@
             
             startSyncCheck();
             startNotificationCheck();
-            startBinanceDepositMonitor();
-            loadBinanceConfig();
-            
             console.log('관리자 대시보드 초기화 완료');
+        }
+
+        function initializeSettingsPanel() {
+            const settingsTab = document.getElementById('settingsTab');
+            const settingsPanel = document.getElementById('settingsPanel');
+            
+            if (settingsTab && settingsPanel) {
+                settingsPanel.style.display = 'block';
+                settingsTab.appendChild(settingsPanel);
+                
+                // 설정값 로드
+                loadSettingsValues();
+            }
+        }
+
+        function loadSettingsValues() {
+            // 자동 전환 설정 로드
+            document.getElementById('autoTransitionEnabled').checked = autoTransition.settings.enabled;
+            document.getElementById('depositToProcessingTime').value = autoTransition.settings.depositToProcessing;
+            document.getElementById('processingToCompleteTime').value = autoTransition.settings.processingToComplete;
+            
+            // 바이낸스 설정 로드
+            const binanceSettings = dataManager.getBinanceSettings();
+            if (binanceSettings.apiKey) {
+                document.getElementById('binanceApiKey').value = binanceSettings.apiKey;
+            }
+            if (binanceSettings.apiSecret) {
+                document.getElementById('binanceApiSecret').value = binanceSettings.apiSecret;
+            }
+            
+            // 모니터링 상태 업데이트
+            updateMonitoringStatus();
+            updateSystemInfo();
+        }
+
+        function updateMonitoringStatus() {
+            const statusElement = document.getElementById('monitoringStatus');
+            if (statusElement) {
+                if (binanceMonitor.isMonitoring) {
+                    statusElement.textContent = '실행중';
+                    statusElement.style.color = '#27ae60';
+                } else {
+                    statusElement.textContent = '정지됨';
+                    statusElement.style.color = '#e74c3c';
+                }
+            }
+        }
+
+        function updateSystemInfo() {
+            document.getElementById('sysOrderCount').textContent = allOrders.length;
+            document.getElementById('sysWalletCount').textContent = allWallets.filter(w => w.isActive).length;
+            document.getElementById('sysTimerCount').textContent = autoTransition.getActiveTimerCount();
+            document.getElementById('sysBotCount').textContent = telegramNotifier.bots.length;
         }
 
         function startSyncCheck() {
@@ -2878,12 +3156,6 @@
             
             document.getElementById('addTelegramBot').addEventListener('click', openAddTelegramBotModal);
             
-            // 바이낸스 API 설정 이벤트 리스너
-            document.getElementById('saveBinanceConfig')?.addEventListener('click', saveBinanceConfig);
-            document.getElementById('testBinanceConnection')?.addEventListener('click', testBinanceConnection);
-            document.getElementById('startAutoDepositCheck')?.addEventListener('click', startAutoDepositCheck);
-            document.getElementById('autoProcessTimer')?.addEventListener('change', saveAutoProcessTimer);
-            
             document.getElementById('walletForm').addEventListener('submit', function(e) {
                 e.preventDefault();
                 saveWallet();
@@ -2893,129 +3165,14 @@
                 e.preventDefault();
                 saveTelegramBot();
             });
-        }
-
-        // ==================== 바이낸스 API 설정 ====================
-        function loadBinanceConfig() {
-            const config = dataManager.getBinanceConfig();
-            const apiKeyInput = document.getElementById('binanceApiKey');
-            const secretKeyInput = document.getElementById('binanceSecretKey');
-            const timerInput = document.getElementById('autoProcessTimer');
             
-            if (apiKeyInput && config.apiKey) {
-                apiKeyInput.value = config.apiKey;
-            }
-            if (secretKeyInput && config.apiSecret) {
-                secretKeyInput.value = config.apiSecret;
-            }
-            if (timerInput) {
-                const savedTimer = dataManager.getAutoProcessTimer();
-                timerInput.value = savedTimer;
-            }
-        }
-
-        function saveBinanceConfig() {
-            const apiKey = document.getElementById('binanceApiKey').value.trim();
-            const secretKey = document.getElementById('binanceSecretKey').value.trim();
+            // 영수증 파일 변경 이벤트
+            document.getElementById('receiptFile')?.addEventListener('change', function(e) {
+                handleReceiptFileSelect(e);
+            });
             
-            if (!apiKey || !secretKey) {
-                showBinanceStatus('API Key와 Secret Key를 모두 입력해주세요.', 'error');
-                return;
-            }
-            
-            const success = dataManager.saveBinanceConfig(apiKey, secretKey);
-            
-            if (success) {
-                showBinanceStatus('바이낸스 API 설정이 저장되었습니다.', 'success');
-                
-                // 바이낸스 API 재설정
-                dataManager.binanceAPI = dataManager.setupBinanceAPI();
-            } else {
-                showBinanceStatus('저장 중 오류가 발생했습니다.', 'error');
-            }
-        }
-
-        async function testBinanceConnection() {
-            showBinanceStatus('바이낸스 연결 테스트 중...', 'info');
-            
-            try {
-                // 실제로는 바이낸스 API를 호출해야 하지만, 여기서는 시뮬레이션
-                await new Promise(resolve => setTimeout(resolve, 1500));
-                
-                const config = dataManager.getBinanceConfig();
-                if (!config.apiKey || !config.apiSecret) {
-                    throw new Error('API 설정이 필요합니다.');
-                }
-                
-                showBinanceStatus('✅ 바이낸스 API 연결 테스트 성공!', 'success');
-            } catch (error) {
-                showBinanceStatus(`❌ 연결 테스트 실패: ${error.message}`, 'error');
-            }
-        }
-
-        function startAutoDepositCheck() {
-            if (!binanceDepositInterval) {
-                binanceDepositInterval = setInterval(() => {
-                    if (dataManager.binanceAPI && allOrders.length > 0) {
-                        dataManager.binanceAPI.startDepositMonitor(allOrders);
-                        console.log('🔍 바이낸스 입금 확인 실행');
-                    }
-                }, 30000); // 30초마다 실행
-                
-                showBinanceStatus('✅ 자동 입금 확인이 시작되었습니다. (30초 간격)', 'success');
-                
-                // 즉시 한 번 실행
-                if (dataManager.binanceAPI && allOrders.length > 0) {
-                    dataManager.binanceAPI.startDepositMonitor(allOrders);
-                }
-            } else {
-                clearInterval(binanceDepositInterval);
-                binanceDepositInterval = null;
-                showBinanceStatus('⏸️ 자동 입금 확인이 중지되었습니다.', 'info');
-            }
-        }
-
-        function saveAutoProcessTimer() {
-            const timerInput = document.getElementById('autoProcessTimer');
-            if (!timerInput) return;
-            
-            const timerSeconds = parseInt(timerInput.value);
-            
-            if (timerSeconds < 1 || timerSeconds > 600) {
-                showBinanceStatus('타이머는 1초에서 600초 사이로 설정해주세요.', 'error');
-                return;
-            }
-            
-            const success = dataManager.saveAutoProcessTimer(timerSeconds);
-            
-            if (success) {
-                showBinanceStatus(`✅ 자동 처리 타이머가 ${timerSeconds}초로 설정되었습니다.`, 'success');
-            } else {
-                showBinanceStatus('타이머 저장 중 오류가 발생했습니다.', 'error');
-            }
-        }
-
-        function startBinanceDepositMonitor() {
-            // DataManager에 바이낸스 API 설정
-            dataManager.binanceAPI = dataManager.setupBinanceAPI();
-            
-            // 바이낸스 입금 확인 시작 (30초마다)
-            startAutoDepositCheck();
-        }
-
-        function showBinanceStatus(message, type) {
-            const statusElement = document.getElementById('binanceStatus');
-            if (!statusElement) return;
-            
-            statusElement.textContent = message;
-            statusElement.className = 'telegram-status ' + type;
-            statusElement.style.display = 'block';
-            
-            setTimeout(() => {
-                if (statusElement.textContent === message) {
-                    statusElement.style.display = 'none';
-                }
-            }, 5000);
+            // 영수증 모달 닫기
+            document.getElementById('closeReceiptModal')?.addEventListener('click', closeReceiptModal);
         }
 
         // ==================== 언어 관련 ====================
@@ -3076,6 +3233,7 @@
             const tabButtons = document.querySelectorAll('.tab-button');
             if (tabButtons[0]) tabButtons[0].textContent = '📋 ' + (currentLang === 'en' ? 'Order Management' : '주문 관리');
             if (tabButtons[1]) tabButtons[1].textContent = '👛 ' + (currentLang === 'en' ? 'Wallet Management' : '지갑 관리');
+            if (tabButtons[2]) tabButtons[2].textContent = '⚙️ ' + (currentLang === 'en' ? 'System Settings' : '시스템 설정');
             
             const searchOrder = document.getElementById('searchOrder');
             if (searchOrder) searchOrder.placeholder = trans.searchPlaceholder;
@@ -3369,6 +3527,78 @@
             }, 3000);
         }
 
+        // ==================== 설정 패널 기능 ====================
+        function saveBinanceCredentials() {
+            const apiKey = document.getElementById('binanceApiKey').value.trim();
+            const apiSecret = document.getElementById('binanceApiSecret').value.trim();
+            
+            if (!apiKey || !apiSecret) {
+                showBinanceStatus('API 키와 Secret을 모두 입력해주세요.', 'error');
+                return;
+            }
+            
+            binanceMonitor.setCredentials(apiKey, apiSecret);
+            showBinanceStatus('바이낸스 API 키가 저장되었습니다.', 'success');
+        }
+
+        function saveAutoTransitionSettings() {
+            const enabled = document.getElementById('autoTransitionEnabled').checked;
+            const depositToProcessing = parseInt(document.getElementById('depositToProcessingTime').value) || 90;
+            const processingToComplete = parseInt(document.getElementById('processingToCompleteTime').value) || 180;
+            
+            autoTransition.updateSettings({
+                enabled: enabled,
+                depositToProcessing: depositToProcessing,
+                processingToComplete: processingToComplete
+            });
+            
+            showNotification('자동 전환 설정이 저장되었습니다.');
+        }
+
+        function startBinanceMonitoring() {
+            const waitingOrders = allOrders.filter(o => o.status === '입금대기' && o.wallet);
+            
+            if (waitingOrders.length === 0) {
+                alert(currentLang === 'en' ? 
+                    'No orders waiting for deposit' : 
+                    '입금 대기중인 주문이 없습니다');
+                return;
+            }
+            
+            binanceMonitor.startMonitoring(waitingOrders);
+            updateMonitoringStatus();
+            
+            showNotification('바이낸스 입금 모니터링이 시작되었습니다');
+        }
+
+        function stopBinanceMonitoring() {
+            binanceMonitor.stopMonitoring();
+            updateMonitoringStatus();
+            
+            showNotification('바이낸스 입금 모니터링이 중지되었습니다');
+        }
+
+        async function testBinanceConnection() {
+            const result = await binanceMonitor.testConnection();
+            
+            if (result.success) {
+                showBinanceStatus(result.message, 'success');
+            } else {
+                showBinanceStatus(result.error, 'error');
+            }
+        }
+
+        function showBinanceStatus(message, type) {
+            const statusElement = document.getElementById('binanceStatus');
+            statusElement.textContent = message;
+            statusElement.className = 'binance-status ' + (type === 'success' ? 'connected' : 'disconnected');
+            statusElement.style.display = 'block';
+            
+            setTimeout(() => {
+                statusElement.style.display = 'none';
+            }, 3000);
+        }
+
         // ==================== 데이터 로드 ====================
         function loadAllData() {
             allOrders = dataManager.getOrders();
@@ -3380,6 +3610,7 @@
             updateStats();
             updateOrders();
             updateWallets();
+            updateSystemInfo();
             
             dataManager.updateAdminSync();
             dataManager.saveLastNotificationTime();
@@ -3556,18 +3787,15 @@
                 const completeText = currentLang === 'en' ? 'Complete' : '완료';
                 const resetText = currentLang === 'en' ? 'Reset' : '재설정';
                 
-                // 바이낸스 자동 처리 표시
-                const autoProcessInfo = order.autoProcessed ? 
-                    `<div style="font-size: 10px; color: #f39c12; margin-top: 2px;">⚡ 자동 처리됨</div>` : '';
-                const binanceCheckInfo = order.binanceCheck ? 
-                    `<div style="font-size: 10px; color: #3498db; margin-top: 2px;">🔗 바이낸스 확인</div>` : '';
+                // 영수증 확인 버튼 추가
+                const receiptButton = order.receipt ? 
+                    `<button class="action-button action-view" onclick="event.stopPropagation(); showReceiptModal('${order.id}')" style="background: #9b59b6; margin-left: 5px;">영수증</button>` : 
+                    '';
                 
                 html += `
                     <tr onclick="showOrderDetail('${order.id}')" style="cursor: pointer;">
                         <td>
                             <div class="order-id">${order.id}</div>
-                            ${autoProcessInfo}
-                            ${binanceCheckInfo}
                         </td>
                         <td>
                             <div class="order-time">${time}</div>
@@ -3606,6 +3834,7 @@
                                 ${['완료', '취소'].includes(order.status) ? `
                                     <button class="action-button action-reset" onclick="event.stopPropagation(); updateOrderStatus('${order.id}', '입금대기')">${resetText}</button>
                                 ` : ''}
+                                ${receiptButton}
                             </div>
                         </td>
                     </tr>
@@ -3685,27 +3914,27 @@
                     wallet.qrCode !== 'null' && 
                     wallet.qrCode !== '' && 
                     wallet.qrCode !== null &&
-                    typeof wallet.qrCode === 'string') {
+                    typeof wallet.qrCode === 'string' && 
+                    wallet.qrCode.startsWith('data:image/')) {
                     
-                    // base64 데이터인지 확인
-                    const isBase64Image = wallet.qrCode.startsWith('data:image/');
-                    
-                    if (isBase64Image) {
-                        qrDisplay = `
-                            <div class="qr-code-small">
-                                <img src="${wallet.qrCode}" 
-                                     alt="Wallet QR Code" 
-                                     style="max-width: 80px; max-height: 80px; object-fit: contain;"
-                                     onload="this.style.opacity='1'"
-                                     onerror="this.onerror=null; this.style.display='none'; 
-                                              this.parentElement.innerHTML='<div style=\"padding:20px;color:#999;font-size:12px;\">⚠️ 이미지 오류<br>재업로드 필요</div>'">
+                    qrDisplay = `
+                        <div class="qr-code-small" style="position: relative;">
+                            <img src="${wallet.qrCode}" 
+                                 alt="Wallet QR Code" 
+                                 style="max-width: 80px; max-height: 80px; border-radius: 4px;"
+                                 onerror="this.onerror=null; this.style.display='none';
+                                          this.parentElement.innerHTML='<div style=\\\"position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; color: #999; font-size: 11px; background: #f8f9fa; border-radius: 8px;\\\">이미지 로드 실패</div>'">
+                            <div style="position: absolute; bottom: -15px; left: 0; right: 0; text-align: center; font-size: 10px; color: #666;">
+                                QR Code
                             </div>
-                        `;
-                    } else {
-                        qrDisplay = '<div style="text-align: center; color: #999; font-size: 12px;">⚠️ 잘못된 이미지 형식</div>';
-                    }
+                        </div>
+                    `;
                 } else {
-                    qrDisplay = '<div style="text-align: center; color: #999; font-size: 12px;">없음</div>';
+                    qrDisplay = `
+                        <div class="qr-error-fallback">
+                            QR 없음
+                        </div>
+                    `;
                 }
                 
                 const shortAddress = wallet.address.length > 20 ? 
@@ -3803,6 +4032,10 @@
             
             dataManager.saveOrders(allOrders);
             
+            // 자동 전환 타이머 관리
+            manageAutoTransitionTimers(orderId, oldStatus, newStatus);
+            
+            // 텔레그램 알림
             if (newStatus === '입금확인' && oldStatus !== '입금확인') {
                 console.log(`📨 주문 ${orderId} 입금확인 - 텔레그램 알림 전송`);
                 
@@ -3811,16 +4044,6 @@
                 } catch (error) {
                     console.error('텔레그램 알림 전송 실패:', error);
                 }
-                
-                // 자동 처리 타이머 시작
-                const autoProcessTime = dataManager.getAutoProcessTimer();
-                console.log(`⏰ 주문 ${orderId} 자동 처리 타이머 시작: ${autoProcessTime}초 후`);
-                
-                setTimeout(() => {
-                    if (dataManager.binanceAPI) {
-                        dataManager.binanceAPI.autoProcessOrder(orderId);
-                    }
-                }, autoProcessTime * 1000);
             }
             
             if (oldStatus !== newStatus && newStatus !== '입금확인') {
@@ -3839,6 +4062,9 @@
             if (selectedOrder && selectedOrder.id === orderId) {
                 closeOrderDetail();
             }
+            
+            // 시스템 정보 업데이트
+            updateSystemInfo();
         }
 
         function getStepFromStatus(status) {
@@ -3850,6 +4076,32 @@
                 case '취소': return 1;
                 default: return 1;
             }
+        }
+
+        // 자동 전환 타이머 관리 함수
+        function manageAutoTransitionTimers(orderId, oldStatus, newStatus) {
+            // 기존 타이머 취소
+            autoTransition.cancelTransition(orderId, '입금확인', '처리중');
+            autoTransition.cancelTransition(orderId, '처리중', '완료');
+            
+            // 새로운 타이머 설정
+            if (newStatus === '입금확인') {
+                autoTransition.scheduleTransition(
+                    orderId, 
+                    '입금확인', 
+                    '처리중', 
+                    autoTransition.settings.depositToProcessing
+                );
+            } else if (newStatus === '처리중') {
+                autoTransition.scheduleTransition(
+                    orderId, 
+                    '처리중', 
+                    '완료', 
+                    autoTransition.settings.processingToComplete
+                );
+            }
+            
+            updateSystemInfo();
         }
 
         // ==================== 증명서 보기 ====================
@@ -3904,11 +4156,14 @@
             
             document.getElementById('ordersTab').classList.remove('active');
             document.getElementById('walletsTab').classList.remove('active');
+            document.getElementById('settingsTab').classList.remove('active');
             
             if (tabId === 'orders') {
                 document.getElementById('ordersTab').classList.add('active');
             } else if (tabId === 'wallets') {
                 document.getElementById('walletsTab').classList.add('active');
+            } else if (tabId === 'settings') {
+                document.getElementById('settingsTab').classList.add('active');
             }
         }
 
@@ -3933,6 +4188,13 @@
                     order.proof.name;
             }
             
+            let receiptInfo = currentLang === 'en' ? 'None' : '없음';
+            if (order.receipt && order.receipt.data) {
+                receiptInfo = order.receipt.type.startsWith('image/') ? 
+                    (currentLang === 'en' ? 'Receipt image' : '영수증 이미지') : 
+                    order.receipt.name;
+            }
+            
             const statusText = {
                 '입금대기': currentLang === 'en' ? 'Waiting Deposit' : '입금대기',
                 '입금확인': currentLang === 'en' ? 'Deposit Confirmed' : '입금확인',
@@ -3950,46 +4212,10 @@
             const stepLabel = currentLang === 'en' ? 'Current Step:' : '현재 단계:';
             const walletLabel = currentLang === 'en' ? 'Deposit Wallet:' : '입금 지갑:';
             const proofLabel = currentLang === 'en' ? 'Payment Proof:' : '결제 증명서:';
+            const receiptLabel = currentLang === 'en' ? 'Payment Receipt:' : '결제 영수증:';
             const viewProofText = currentLang === 'en' ? 'View' : '보기';
-            const paymentHistoryLabel = currentLang === 'en' ? 'Payment History (Thailand)' : '결제 내역 (태국)';
-            const uploadPaymentHistoryLabel = currentLang === 'en' ? 'Upload Payment History' : '결제 내역 업로드';
-            const viewPaymentHistoryLabel = currentLang === 'en' ? 'View Payment History' : '결제 내역 보기';
-            
-            // 바이낸스 확인 정보
-            let binanceInfo = '';
-            if (order.binanceCheck) {
-                const binanceLabel = currentLang === 'en' ? 'Binance Check:' : '바이낸스 확인:';
-                const depositTimeLabel = currentLang === 'en' ? 'Deposit Time:' : '입금 시간:';
-                const transactionLabel = currentLang === 'en' ? 'Transaction:' : '트랜잭션:';
-                
-                binanceInfo = `
-                    <div class="form-group">
-                        <label class="form-label">${binanceLabel}</label>
-                        <div style="padding: 10px; background: #e3f2fd; border-radius: 6px; color: #1565c0;">
-                            <div style="margin-bottom: 5px;">✅ ${currentLang === 'en' ? 'Confirmed by Binance API' : '바이낸스 API로 확인됨'}</div>
-                            ${order.depositTime ? `<div><strong>${depositTimeLabel}</strong> ${new Date(order.depositTime).toLocaleString('ko-KR')}</div>` : ''}
-                            ${order.depositTxId ? `<div><strong>${transactionLabel}</strong> ${order.depositTxId.substring(0, 20)}...</div>` : ''}
-                        </div>
-                    </div>
-                `;
-            }
-            
-            // 자동 처리 정보
-            let autoProcessInfo = '';
-            if (order.autoProcessed) {
-                const autoProcessLabel = currentLang === 'en' ? 'Auto Process:' : '자동 처리:';
-                const processedAtLabel = currentLang === 'en' ? 'Processed at:' : '처리 시간:';
-                
-                autoProcessInfo = `
-                    <div class="form-group">
-                        <label class="form-label">${autoProcessLabel}</label>
-                        <div style="padding: 10px; background: #fff3cd; border-radius: 6px; color: #856404;">
-                            <div style="margin-bottom: 5px;">⚡ ${currentLang === 'en' ? 'Automatically processed' : '자동으로 처리됨'}</div>
-                            ${order.autoProcessedAt ? `<div><strong>${processedAtLabel}</strong> ${new Date(order.autoProcessedAt).toLocaleString('ko-KR')}</div>` : ''}
-                        </div>
-                    </div>
-                `;
-            }
+            const viewReceiptText = currentLang === 'en' ? 'View Receipt' : '영수증 보기';
+            const uploadReceiptText = currentLang === 'en' ? 'Upload Receipt' : '영수증 업로드';
             
             let detailHtml = `
                 <div class="form-group">
@@ -4022,9 +4248,6 @@
                         </div>
                     </div>
                 </div>
-                
-                ${binanceInfo}
-                ${autoProcessInfo}
                 
                 <div class="form-row">
                     <div class="form-group">
@@ -4067,39 +4290,16 @@
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label">${paymentHistoryLabel}</label>
-                    <div style="padding: 15px; background: #f8f9fa; border-radius: 8px; border: 2px dashed #ddd;">
-                        ${order.paymentHistory && order.paymentHistory.data ?
-                            `<div style="text-align: center;">
-                                <p>${currentLang === 'en' ? 'Payment history uploaded' : '결제 내역이 업로드됨'}</p>
-                                <button class="action-button action-view" onclick="viewPaymentHistory('${order.id}')" style="margin: 10px 0;">
-                                    ${viewPaymentHistoryLabel}
-                                </button>
-                                <button class="action-button action-delete" onclick="deletePaymentHistory('${order.id}')" style="margin-left: 10px;">
-                                    ${currentLang === 'en' ? 'Delete' : '삭제'}
-                                </button>
-                            </div>` :
-                            `<div style="text-align: center;">
-                                <p style="color: #718096; margin-bottom: 10px;">
-                                    ${currentLang === 'en' ? 'No payment history uploaded' : '업로드된 결제 내역 없음'}
-                                </p>
-                                <input type="file" 
-                                       id="paymentHistoryUpload" 
-                                       accept="image/*" 
-                                       style="display: none;"
-                                       onchange="uploadPaymentHistory('${order.id}', this)">
-                                <button class="action-button action-upload" 
-                                        onclick="document.getElementById('paymentHistoryUpload').click()">
-                                    📸 ${uploadPaymentHistoryLabel}
-                                </button>
-                            </div>`
+                    <label class="form-label">${receiptLabel}</label>
+                    <div style="padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                        ${receiptInfo}
+                        ${order.receipt && order.receipt.data ? 
+                            `<button class="action-button action-view" style="margin-top: 5px;" onclick="showReceiptModal('${order.id}')">${viewReceiptText}</button>` :
+                            (order.status === '완료' ? 
+                                `<button class="action-button action-edit" style="margin-top: 5px;" onclick="openReceiptUploadModal('${order.id}')">${uploadReceiptText}</button>` : 
+                                '')
                         }
                     </div>
-                    <small style="color: #718096; font-size: 12px;">
-                        * ${currentLang === 'en' ? 
-                            'Upload proof of payment from Thailand banking app. Users can view this in their order details.' : 
-                            '태국 계좌이체 내역을 업로드하세요. 사용자가 주문 상세에서 확인할 수 있습니다.'}
-                    </small>
                 </div>
             `;
             
@@ -4143,211 +4343,6 @@
             selectedOrder = null;
         }
 
-        // ==================== 결제 내역 관리 ====================
-        function uploadPaymentHistory(orderId, fileInput) {
-            const file = fileInput.files[0];
-            if (!file) return;
-            
-            // 파일 크기 제한 (5MB)
-            if (file.size > 5 * 1024 * 1024) {
-                alert(currentLang === 'en' ? 
-                    'File size must be less than 5MB' : 
-                    '파일 크기는 5MB 이하여야 합니다.');
-                return;
-            }
-            
-            // 이미지 파일만 허용
-            if (!file.type.startsWith('image/')) {
-                alert(currentLang === 'en' ? 
-                    'Only image files can be uploaded' : 
-                    '이미지 파일만 업로드할 수 있습니다.');
-                return;
-            }
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const imageData = e.target.result;
-                
-                // 이미지 압축
-                compressImage(imageData, 800, 800).then(compressedData => {
-                    savePaymentHistory(orderId, compressedData, file);
-                }).catch(error => {
-                    console.error('이미지 압축 실패:', error);
-                    savePaymentHistory(orderId, imageData, file);
-                });
-            };
-            
-            reader.readAsDataURL(file);
-        }
-
-        function savePaymentHistory(orderId, imageData, file) {
-            // 주문 업데이트
-            const orderIndex = allOrders.findIndex(o => o.id === orderId);
-            if (orderIndex > -1) {
-                allOrders[orderIndex].paymentHistory = {
-                    name: file.name,
-                    type: file.type,
-                    size: file.size,
-                    data: imageData,
-                    uploadedAt: new Date().toISOString(),
-                    uploadedBy: loginManager.getCurrentAdmin()?.username || 'admin'
-                };
-                
-                dataManager.saveOrders(allOrders);
-                
-                // 텔레그램 알림 전송 (이미지와 함께)
-                if (window.telegramNotifier) {
-                    const message = 
-                        `📸 <b>결제 내역 업로드 알림</b>\n\n` +
-                        `📋 <b>주문 ID:</b> ${orderId}\n` +
-                        `💰 <b>금액:</b> ${allOrders[orderIndex].amount.toLocaleString()} THB\n` +
-                        `👤 <b>업로드한 관리자:</b> ${loginManager.getCurrentAdmin()?.username || '관리자'}\n` +
-                        `⏰ <b>업로드 시간:</b> ${new Date().toLocaleString('ko-KR')}\n\n` +
-                        `✅ <b>사용자가 주문 상세에서 확인할 수 있습니다.</b>`;
-                    
-                    telegramNotifier.sendToAllBots(message, {
-                        notificationType: 'statusChange',
-                        imageData: imageData,
-                        imageCaption: message
-                    });
-                }
-                
-                // 주문 상세 새로고침
-                showOrderDetail(orderId);
-                
-                alert(currentLang === 'en' ? 
-                    'Payment history uploaded successfully' : 
-                    '결제 내역이 업로드되었습니다.');
-            }
-        }
-
-        function viewPaymentHistory(orderId) {
-            const order = allOrders.find(o => o.id === orderId);
-            if (!order || !order.paymentHistory || !order.paymentHistory.data) {
-                alert(currentLang === 'en' ? 'No payment history' : '결제 내역이 없습니다');
-                return;
-            }
-            
-            const paymentWindow = window.open('', '_blank');
-            const title = currentLang === 'en' ? 'Payment History' : '결제 내역';
-            
-            paymentWindow.document.write(`
-                <html>
-                <head>
-                    <title>${title} - ${order.id}</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
-                        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
-                        .header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #3498db; padding-bottom: 20px; }
-                        .info { margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; }
-                        .info-item { margin: 10px 0; }
-                        .image-container { text-align: center; margin: 20px 0; }
-                        img { max-width: 100%; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <div class="header">
-                            <h1>${title}</h1>
-                            <h3>${currentLang === 'en' ? 'Order ID:' : '주문 ID:'} ${order.id}</h3>
-                        </div>
-                        
-                        <div class="info">
-                            <div class="info-item">
-                                <strong>${currentLang === 'en' ? 'Amount:' : '금액:'}</strong> 
-                                ${order.amount.toLocaleString()} THB
-                            </div>
-                            <div class="info-item">
-                                <strong>${currentLang === 'en' ? 'Uploaded by:' : '업로드한 관리자:'}</strong> 
-                                ${order.paymentHistory.uploadedBy}
-                            </div>
-                            <div class="info-item">
-                                <strong>${currentLang === 'en' ? 'Upload time:' : '업로드 시간:'}</strong> 
-                                ${new Date(order.paymentHistory.uploadedAt).toLocaleString('ko-KR')}
-                            </div>
-                            <div class="info-item">
-                                <strong>${currentLang === 'en' ? 'File name:' : '파일명:'}</strong> 
-                                ${order.paymentHistory.name}
-                            </div>
-                        </div>
-                        
-                        <div class="image-container">
-                            <img src="${order.paymentHistory.data}" 
-                                 alt="Payment History"
-                                 onerror="this.onerror=null; this.src='data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"400\" height=\"300\"><rect width=\"400\" height=\"300\" fill=\"%23f0f0f0\"/><text x=\"200\" y=\"150\" font-family=\"Arial\" font-size=\"16\" fill=\"%23999\" text-anchor=\"middle\">이미지 로드 오류</text></svg>';">
-                        </div>
-                        
-                        <div style="text-align: center; margin-top: 20px; color: #666; font-size: 14px;">
-                            ${currentLang === 'en' ? 
-                                'This payment history is visible to the user in their order details.' : 
-                                '이 결제 내역은 사용자가 주문 상세에서 확인할 수 있습니다.'}
-                        </div>
-                    </div>
-                </body>
-                </html>
-            `);
-        }
-
-        function deletePaymentHistory(orderId) {
-            const confirmMessage = currentLang === 'en' ?
-                'Delete payment history? Users will no longer be able to view it.' :
-                '결제 내역을 삭제하시겠습니까? 사용자가 더 이상 확인할 수 없습니다.';
-            
-            if (!confirm(confirmMessage)) return;
-            
-            const orderIndex = allOrders.findIndex(o => o.id === orderId);
-            if (orderIndex > -1) {
-                allOrders[orderIndex].paymentHistory = null;
-                dataManager.saveOrders(allOrders);
-                showOrderDetail(orderId);
-                
-                alert(currentLang === 'en' ?
-                    'Payment history deleted' :
-                    '결제 내역이 삭제되었습니다.');
-            }
-        }
-
-        // ==================== 이미지 압축 함수 ====================
-        function compressImage(base64String, maxWidth, maxHeight) {
-            return new Promise((resolve, reject) => {
-                const img = new Image();
-                img.src = base64String;
-                
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
-                    
-                    // 비율 유지하며 리사이즈
-                    if (width > height) {
-                        if (width > maxWidth) {
-                            height = Math.round((height * maxWidth) / width);
-                            width = maxWidth;
-                        }
-                    } else {
-                        if (height > maxHeight) {
-                            width = Math.round((width * maxHeight) / height);
-                            height = maxHeight;
-                        }
-                    }
-                    
-                    canvas.width = width;
-                    canvas.height = height;
-                    
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-                    
-                    // JPEG로 압축 (품질 80%)
-                    const compressedData = canvas.toDataURL('image/jpeg', 0.8);
-                    resolve(compressedData);
-                };
-                
-                img.onerror = function(error) {
-                    reject(error);
-                };
-            });
-        }
-
         // ==================== 지갑 관리 ====================
         function openAddWalletModal() {
             const trans = translations[currentLang];
@@ -4361,6 +4356,7 @@
             if (walletId) walletId.value = '';
             
             qrCodeFile = null;
+            document.getElementById('qrCodePreview').innerHTML = '';
             
             const statusSelect = document.getElementById('walletStatus');
             if (statusSelect) statusSelect.value = 'active';
@@ -4399,6 +4395,21 @@
             
             qrCodeFile = null;
             
+            // QR 코드 미리보기 표시
+            const qrPreview = document.getElementById('qrCodePreview');
+            if (qrPreview && wallet.qrCode && wallet.qrCode.startsWith('data:image/')) {
+                qrPreview.innerHTML = `
+                    <div style="margin-top: 10px;">
+                        <label style="font-size: 12px; color: #718096;">현재 QR 코드:</label>
+                        <div style="margin-top: 5px;">
+                            <img src="${wallet.qrCode}" style="max-width: 100px; max-height: 100px; border-radius: 4px; border: 1px solid #ddd;">
+                        </div>
+                    </div>
+                `;
+            } else {
+                qrPreview.innerHTML = '';
+            }
+            
             const modal = document.getElementById('walletModal');
             if (modal) modal.classList.remove('hidden');
         }
@@ -4407,7 +4418,10 @@
             const file = event.target.files[0];
             if (!file) return;
             
-            const maxSize = 2 * 1024 * 1024;
+            const maxSize = 2 * 1024 * 1024; // 2MB
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            
+            // 파일 크기 검증
             if (file.size > maxSize) {
                 alert(currentLang === 'en' ? 
                     'File size must be less than 2MB' : 
@@ -4416,15 +4430,38 @@
                 return;
             }
             
-            if (!file.type.startsWith('image/')) {
+            // 파일 타입 검증
+            if (!allowedTypes.includes(file.type)) {
                 alert(currentLang === 'en' ? 
-                    'Only image files can be uploaded' : 
-                    '이미지 파일만 업로드할 수 있습니다');
+                    'Only JPEG, PNG, GIF, or WebP images can be uploaded' : 
+                    'JPEG, PNG, GIF, WebP 이미지 파일만 업로드할 수 있습니다');
                 event.target.value = '';
                 return;
             }
             
+            // 이미지 미리보기 표시
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const qrPreview = document.getElementById('qrCodePreview');
+                qrPreview.innerHTML = `
+                    <div style="margin-top: 10px;">
+                        <label style="font-size: 12px; color: #718096;">QR 코드 미리보기:</label>
+                        <div style="margin-top: 5px;">
+                            <img src="${e.target.result}" 
+                                 style="max-width: 100px; max-height: 100px; border-radius: 4px; border: 1px solid #ddd;"
+                                 onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\"color:#e74c3c;font-size:11px;\">이미지 로드 실패</div>'">
+                        </div>
+                    </div>
+                `;
+            };
+            reader.readAsDataURL(file);
+            
             qrCodeFile = file;
+            console.log('✅ QR 코드 이미지 검증 완료:', {
+                name: file.name,
+                type: file.type,
+                size: file.size
+            });
         }
 
         function saveWallet() {
@@ -4469,24 +4506,13 @@
                     const qrCodeData = e.target.result;
                     console.log('QR 코드 데이터 읽기 완료, 길이:', qrCodeData.length);
                     
-                    // 이미지 압축
-                    compressImage(qrCodeData, 200, 200).then(compressedData => {
-                        if (compressedData && compressedData.startsWith('data:image/')) {
-                            saveWalletData(compressedData);
-                        } else {
-                            console.error('잘못된 이미지 형식');
-                            alert('이미지 형식이 올바르지 않습니다.');
-                            return;
-                        }
-                    }).catch(error => {
-                        console.error('이미지 압축 실패:', error);
-                        if (qrCodeData && qrCodeData.startsWith('data:image/')) {
-                            saveWalletData(qrCodeData);
-                        } else {
-                            alert('이미지 처리 중 오류가 발생했습니다.');
-                            return;
-                        }
-                    });
+                    if (qrCodeData && qrCodeData.startsWith('data:image/')) {
+                        saveWalletData(qrCodeData);
+                    } else {
+                        console.error('잘못된 이미지 형식');
+                        alert('이미지 형식이 올바르지 않습니다.');
+                        return;
+                    }
                 };
                 
                 reader.onerror = function(e) {
@@ -4545,6 +4571,7 @@
                     allWallets = updatedWallets;
                     updateStats();
                     updateWallets();
+                    updateSystemInfo();
                     
                     closeWalletModal();
                     
@@ -4598,6 +4625,7 @@
             allWallets = updatedWallets;
             updateStats();
             updateWallets();
+            updateSystemInfo();
             
             const successMessage = currentLang === 'en' ?
                 `Wallet ${action.toLowerCase()}d` :
@@ -4632,6 +4660,7 @@
             allWallets = updatedWallets;
             updateStats();
             updateWallets();
+            updateSystemInfo();
             
             alert(currentLang === 'en' ? 'Default wallet set' : '기본 지갑이 설정되었습니다');
         }
@@ -4680,6 +4709,7 @@
             allWallets = updatedWallets;
             updateStats();
             updateWallets();
+            updateSystemInfo();
             
             alert(currentLang === 'en' ? 'Wallet deleted' : '지갑이 삭제되었습니다');
         }
@@ -4689,6 +4719,247 @@
             if (modal) modal.classList.add('hidden');
             selectedWallet = null;
             qrCodeFile = null;
+        }
+
+        // ==================== 영수증 관리 ====================
+        function openReceiptUploadModal(orderId) {
+            const order = allOrders.find(o => o.id === orderId);
+            if (!order) {
+                alert('주문을 찾을 수 없습니다');
+                return;
+            }
+            
+            selectedOrder = order;
+            
+            // 주문 정보 표시
+            const orderInfo = document.getElementById('receiptOrderInfo');
+            orderInfo.innerHTML = `
+                <div style="font-weight: bold; color: #2c3e50; margin-bottom: 5px;">
+                    주문 ID: ${order.id}
+                </div>
+                <div style="color: #4a5568; font-size: 14px;">
+                    금액: ${order.amount.toLocaleString()} THB<br>
+                    상태: ${order.status}
+                </div>
+            `;
+            
+            // 파일 입력 초기화
+            document.getElementById('receiptFile').value = '';
+            document.getElementById('receiptPreviewContainer').style.display = 'none';
+            
+            // 모달 표시
+            document.getElementById('receiptModal').classList.remove('hidden');
+        }
+
+        function handleReceiptFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+            
+            // 파일 크기 검증
+            if (file.size > maxSize) {
+                alert('파일 크기는 5MB 이하여야 합니다.');
+                event.target.value = '';
+                return;
+            }
+            
+            // 파일 타입 검증
+            if (!allowedTypes.includes(file.type)) {
+                alert('JPEG, PNG, GIF, WebP 이미지 파일만 업로드할 수 있습니다');
+                event.target.value = '';
+                return;
+            }
+            
+            // 미리보기 표시
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('receiptPreview');
+                preview.src = e.target.result;
+                document.getElementById('receiptPreviewContainer').style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function uploadReceipt() {
+            if (!selectedOrder) {
+                alert('주문이 선택되지 않았습니다');
+                return;
+            }
+            
+            const fileInput = document.getElementById('receiptFile');
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('영수증 이미지를 선택해주세요');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const receiptData = e.target.result;
+                
+                // 주문 업데이트
+                const orderIndex = allOrders.findIndex(o => o.id === selectedOrder.id);
+                if (orderIndex === -1) {
+                    alert('주문을 찾을 수 없습니다');
+                    return;
+                }
+                
+                allOrders[orderIndex].receipt = {
+                    name: file.name,
+                    type: file.type,
+                    size: file.size,
+                    data: receiptData,
+                    uploadedAt: new Date().toISOString()
+                };
+                
+                // 데이터 저장
+                dataManager.saveOrders(allOrders);
+                
+                // 사용자 페이지에 알림
+                dataManager.notifyUserPage(selectedOrder.id, '완료', allOrders[orderIndex].receipt);
+                
+                // 업데이트
+                updateOrders();
+                updateSystemInfo();
+                
+                // 모달 닫기
+                closeReceiptModal();
+                
+                alert('영수증이 업로드되었습니다. 고객 페이지에서 확인할 수 있습니다.');
+            };
+            
+            reader.onerror = function(e) {
+                alert('파일 읽기 중 오류가 발생했습니다');
+            };
+            
+            reader.readAsDataURL(file);
+        }
+
+        function closeReceiptModal() {
+            document.getElementById('receiptModal').classList.add('hidden');
+            selectedOrder = null;
+        }
+
+        // 영수증 모달 표시 함수
+        function showReceiptModal(orderId) {
+            const order = allOrders.find(o => o.id === orderId);
+            if (!order || !order.receipt) {
+                alert(currentLang === 'en' ? 'No receipt available' : '영수증이 없습니다');
+                return;
+            }
+
+            const receiptWindow = window.open('', '_blank');
+            const title = currentLang === 'en' ? 'Payment Receipt' : '결제 영수증';
+            
+            receiptWindow.document.write(`
+                <html>
+                <head>
+                    <title>${title} - ${order.id}</title>
+                    <style>
+                        body { 
+                            font-family: Arial, sans-serif; 
+                            padding: 20px;
+                            background: #f5f5f5;
+                        }
+                        .container {
+                            max-width: 800px;
+                            margin: 0 auto;
+                            background: white;
+                            padding: 30px;
+                            border-radius: 10px;
+                            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                        }
+                        .header { 
+                            text-align: center; 
+                            margin-bottom: 30px;
+                            border-bottom: 2px solid #3498db;
+                            padding-bottom: 20px;
+                        }
+                        .info { 
+                            margin: 20px 0; 
+                            padding: 20px; 
+                            background: #f8f9fa; 
+                            border-radius: 8px; 
+                        }
+                        .info-row {
+                            display: flex;
+                            justify-content: space-between;
+                            margin-bottom: 10px;
+                            padding: 8px 0;
+                            border-bottom: 1px solid #eee;
+                        }
+                        .label { font-weight: bold; color: #2c3e50; }
+                        .value { color: #34495e; }
+                        .receipt-image {
+                            margin-top: 30px;
+                            text-align: center;
+                        }
+                        .receipt-image img {
+                            max-width: 100%;
+                            border: 1px solid #ddd;
+                            border-radius: 8px;
+                            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+                        }
+                        .download-btn {
+                            display: inline-block;
+                            margin-top: 20px;
+                            padding: 10px 20px;
+                            background: #3498db;
+                            color: white;
+                            text-decoration: none;
+                            border-radius: 5px;
+                            font-weight: bold;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <div class="header">
+                            <h1>${title}</h1>
+                            <h3>${order.id}</h3>
+                            <p>${new Date(order.receipt.uploadedAt).toLocaleString()}</p>
+                        </div>
+                        
+                        <div class="info">
+                            <div class="info-row">
+                                <span class="label">${currentLang === 'en' ? 'Order ID:' : '주문 ID:'}</span>
+                                <span class="value">${order.id}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">${currentLang === 'en' ? 'Amount:' : '금액:'}</span>
+                                <span class="value">${order.amount.toLocaleString()} THB</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">USDT:</span>
+                                <span class="value">${order.usdt.toFixed(4)} USDT</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">${currentLang === 'en' ? 'Status:' : '상태:'}</span>
+                                <span class="value">${order.status}</span>
+                            </div>
+                            <div class="info-row">
+                                <span class="label">${currentLang === 'en' ? 'Completed at:' : '완료 시간:'}</span>
+                                <span class="value">${new Date(order.updated).toLocaleString()}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="receipt-image">
+                            <h3>${currentLang === 'en' ? 'Payment Receipt' : '결제 영수증'}</h3>
+                            <img src="${order.receipt.data}" 
+                                 alt="Payment Receipt"
+                                 onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNGNUY1RjUiLz48dGV4dCB4PSI1MCIgeT0iNTUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxMiIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSI+RXJyb3IgbG9hZGluZyBpbWFnZTwvdGV4dD48L3N2Zz4='">
+                            <br>
+                            <a href="${order.receipt.data}" download="receipt_${order.id}.${order.receipt.type.split('/')[1] || 'jpg'}" class="download-btn">
+                                ${currentLang === 'en' ? 'Download Receipt' : '영수증 다운로드'}
+                            </a>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `);
         }
 
         // ==================== 데이터 동기화 ====================
@@ -4705,6 +4976,7 @@
                 updateStats();
                 updateOrders();
                 updateWallets();
+                updateSystemInfo();
                 
                 localStorage.setItem('admin_last_check', syncKey || '0');
             }
@@ -4752,9 +5024,9 @@
                 let csv = '';
                 
                 if (currentLang === 'en') {
-                    csv = 'Order ID,Created Time,Amount(THB),USDT Amount,Status,Step,Wallet,Network,Proof,Payment History,Binance Check,Auto Process,Updated Time\n';
+                    csv = 'Order ID,Created Time,Amount(THB),USDT Amount,Status,Step,Wallet,Network,Proof,Receipt,Updated Time\n';
                 } else {
-                    csv = '주문 ID,생성 시간,금액(THB),USDT 금액,상태,단계,지갑,네트워크,증명서,결제 내역,바이낸스 확인,자동 처리,업데이트 시간\n';
+                    csv = '주문 ID,생성 시간,금액(THB),USDT 금액,상태,단계,지갑,네트워크,증명서,영수증,업데이트 시간\n';
                 }
                 
                 allOrders.forEach(order => {
@@ -4766,17 +5038,11 @@
                     const hasProof = order.proof && order.proof.data ? 
                         (currentLang === 'en' ? 'Yes' : '예') : 
                         (currentLang === 'en' ? 'No' : '아니오');
-                    const hasPaymentHistory = order.paymentHistory && order.paymentHistory.data ? 
-                        (currentLang === 'en' ? 'Yes' : '예') : 
-                        (currentLang === 'en' ? 'No' : '아니오');
-                    const binanceCheck = order.binanceCheck ? 
-                        (currentLang === 'en' ? 'Yes' : '예') : 
-                        (currentLang === 'en' ? 'No' : '아니오');
-                    const autoProcess = order.autoProcessed ? 
+                    const hasReceipt = order.receipt && order.receipt.data ? 
                         (currentLang === 'en' ? 'Yes' : '예') : 
                         (currentLang === 'en' ? 'No' : '아니오');
                     
-                    csv += `"${order.id}","${time}","${order.amount}","${order.usdt || 0}","${order.status}","${stepText}","${walletInfo}","${order.wallet?.network || ''}","${hasProof}","${hasPaymentHistory}","${binanceCheck}","${autoProcess}","${updated}"\n`;
+                    csv += `"${order.id}","${time}","${order.amount}","${order.usdt || 0}","${order.status}","${stepText}","${walletInfo}","${order.wallet?.network || ''}","${hasProof}","${hasReceipt}","${updated}"\n`;
                 });
                 
                 const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
@@ -4860,6 +5126,7 @@
                 dataManager.saveOrders([]);
                 updateStats();
                 updateOrders();
+                updateSystemInfo();
                 alert(currentLang === 'en' ? 'All order records deleted' : '모든 주문 기록이 삭제되었습니다');
             }
         };
@@ -4877,6 +5144,7 @@
                 allWallets = updatedWallets;
                 updateStats();
                 updateWallets();
+                updateSystemInfo();
                 dataManager.notifyUserPageWallets(updatedWallets);
                 
                 alert(currentLang === 'en' ?
@@ -4894,6 +5162,7 @@
             
             updateStats();
             updateOrders();
+            updateSystemInfo();
             
             showNotification(`새 주문이 접수되었습니다: ${order.id}`);
             
