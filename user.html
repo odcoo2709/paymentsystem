@@ -1776,7 +1776,7 @@
             `;
         }
 
-        // ==================== QR 코드 표시 함수 (수정됨) ====================
+        // ==================== QR 코드 표시 함수 ====================
         function updateQRCodeDisplay() {
             if (!activeWallet) {
                 console.log('활성 지갑이 없음');
@@ -1786,7 +1786,6 @@
             const qrCodeContainer = document.getElementById('qrCodeContainer');
             if (!qrCodeContainer) return;
             
-            // 기존 내용 모두 제거
             qrCodeContainer.innerHTML = '';
             
             if (activeWallet.qrCode && 
@@ -1805,7 +1804,6 @@
                 img.style.maxHeight = '100%';
                 img.style.borderRadius = '4px';
                 
-                // 이미지 로드 에러 처리
                 img.onerror = function() {
                     console.log('QR 코드 이미지 로드 실패');
                     this.style.display = 'none';
@@ -1818,7 +1816,6 @@
                     qrCodeContainer.appendChild(errorDiv);
                 };
                 
-                // 이미지 로드 성공 처리
                 img.onload = function() {
                     console.log('QR 코드 이미지 로드 성공');
                 };
@@ -1982,12 +1979,7 @@
         }
 
         function goToStep(step) {
-    console.log('🔧 goToStep 실행:', currentStep, '->', step);
-    console.log('단계 ' + currentStep + ' 비활성화');
-    console.log('단계 ' + currentStep + ' 활성화');
-    console.log('❌ 단계 ' + step + ' 요소 찾을 수 없음!');
-}
-
+            console.log('🔧 goToStep 실행:', currentStep, '->', step);
             
             if (currentStep >= 1 && currentStep <= 4) {
                 const currentStepElement = document.getElementById(`step${currentStep}`);
