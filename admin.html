@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin - Order & Wallet Management System</title>
+    <!-- CryptoJS 라이브러리 추가 -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -1205,7 +1207,7 @@
             <div class="login-help">
                 <strong>기본 로그인 정보:</strong><br>
                 아이디: <code>admin</code><br>
-                비밀번호: <code>1234!@!@</code>
+                비밀번호: <code>1234</code>
             </div>
             
             <button type="submit" class="login-button">로그인</button>
@@ -1705,7 +1707,12 @@
             }
 
             generateSignature(queryString) {
-                return CryptoJS.HmacSHA256(queryString, this.secretKey).toString(CryptoJS.enc.Hex);
+                // CryptoJS가 로드되었는지 확인
+                if (typeof CryptoJS === 'undefined') {
+                    console.error('CryptoJS가 로드되지 않았습니다. 라이브러리를 확인하세요.');
+                    throw new Error('CryptoJS is not defined');
+                }
+                return CryptoJS.HmacSHA256(queryString, this.secretKey).toString();
             }
 
             async testConnection() {
