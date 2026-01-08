@@ -1432,145 +1432,147 @@
         };
 
         // ==================== PWA 설치 기능 ====================
-        function initializePWA() {
-            // 전역 변수 설정
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-            const isAndroid = /Android/.test(navigator.userAgent);
-            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                                window.navigator.standalone === true;
+        // ==================== PWA 설치 기능 ====================
+function initializePWA() {
+    // 전역 변수 설정
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isAndroid = /Android/.test(navigator.userAgent);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                        window.navigator.standalone === true;
 
-            console.log('PWA 감지:', { isIOS, isAndroid, isStandalone });
+    console.log('PWA 감지:', { isIOS, isAndroid, isStandalone });
 
-            const installButton = document.getElementById('installButton');
-            const installToast = document.getElementById('installToast');
+    const installButton = document.getElementById('installButton');
+    const installToast = document.getElementById('installToast');
 
-            // iOS Chrome 감지
-            const isChromeIOS = /CriOS|Chrome/.test(navigator.userAgent) && isIOS;
+    // 이미 설치된 경우 버튼 숨김
+    if (isStandalone) {
+        installButton.classList.add('hidden');
+        return;
+    }
 
-            // iOS Chrome이면 홈 화면 추가만 제공
-            if (isChromeIOS) {
-                console.log('iOS Chrome 감지 - 홈 화면 추가 기능 제공');
-                installButton.classList.remove('hidden');
-                document.getElementById('installButtonText').textContent = '홈 화면 추가';
-                
-                installButton.onclick = () => {
-                    copyCurrentUrl();
-                };
-                return;
-            }
+    // iOS Safari인 경우
+    if (isIOS && !isStandalone) {
+        console.log('iOS Safari 감지 - 홈 화면 추가 가이드 제공');
+        installButton.classList.remove('hidden');
+        const trans = translations[currentLang];
+        document.getElementById('installButtonText').textContent = trans.addToHomeScreen;
+        
+        installButton.onclick = () => {
+            showIOSInstallGuide();
+        };
+        return;
+    }
 
-            // 모바일 장치인지 확인
-            const isMobile = isAndroid || isIOS;
-            
-            // 모바일이 아니면 버튼 숨김
-            if (!isMobile) {
+    // Android/데스크톱 Chrome의 경우
+    window.addEventListener('beforeinstallprompt', (e) => {
+        console.log('✅ beforeinstallprompt 이벤트 발생');
+        e.preventDefault();
+        deferredPrompt = e;
+        
+        installButton.classList.remove('hidden');
+        const trans = translations[currentLang];
+        document.getElementById('installButtonText').textContent = trans.installApp;
+        installPromptShown = true;
+        
+        showInstallToast('📱 ' + (currentLang === 'en' ? 'Install the app for more convenience!' : '앱을 설치하면 더 편리해요!'), 3000);
+        
+        installButton.onclick = async () => {
+            console.log('설치 버튼 클릭됨');
+            if (deferredPrompt) {
                 installButton.classList.add('hidden');
-                return;
-            }
-
-            // 이미 설치된 경우
-            if (isStandalone) {
-                const trans = translations[currentLang];
-                document.getElementById('installButtonText').textContent = trans.installApp;
-                installButton.classList.remove('hidden');
                 
-                installButton.onclick = () => {
-                    if (isAndroid) {
-                        window.location.reload();
-                    } else {
-                        showIOSQuickGuide();
-                    }
-                };
-                return;
-            }
-
-            // Android/데스크톱 Chrome의 경우
-            window.addEventListener('beforeinstallprompt', (e) => {
-                console.log('✅ beforeinstallprompt 이벤트 발생');
-                e.preventDefault();
-                deferredPrompt = e;
+                deferredPrompt.prompt();
                 
-                installButton.classList.remove('hidden');
-                const trans = translations[currentLang];
-                document.getElementById('installButtonText').textContent = trans.installApp;
-                installPromptShown = true;
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`사용자 응답: ${outcome}`);
                 
-                showInstallToast('📱 ' + (currentLang === 'en' ? 'Install the app for more convenience!' : '앱을 설치하면 더 편리해요!'), 3000);
-                
-                installButton.onclick = async () => {
-                    console.log('설치 버튼 클릭됨');
-                    if (deferredPrompt) {
-                        installButton.classList.add('hidden');
-                        
-                        deferredPrompt.prompt();
-                        
-                        const { outcome } = await deferredPrompt.userChoice;
-                        console.log(`사용자 응답: ${outcome}`);
-                        
-                        if (outcome === 'accepted') {
-                            console.log('PWA 설치 수락됨');
-                            showInstallToast('✅ ' + (currentLang === 'en' ? 'App installation started!' : '앱 설치가 시작됩니다!'), 2000);
-                        } else {
-                            showInstallToast(currentLang === 'en' ? 'Installation cancelled' : '설치가 취소되었습니다', 2000);
-                            setTimeout(() => {
-                                installButton.classList.remove('hidden');
-                            }, 3000);
-                        }
-                        
-                        deferredPrompt = null;
-                    }
-                };
-            });
-
-            // beforeinstallprompt 이벤트가 발생하지 않을 경우
-            setTimeout(() => {
-                if (!installPromptShown && !isStandalone && isMobile) {
-                    showManualInstallOption(isAndroid, isIOS);
-                }
-            }, 5000);
-
-            // 설치 완료 후
-            window.addEventListener('appinstalled', () => {
-                console.log('🎉 PWA가 설치되었습니다');
-                installButton.classList.add('hidden');
-                showInstallToast('🎉 ' + (currentLang === 'en' ? 'App installed! Check on home screen.' : '앱 설치 완료! 홈 화면에서 확인하세요.'), 3000);
-                deferredPrompt = null;
-            });
-        }
-
-        function showManualInstallOption(isAndroid, isIOS) {
-            const installButton = document.getElementById('installButton');
-            const installToast = document.getElementById('installToast');
-            
-            if (!installButton || !installToast) return;
-            
-            installButton.classList.remove('hidden');
-            
-            if (isAndroid) {
-                const trans = translations[currentLang];
-                document.getElementById('installButtonText').textContent = trans.installApp;
-                
-                installButton.onclick = () => {
-                    const trans = translations[currentLang];
-                    installToast.innerHTML = `
-                        <strong>📱 ${currentLang === 'en' ? 'Install app in Chrome' : 'Chrome에서 앱 설치하기'}</strong><br>
-                        1. ${currentLang === 'en' ? 'Tap Chrome menu (⋮)' : 'Chrome 메뉴(⋮) 탭'}<br>
-                        2. <strong>'${currentLang === 'en' ? 'Install app' : '앱 설치'}'</strong> ${currentLang === 'en' ? 'select' : '선택'}<br>
-                        3. <strong>'${currentLang === 'en' ? 'Install' : '설치'}'</strong> ${currentLang === 'en' ? 'button tap' : '버튼 탭'}<br>
-                        <br>
-                        <small style="color:#666;">${currentLang === 'en' ? 'Or click the 📲 icon next to address bar' : '또는 주소창 옆의 📲 아이콘 클릭'}</small>
-                    `;
-                    installToast.classList.add('show');
-                    
+                if (outcome === 'accepted') {
+                    console.log('PWA 설치 수락됨');
+                    showInstallToast('✅ ' + (currentLang === 'en' ? 'App installation started!' : '앱 설치가 시작됩니다!'), 2000);
+                } else {
+                    showInstallToast(currentLang === 'en' ? 'Installation cancelled' : '설치가 취소되었습니다', 2000);
                     setTimeout(() => {
-                        installToast.classList.remove('show');
-                        installToast.classList.add('hide');
-                        setTimeout(() => {
-                            installToast.classList.remove('hide');
-                        }, 300);
-                    }, 7000);
-                };
+                        installButton.classList.remove('hidden');
+                    }, 3000);
+                }
+                
+                deferredPrompt = null;
             }
+        };
+    });
+
+    // beforeinstallprompt 이벤트가 발생하지 않을 경우
+    setTimeout(() => {
+        if (!installPromptShown && !isStandalone && isAndroid) {
+            showAndroidInstallGuide();
+        }
+    }, 5000);
+
+    // 설치 완료 후
+    window.addEventListener('appinstalled', () => {
+        console.log('🎉 PWA가 설치되었습니다');
+        installButton.classList.add('hidden');
+        showInstallToast('🎉 ' + (currentLang === 'en' ? 'App installed! Check on home screen.' : '앱 설치 완료! 홈 화면에서 확인하세요.'), 3000);
+        deferredPrompt = null;
+    });
+}
+
+// iOS 설치 가이드 표시
+function showIOSInstallGuide() {
+    const installToast = document.getElementById('installToast');
+    const trans = translations[currentLang];
+    
+    installToast.innerHTML = `
+        <strong>📱 ${currentLang === 'en' ? 'Add to Home Screen' : '홈 화면에 추가하기'}</strong><br><br>
+        1. ${currentLang === 'en' ? 'Tap the share button (📤) below' : '아래의 공유 버튼(📤)을 탭하세요'}<br>
+        2. ${currentLang === 'en' ? 'Scroll down and find' : '아래로 스크롤하여 찾으세요'}<br>
+        3. <strong>'${trans.addToHomeScreen}'</strong> ${currentLang === 'en' ? 'select' : '선택'}<br>
+        4. <strong>'${currentLang === 'en' ? 'Add' : '추가'}'</strong> ${currentLang === 'en' ? 'button tap' : '버튼 탭하기'}
+    `;
+    installToast.classList.add('show');
+    
+    setTimeout(() => {
+        installToast.classList.remove('show');
+        installToast.classList.add('hide');
+        setTimeout(() => {
+            installToast.classList.remove('hide');
+        }, 300);
+    }, 8000);
+}
+
+// Android 설치 가이드 표시
+function showAndroidInstallGuide() {
+    const installButton = document.getElementById('installButton');
+    const installToast = document.getElementById('installToast');
+    
+    if (!installButton || !installToast) return;
+    
+    installButton.classList.remove('hidden');
+    const trans = translations[currentLang];
+    document.getElementById('installButtonText').textContent = trans.installApp;
+    
+    installButton.onclick = () => {
+        const trans = translations[currentLang];
+        installToast.innerHTML = `
+            <strong>📱 ${currentLang === 'en' ? 'Install app in Chrome' : 'Chrome에서 앱 설치하기'}</strong><br>
+            1. ${currentLang === 'en' ? 'Tap Chrome menu (⋮)' : 'Chrome 메뉴(⋮) 탭'}<br>
+            2. <strong>'${trans.installApp}'</strong> ${currentLang === 'en' ? 'select' : '선택'}<br>
+            3. <strong>'${currentLang === 'en' ? 'Install' : '설치'}'</strong> ${currentLang === 'en' ? 'button tap' : '버튼 탭'}<br>
+            <br>
+            <small style="color:#666;">${currentLang === 'en' ? 'Or tap the 📲 icon next to address bar' : '또는 주소창 옆의 📲 아이콘 탭'}</small>
+        `;
+        installToast.classList.add('show');
+        
+        setTimeout(() => {
+            installToast.classList.remove('show');
+            installToast.classList.add('hide');
+            setTimeout(() => {
+                installToast.classList.remove('hide');
+            }, 300);
+        }, 7000);
+    };
+}
             else if (isIOS) {
                 const trans = translations[currentLang];
                 document.getElementById('installButtonText').textContent = trans.addToHomeScreen;
