@@ -1335,45 +1335,42 @@
         }
 
         function updateAllText() {
-            const trans = translations[currentLang];
-            
-            // 기본 텍스트 업데이트
-            document.getElementById('pageTitle').textContent = trans.title;
-            document.getElementById('pageSubtitle').textContent = trans.subtitle;
-            document.getElementById('exchangeTitle').textContent = trans.exchangeTitle;
-            document.getElementById('amountLabel').textContent = trans.amountLabel;
-            document.getElementById('amountLimit').textContent = trans.amountLimit;
-            document.getElementById('calcAmountLabel').textContent = trans.calcAmountLabel;
-            document.getElementById('calcRateLabel').textContent = trans.calcRateLabel;
-            document.getElementById('calcUsdtLabel').textContent = trans.calcUsdtLabel;
-            document.getElementById('calcFeeLabel').textContent = trans.calcFeeLabel;
-            document.getElementById('calcTotalLabel').textContent = trans.calcTotalLabel;
-            document.getElementById('uploadRequired').textContent = trans.uploadRequired;
-            document.getElementById('payButtonText').textContent = trans.payNow;
-            document.getElementById('activeOrdersTitle').textContent = trans.activeOrders;
-            document.getElementById('completedOrdersTitle').textContent = trans.completedOrders;
-            document.getElementById('noActiveOrders').textContent = trans.noActiveOrders;
-            document.getElementById('noCompletedOrders').textContent = trans.noCompletedOrders;
-            document.getElementById('syncText').textContent = trans.syncText;
-            
-            // 업로드 버튼 텍스트 업데이트
-            const uploadButtonText = document.getElementById('uploadButtonText');
-            if (uploadButtonText) {
-                if (!uploadedFile) {
-                    uploadButtonText.textContent = `📎 ${trans.uploadText}`;
-                } else {
-                    const uploadText = currentLang === 'en' ? 'Upload completed' : '업로드 완료';
-                    uploadButtonText.innerHTML = 
-                        `✅ ${uploadText}<br><span style="font-size:11px;color:#718096;">${uploadedFile.name}</span>`;
-                }
-            }
-            
-            // 영수증 토글 버튼 텍스트 업데이트
-            const toggleReceiptBtn = document.getElementById('toggleReceiptBtn');
-            if (toggleReceiptBtn) {
-                toggleReceiptBtn.textContent = showReceipts ? trans.hideReceipts : trans.showReceipts;
-            }
-            
+    const trans = translations[currentLang];
+    
+    // 모든 텍스트 요소 업데이트
+    const elements = {
+        'pageTitle': trans.title,
+        'pageSubtitle': trans.subtitle,
+        'exchangeTitle': trans.exchangeTitle,
+        'amountLabel': trans.amountLabel,
+        'amountLimit': trans.amountLimit,
+        'calcAmountLabel': trans.calcAmountLabel,
+        'calcRateLabel': trans.calcRateLabel,
+        'calcUsdtLabel': trans.calcUsdtLabel,
+        'calcFeeLabel': trans.calcFeeLabel,
+        'calcTotalLabel': trans.calcTotalLabel,
+        'uploadRequired': trans.uploadRequired,
+        'payButtonText': trans.payNow,
+        'activeOrdersTitle': trans.activeOrders,
+        'completedOrdersTitle': trans.completedOrders,
+        'noActiveOrders': trans.noActiveOrders,
+        'noCompletedOrders': trans.noCompletedOrders,
+        'syncText': trans.syncText,
+        'toggleReceiptBtn': showReceipts ? trans.hideReceipts : trans.showReceipts
+    };
+    
+    // 기본 텍스트 업데이트
+    for (const [id, text] of Object.entries(elements)) {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = text;
+        }
+    }
+    
+    // ✅ 환율 업데이트 텍스트
+    const rateUpdateElement = document.getElementById('rateUpdate');
+    if (rateUpdateElement) {
+        if (exchangeRate > 0) {
             const now = new Date();
             const timeString = now.toLocaleTimeString('ko-KR', { 
                 hour: '2-digit', 
@@ -1381,108 +1378,120 @@
                 second: '2-digit',
                 hour12: false 
             });
-            
-            if (exchangeRate > 0) {
-                document.getElementById('exchangeRate').innerHTML = 
-                    `<span style="color:#e53e3e;font-weight:bold;">${exchangeRate.toFixed(2)}</span>`;
-                document.getElementById('rateUpdate').textContent = trans.lastUpdate + timeString;
-            }
-            
-            if (!document.getElementById('qrModal').classList.contains('hidden')) {
-                updateModalText();
-            }
-            
-            updateOrdersList();
+            rateUpdateElement.textContent = trans.lastUpdate + timeString;
+        } else {
+            rateUpdateElement.textContent = trans.lastUpdate + trans.rateLoading;
         }
+    }
+    
+    // ✅ 업로드 버튼 텍스트 - 이 부분이 핵심!
+    const uploadButtonText = document.getElementById('uploadButtonText');
+    if (uploadButtonText) {
+        if (!uploadedFile) {
+            // 파일 없을 때
+            uploadButtonText.textContent = `📎 ${trans.uploadText}`;
+        } else {
+            // 파일 있을 때
+            const uploadCompletedText = currentLang === 'en' ? 'Upload completed' : '업로드 완료';
+            uploadButtonText.innerHTML = 
+                `✅ ${uploadCompletedText}<br><span style="font-size:11px;color:#718096;">${uploadedFile.name}</span>`;
+        }
+    }
+    
+    // 환율 숫자 표시
+    if (exchangeRate > 0) {
+        document.getElementById('exchangeRate').innerHTML = 
+            `<span style="color:#e53e3e;font-weight:bold;">${exchangeRate.toFixed(2)}</span>`;
+    }
+    
+    // 모달 텍스트 업데이트
+    if (!document.getElementById('qrModal').classList.contains('hidden')) {
+        updateModalText();
+    }
+    
+    updateOrdersList();
+}
 
         // ==================== 환율 관련 함수 ====================
         async function fetchRealTimeExchangeRate() {
+    try {
+        console.log('환율 조회 시작...');
+        
+        const apiUrls = [
+            'https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=thb',
+            'https://api.binance.com/api/v3/ticker/price?symbol=USDTTHB'
+        ];
+        
+        let rate = 0;
+        
+        for (const apiUrl of apiUrls) {
             try {
-                console.log('환율 조회 시작...');
+                console.log(`API 시도: ${apiUrl}`);
                 
-                const apiUrls = [
-                    'https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=thb',
-                    'https://api.binance.com/api/v3/ticker/price?symbol=USDTTHB'
-                ];
+                const response = await fetch(apiUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
                 
-                let rate = 0;
-                
-                for (const apiUrl of apiUrls) {
-                    try {
-                        console.log(`API 시도: ${apiUrl}`);
-                        
-                        const response = await fetch(apiUrl, {
-                            method: 'GET',
-                            headers: {
-                                'Accept': 'application/json',
-                                'Content-Type': 'application/json'
-                            }
-                        });
-                        
-                        if (response.ok) {
-                            const data = await response.json();
-                            
-                            if (apiUrl.includes('coingecko')) {
-                                if (data.tether && data.tether.thb) {
-                                    rate = parseFloat(data.tether.thb);
-                                }
-                            } else if (apiUrl.includes('binance')) {
-                                if (data.price) {
-                                    rate = parseFloat(data.price);
-                                }
-                            }
-                            
-                            if (rate && rate > 0 && rate < 100) {
-                                console.log('환율 조회 성공:', rate);
-                                break;
-                            }
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (apiUrl.includes('coingecko')) {
+                        if (data.tether && data.tether.thb) {
+                            rate = parseFloat(data.tether.thb);
                         }
-                    } catch (error) {
-                        console.log(`${apiUrl} 실패:`, error.message);
-                        continue;
+                    } else if (apiUrl.includes('binance')) {
+                        if (data.price) {
+                            rate = parseFloat(data.price);
+                        }
+                    }
+                    
+                    if (rate && rate > 0 && rate < 100) {
+                        console.log('환율 조회 성공:', rate);
+                        updateExchangeRateDisplay(rate, true);
+                        return; // 성공하면 함수 종료
                     }
                 }
-                
-                if (!rate || rate <= 0) {
-                    rate = 35.5;
-                    console.log('API 실패, 기본 환율 사용:', rate);
-                }
-                
-                exchangeRate = rate;
-                updateExchangeRateDisplay(rate, true);
-                
             } catch (error) {
-                console.error('환율 조회 실패:', error);
-                exchangeRate = 35.5;
-                updateExchangeRateDisplay(35.5, false);
+                console.log(`${apiUrl} 실패:`, error.message);
+                continue;
             }
         }
+        
+        // 모든 API 실패 시 기본값 사용
+        rate = 31.5;
+        console.log('API 실패, 기본 환율 사용:', rate);
+        updateExchangeRateDisplay(rate, false);
+        
+    } catch (error) {
+        console.error('환율 조회 실패:', error);
+        updateExchangeRateDisplay(31.5, false);
+    }
+}
 
         function updateExchangeRateDisplay(rate, success) {
-            const trans = translations[currentLang];
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('ko-KR', { 
-                hour: '2-digit', 
-                minute: '2-digit', 
-                second: '2-digit',
-                hour12: false 
-            });
-            
-            const rateElement = document.getElementById('exchangeRate');
-            
-            if (success) {
-                rateElement.innerHTML = `<span style="color:#e53e3e;font-weight:bold;">${rate.toFixed(2)}</span>`;
-                document.getElementById('calcRate').textContent = rate.toFixed(2);
-                document.getElementById('rateUpdate').textContent = trans.lastUpdate + timeString;
-            } else {
-                rateElement.innerHTML = `<span style="color:#e53e3e;font-weight:bold;">${rate.toFixed(2)}</span> (기본값)`;
-                document.getElementById('calcRate').textContent = rate.toFixed(2);
-                document.getElementById('rateUpdate').textContent = trans.lastUpdate + '기본 환율 적용';
-            }
-            
-            updateCalculation();
-        }
-
+    // 환율 업데이트
+    exchangeRate = rate;
+    
+    const rateElement = document.getElementById('exchangeRate');
+    const calcRateElement = document.getElementById('calcRate');
+    
+    if (success) {
+        rateElement.innerHTML = `<span style="color:#e53e3e;font-weight:bold;">${rate.toFixed(2)}</span>`;
+        if (calcRateElement) calcRateElement.textContent = rate.toFixed(2);
+    } else {
+        rateElement.innerHTML = `<span style="color:#e53e3e;font-weight:bold;">${rate.toFixed(2)}</span> (기본값)`;
+        if (calcRateElement) calcRateElement.textContent = rate.toFixed(2);
+    }
+    
+    // 텍스트 업데이트
+    updateAllText();
+    
+    updateCalculation();
+}
         // ==================== 계산 및 결제 관련 함수 ====================
         function updateCalculation() {
             const amount = parseInt(document.getElementById('thbAmount').value) || 0;
@@ -1737,30 +1746,27 @@
             
             const reader = new FileReader();
             reader.onload = function(e) {
-                console.log('파일 읽기 완료');
-                
-                const trans = translations[currentLang];
-                const uploadButtonText = document.getElementById('uploadButtonText');
-                const uploadPreview = document.getElementById('uploadPreview');
-                
-                if (uploadButtonText) {
-                    uploadButtonText.innerHTML = 
-                        `✅ ${currentLang === 'en' ? 'Upload completed' : '업로드 완료'}<br>
-                        <span style="font-size:11px;color:#718096;">${file.name}</span>`;
-                }
-                
-                if (uploadPreview) {
-                    uploadPreview.innerHTML = `
-                        <img src="${e.target.result}" alt="Payment proof" class="upload-preview-image">
-                        <div class="file-info">
-                            ${file.name} (${(file.size / 1024).toFixed(1)}KB)
-                        </div>
-                    `;
-                }
-                
-                checkPaymentButton();
-                console.log('파일 업로드 처리 완료');
-            };
+    console.log('파일 읽기 완료');
+    
+    uploadedFile = file; // 파일 업로드 상태 업데이트
+    
+    // 파일 업로드 후 언어 업데이트 적용
+    updateAllText();
+    
+    // 미리보기 업데이트
+    const uploadPreview = document.getElementById('uploadPreview');
+    if (uploadPreview) {
+        uploadPreview.innerHTML = `
+            <img src="${e.target.result}" alt="Payment proof" class="upload-preview-image">
+            <div class="file-info">
+                ${file.name} (${(file.size / 1024).toFixed(1)}KB)
+            </div>
+        `;
+    }
+    
+    checkPaymentButton();
+    console.log('파일 업로드 처리 완료');
+};
             
             reader.onerror = function(e) {
                 console.error('파일 읽기 오류:', e);
@@ -2428,6 +2434,8 @@
     </script>
 </body>
 </html>
+
+
 
 
 
