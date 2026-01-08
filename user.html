@@ -1407,20 +1407,36 @@ function showManualInstallOption() {
 // iOS 크롬용 가이드 (새로 추가)
 function showIOSChromeGuide() {
     const installToast = document.getElementById('installToast');
+    const currentUrl = window.location.href;
     
     installToast.innerHTML = `
-        <strong>⚠️ iOS는 Safari에서만 설치 가능</strong><br><br>
+        <strong>📱 iOS는 Safari에서만 설치 가능</strong><br><br>
         <strong>설치 방법:</strong><br>
-        1. 이 페이지를 <strong>Safari에서 열기</strong><br>
+        1. 아래 링크를 <strong>Safari에서 열기</strong><br>
         2. 공유 버튼(📤) 탭<br>
         3. '홈 화면에 추가' 선택<br>
         4. '추가' 버튼 탭<br><br>
         
-        <button onclick="openInSafari()" 
-                style="background:#007aff; color:white; border:none; padding:8px 15px; border-radius:8px; margin-top:5px; width:100%;">
-            Safari에서 열기
-        </button>
+        <div style="background:#f8f9fa; padding:10px; border-radius:6px; margin:10px 0; word-break:break-all; font-size:12px;">
+            ${currentUrl}
+        </div>
+        
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+            <button onclick="copyCurrentUrl()" 
+                    style="flex:1; background:#4CAF50; color:white; border:none; padding:10px; border-radius:8px; font-size:14px;">
+                🔗 링크 복사
+            </button>
+            <button onclick="openInSafari()" 
+                    style="flex:1; background:#007aff; color:white; border:none; padding:10px; border-radius:8px; font-size:14px;">
+                Safari에서 열기
+            </button>
+        </div>
+        
+        <small style="color:#666; display:block; margin-top:10px; text-align:center;">
+            링크를 복사해서 Safari에 붙여넣으세요
+        </small>
     `;
+    
     installToast.classList.add('show');
     
     setTimeout(() => {
@@ -1429,7 +1445,7 @@ function showIOSChromeGuide() {
         setTimeout(() => {
             installToast.classList.remove('hide');
         }, 300);
-    }, 10000);
+    }, 15000);
 }
 
 // Safari에서 열기 함수
@@ -1437,16 +1453,13 @@ function openInSafari() {
     // 현재 URL 가져오기
     const currentUrl = window.location.href;
     
-    // Safari URL 스킴으로 변경
-    const safariUrl = currentUrl.replace(/^https?:\/\//, '');
+    // 방법 1: 일반 https URL 사용 (가장 안정적)
+    window.location.href = currentUrl;
     
-    // Safari에서 열기 시도
-    window.location.href = `x-web-search://?${encodeURIComponent(safariUrl)}`;
-    
-    // 실패 시 일반 링크로 대체
+    // iOS Safari에서 홈 화면 추가를 유도하기 위한 안내
     setTimeout(() => {
-        window.location.href = currentUrl;
-    }, 500);
+        showInstallToast('Safari에서 공유 버튼(📤)을 탭하고 "홈 화면에 추가"를 선택하세요', 5000);
+    }, 1000);
 }
 
 // 설치 안내 토스트 표시
@@ -1475,7 +1488,30 @@ if ('serviceWorker' in navigator) {
         });
     });
 }
+function copyCurrentUrl() {
+    const url = window.location.href;
+    navigator.clipboard.writeText(url)
+        .then(() => {
+            showInstallToast('🔗 링크가 복사되었습니다! Safari에 붙여넣으세요', 3000);
+            
+            // 복사 후 Safari 열기 제안
+            setTimeout(() => {
+                if (confirm('링크가 복사되었습니다. Safari에서 열까요?')) {
+                    openInSafari();
+                }
+            }, 1000);
+        })
+        .catch(err => {
+            console.error('복사 실패:', err);
+            // 폴백: 직접 URL 보여주기
+            prompt('아래 URL을 복사하세요:', url);
+        });
+}
 
+// 페이지 로드 시 iOS 브라우저 체크
+document.addEventListener('DOMContentLoaded', function() {
+    checkIOSBrowser();
+});
 // ✅ 페이지 로드 시 실행 (이 부분이 꼭 필요!)
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM 로드 완료 - PWA 설치 기능 초기화');
