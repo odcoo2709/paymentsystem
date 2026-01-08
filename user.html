@@ -1722,7 +1722,7 @@
                 }
                 
                 if (!success || rate <= 0) {
-                    rate = 35.5;
+                    rate = 31.5;
                     console.log('API 실패, 기본 환율 사용:', rate);
                     updateExchangeRateDisplay(rate, false);
                 } else {
@@ -1731,7 +1731,7 @@
                 
             } catch (error) {
                 console.error('환율 조회 실패:', error);
-                updateExchangeRateDisplay(35.5, false);
+                updateExchangeRateDisplay(31.5, false);
             }
         }
         
