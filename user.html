@@ -1205,334 +1205,31 @@
     </div>
 
     <script>
-      // ==================== 간편한 PWA 설치 기능 ====================
-// ==================== 간편한 PWA 설치 기능 ====================
-let deferredPrompt;
-// ✅ 이미 전역에 isIOS, isAndroid, isStandalone 변수 있음
-let installPromptShown = false;
+        // ==================== 전역 변수 초기화 ====================
+        // PWA 설치 관련 변수
+        let deferredPrompt;
+        let installPromptShown = false;
+        
+        // 환율 및 결제 관련 변수
+        let exchangeRate = 31.5; // 기본값
+        let timeLeft = 300;
+        let timerInterval = null;
+        let uploadedFile = null;
+        let activeWallet = null;
+        let allWallets = [];
+        let allOrders = [];
+        let currentLang = 'ko';
+        let syncCheckInterval = null;
+        let currentOrderId = '';
+        
+        // 주문 페이지네이션 관련 변수
+        let activeOrdersPage = 1;
+        let completedOrdersPage = 1;
+        const ORDERS_PER_PAGE = 1;
+        
+        // 영수증 표시 상태
+        let showReceipts = false;
 
-// PWA 설치 가능 여부 체크 - 수정된 버전
-function checkPWAInstallSupport() {
-    const installButton = document.getElementById('installButton');
-    const installToast = document.getElementById('installToast');
-    
-    if (!installButton || !installToast) return;
-    
-    // ================ ✅ iOS Chrome 체크 (수정됨) ================
-    // ✅ isIOS는 이미 전역 변수로 있으므로 재선언하지 않음!
-    const isChromeIOS = /CriOS|Chrome/.test(navigator.userAgent) && isIOS;
-    
-    // iOS Chrome이면 별도 처리
-    if (isChromeIOS) {
-        console.log('iOS Chrome 감지 - Safari 리디렉션 안내');
-        installButton.classList.remove('hidden');
-        document.getElementById('installButtonText').textContent = '앱 설치하기';
-        
-        // ✅ onclick 이벤트 리스너로 변경 (addEventListener 대신)
-        installButton.onclick = () => {
-            showIOSChromeGuide();
-        };
-        return; // ✅ 여기서 함수 종료!
-    }
-    // ================ ✅ 추가 끝 ================
-    
-    // ✅ 모바일 장치인지 먼저 확인 (기존 코드)
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
-    // 모바일이 아니면 버튼 숨김
-    if (!isMobile) {
-        installButton.classList.add('hidden');
-        return;
-    }
-    
-    console.log('모바일 장치 감지:', {
-        isAndroid,
-        isIOS,
-        isStandalone,
-        userAgent: navigator.userAgent
-    });
-    
-    // ✅ 이미 설치된 경우에도 버튼 유지 (사용자가 재설치할 수 있도록)
-    // 대신 텍스트 변경
-    if (isStandalone) {
-        document.getElementById('installButtonText').textContent = isAndroid ? '앱 열기' : '홈에서 열기';
-        installButton.classList.remove('hidden');
-        
-        // ✅ onclick 사용으로 통일
-        installButton.onclick = () => {
-            if (isAndroid) {
-                // 안드로이드 PWA 열기 시도
-                window.location.reload();
-            } else {
-                showIOSQuickGuide();
-            }
-        };
-        return;
-    }
-    
-    // Android/데스크톱 Chrome의 경우 - 클릭 한 번으로 바로 설치
-    window.addEventListener('beforeinstallprompt', (e) => {
-        console.log('✅ beforeinstallprompt 이벤트 발생 - 안드로이드 PWA 설치 가능');
-        e.preventDefault();
-        deferredPrompt = e;
-        
-        // 설치 버튼 표시
-        installButton.classList.remove('hidden');
-        document.getElementById('installButtonText').textContent = '앱 설치';
-        installPromptShown = true;
-        
-        // 간단한 안내 토스트 표시
-        showInstallToast('📱 앱을 설치하면 더 편리해요!', 3000);
-        
-        // ✅ onclick으로 통일 (addEventListener 중복 방지)
-        installButton.onclick = async () => {
-            console.log('설치 버튼 클릭됨');
-            if (deferredPrompt) {
-                installButton.classList.add('hidden');
-                
-                // 지연된 프롬프트 표시 - 사용자가 바로 설치 가능
-                deferredPrompt.prompt();
-                
-                const { outcome } = await deferredPrompt.userChoice;
-                console.log(`사용자 응답: ${outcome}`);
-                
-                if (outcome === 'accepted') {
-                    console.log('PWA 설치 수락됨');
-                    showInstallToast('✅ 앱 설치가 시작됩니다!', 2000);
-                } else {
-                    showInstallToast('설치가 취소되었습니다', 2000);
-                    // 취소 후 3초 뒤에 버튼 다시 표시
-                    setTimeout(() => {
-                        installButton.classList.remove('hidden');
-                    }, 3000);
-                }
-                
-                deferredPrompt = null;
-            }
-        };
-    });
-    
-    // beforeinstallprompt 이벤트가 즉시 발생하지 않을 수 있으므로
-    // 일정 시간 후에도 이벤트가 발생하지 않으면 수동으로 버튼 표시
-    setTimeout(() => {
-        console.log('타임아웃 체크:', {
-            installPromptShown,
-            isStandalone,
-            isMobile
-        });
-        
-        if (!installPromptShown && !isStandalone && isMobile) {
-            console.log('✅ 수동으로 설치 버튼 표시');
-            showManualInstallOption();
-        }
-    }, 5000); // 5초로 증가
-    
-    // 설치 완료 후 버튼 숨기기
-    window.addEventListener('appinstalled', () => {
-        console.log('🎉 PWA가 설치되었습니다');
-        installButton.classList.add('hidden');
-        showInstallToast('🎉 앱 설치 완료! 홈 화면에서 확인하세요.', 3000);
-        deferredPrompt = null;
-    });
-}
-
-// 안드로이드 수동 설치 옵션 - 개선된 버전
-function showManualInstallOption() {
-    const installButton = document.getElementById('installButton');
-    const installToast = document.getElementById('installToast');
-    
-    if (!installButton || !installToast) return;
-    
-    console.log('수동 설치 옵션 표시:', { isAndroid, isIOS });
-    
-    // 버튼 표시
-    installButton.classList.remove('hidden');
-    
-    // Android Chrome의 경우
-    if (isAndroid) {
-        document.getElementById('installButtonText').textContent = '앱 설치';
-        
-        installButton.onclick = () => {
-            installToast.innerHTML = `
-                <strong>📱 Chrome에서 앱 설치하기</strong><br>
-                1. Chrome 메뉴(⋮) 탭<br>
-                2. <strong>'앱 설치'</strong> 선택<br>
-                3. <strong>'설치'</strong> 버튼 탭<br>
-                <br>
-                <small style="color:#666;">또는 주소창 옆의 📲 아이콘 클릭</small>
-            `;
-            installToast.classList.add('show');
-            
-            setTimeout(() => {
-                installToast.classList.remove('show');
-                installToast.classList.add('hide');
-                setTimeout(() => {
-                    installToast.classList.remove('hide');
-                }, 300);
-            }, 7000); // 7초 동안 표시
-        };
-    }
-    // iOS의 경우
-    else if (isIOS) {
-        document.getElementById('installButtonText').textContent = '홈 화면에 추가';
-        
-        installButton.onclick = () => {
-            showIOSQuickGuide();
-        };
-    }
-}
-
-// iOS 크롬용 가이드 (새로 추가)
-function showIOSChromeGuide() {
-    const installToast = document.getElementById('installToast');
-    const currentUrl = window.location.href;
-    
-    installToast.innerHTML = `
-        <strong>📱 Safari에서 앱 설치</strong><br><br>
-        
-        <div style="text-align:center;">
-            <button onclick="openInSafari()" 
-                    style="background:#007aff; color:white; border:none; padding:14px 20px; border-radius:10px; font-size:16px; font-weight:bold; width:90%; margin:10px 0; box-shadow:0 4px 10px rgba(0,122,255,0.3);">
-                Safari에서 열기
-            </button>
-            
-            <div style="display:flex; align-items:center; gap:10px; margin:15px 0; justify-content:center;">
-                <div style="width:40px; height:1px; background:#ddd;"></div>
-                <span style="color:#999; font-size:13px;">또는</span>
-                <div style="width:40px; height:1px; background:#ddd;"></div>
-            </div>
-            
-            <button onclick="copyCurrentUrl()" 
-                    style="background:#4CAF50; color:white; border:none; padding:10px 15px; border-radius:8px; font-size:14px; width:90%;">
-                🔗 링크 복사해서 Safari에 붙여넣기
-            </button>
-        </div>
-        
-        <div style="margin-top:15px; padding:12px; background:#f8f9fa; border-radius:8px; border-left:4px solid #ff9500; font-size:12px;">
-            <strong>💡 중요한 안내:</strong><br>
-            Safari가 열리면 주소가 <strong>${currentUrl}</strong> 인지 확인하세요.<br>
-            만약 "구글 검색"이라면 위 주소를 직접 입력하세요.
-        </div>
-    `;
-    
-    installToast.classList.add('show');
-    
-    setTimeout(() => {
-        installToast.classList.remove('show');
-        installToast.classList.add('hide');
-        setTimeout(() => {
-            installToast.classList.remove('hide');
-        }, 300);
-    }, 15000);
-}
-
-// Safari에서 열기 함수
-function openInSafari() {
-    const currentUrl = window.location.href;
-    
-    // ✅ 현재 URL 그대로 사용 (구글 검색 방지)
-    window.location.href = currentUrl;
-    
-    // 2초 후 자세한 안내
-    setTimeout(() => {
-        const installToast = document.getElementById('installToast');
-        if (installToast) {
-            installToast.innerHTML = `
-                <strong>✅ Safari에서 열었습니다!</strong><br><br>
-                <strong>주소 확인하기:</strong><br>
-                1. Safari 주소창 확인<br>
-                2. 만약 "구글 검색"이라면:<br>
-                &nbsp;&nbsp;• 주소창 터치<br>
-                &nbsp;&nbsp;• <span style="color:#007aff; background:#f0f0f0; padding:2px 5px; border-radius:3px;">${currentUrl}</span><br>
-                &nbsp;&nbsp;• 붙여넣기<br>
-                3. 공유 버튼(📤) → '홈 화면에 추가'
-            `;
-            installToast.classList.add('show');
-            
-            setTimeout(() => {
-                installToast.classList.remove('show');
-            }, 10000);
-        }
-    }, 2000);
-}
-
-// 설치 안내 토스트 표시
-function showInstallToast(message, duration = 3000) {
-    const installToast = document.getElementById('installToast');
-    if (!installToast) return;
-    
-    installToast.innerHTML = message;
-    installToast.classList.remove('hide');
-    installToast.classList.add('show');
-    
-    setTimeout(() => {
-        installToast.classList.remove('show');
-        installToast.classList.add('hide');
-        setTimeout(() => {
-            installToast.classList.remove('hide');
-        }, 300);
-    }, duration);
-}
-
-// Service Worker 등록
-if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/service-worker.js').catch(error => {
-            console.log('ServiceWorker 등록 실패:', error);
-        });
-    });
-}
-function copyCurrentUrl() {
-    const url = window.location.href;
-    navigator.clipboard.writeText(url)
-        .then(() => {
-            showInstallToast('🔗 링크가 복사되었습니다! Safari에 붙여넣으세요', 3000);
-            
-            // 복사 후 Safari 열기 제안
-            setTimeout(() => {
-                if (confirm('링크가 복사되었습니다. Safari에서 열까요?')) {
-                    openInSafari();
-                }
-            }, 1000);
-        })
-        .catch(err => {
-            console.error('복사 실패:', err);
-            // 폴백: 직접 URL 보여주기
-            prompt('아래 URL을 복사하세요:', url);
-        });
-}
-
-// 페이지 로드 시 iOS 브라우저 체크
-document.addEventListener('DOMContentLoaded', function() {
-    checkIOSBrowser();
-});
-// ✅ 페이지 로드 시 실행 (이 부분이 꼭 필요!)
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM 로드 완료 - PWA 설치 기능 초기화');
-    checkPWAInstallSupport();
-});
-
-// iOS 크롬 감지
-function checkIOSBrowser() {
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    const isChrome = /CriOS|Chrome/.test(navigator.userAgent);
-    
-    if (isIOS && isChrome) {
-        // iOS 크롬 감지 시 사용자에게 알림
-        const installButton = document.getElementById('installButton');
-        if (installButton) {
-            installButton.onclick = () => {
-                showIOSChromeGuide();
-            };
-        }
-    }
-}
-
-// 페이지 로드 시 iOS 브라우저 체크
-document.addEventListener('DOMContentLoaded', function() {
-    checkIOSBrowser();
-});
-        
         // ==================== 데이터 관리자 클래스 ====================
         class DataManager {
             constructor() {
@@ -1629,29 +1326,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // ==================== 전역 변수 및 DataManager 인스턴스 ====================
+        // DataManager 인스턴스 생성
         const dataManager = new DataManager();
-        
-        let exchangeRate = 0;
-        let timeLeft = 300;
-        let timerInterval = null;
-        let uploadedFile = null;
-        let activeWallet = null;
-        let allWallets = [];
-        let allOrders = [];
-        let currentLang = 'ko';
-        let syncCheckInterval = null;
-        let currentOrderId = '';
-        
-        // 주문 페이지네이션 관련 변수
-        let activeOrdersPage = 1;
-        let completedOrdersPage = 1;
-        const ORDERS_PER_PAGE = 1;
-        
-        // 영수증 표시 상태
-        let showReceipts = false;
 
-        // 번역 데이터
+        // ==================== 번역 데이터 ====================
         const translations = {
             en: {
                 title: "USDT/THB Payment",
@@ -1753,18 +1431,398 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
 
+        // ==================== PWA 설치 기능 ====================
+        function initializePWA() {
+            // 전역 변수 설정
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+            const isAndroid = /Android/.test(navigator.userAgent);
+            const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                                window.navigator.standalone === true;
+
+            console.log('PWA 감지:', { isIOS, isAndroid, isStandalone });
+
+            const installButton = document.getElementById('installButton');
+            const installToast = document.getElementById('installToast');
+
+            // iOS Chrome 감지
+            const isChromeIOS = /CriOS|Chrome/.test(navigator.userAgent) && isIOS;
+
+            // iOS Chrome이면 별도 처리
+            if (isChromeIOS) {
+                console.log('iOS Chrome 감지');
+                installButton.classList.remove('hidden');
+                document.getElementById('installButtonText').textContent = '앱 설치하기';
+                
+                installButton.onclick = () => {
+                    showIOSChromeGuide();
+                };
+                return;
+            }
+
+            // 모바일 장치인지 확인
+            const isMobile = isAndroid || isIOS;
+            
+            // 모바일이 아니면 버튼 숨김
+            if (!isMobile) {
+                installButton.classList.add('hidden');
+                return;
+            }
+
+            // 이미 설치된 경우
+            if (isStandalone) {
+                document.getElementById('installButtonText').textContent = isAndroid ? '앱 열기' : '홈에서 열기';
+                installButton.classList.remove('hidden');
+                
+                installButton.onclick = () => {
+                    if (isAndroid) {
+                        window.location.reload();
+                    } else {
+                        showIOSQuickGuide();
+                    }
+                };
+                return;
+            }
+
+            // Android/데스크톱 Chrome의 경우
+            window.addEventListener('beforeinstallprompt', (e) => {
+                console.log('✅ beforeinstallprompt 이벤트 발생');
+                e.preventDefault();
+                deferredPrompt = e;
+                
+                installButton.classList.remove('hidden');
+                document.getElementById('installButtonText').textContent = '앱 설치';
+                installPromptShown = true;
+                
+                showInstallToast('📱 앱을 설치하면 더 편리해요!', 3000);
+                
+                installButton.onclick = async () => {
+                    console.log('설치 버튼 클릭됨');
+                    if (deferredPrompt) {
+                        installButton.classList.add('hidden');
+                        
+                        deferredPrompt.prompt();
+                        
+                        const { outcome } = await deferredPrompt.userChoice;
+                        console.log(`사용자 응답: ${outcome}`);
+                        
+                        if (outcome === 'accepted') {
+                            console.log('PWA 설치 수락됨');
+                            showInstallToast('✅ 앱 설치가 시작됩니다!', 2000);
+                        } else {
+                            showInstallToast('설치가 취소되었습니다', 2000);
+                            setTimeout(() => {
+                                installButton.classList.remove('hidden');
+                            }, 3000);
+                        }
+                        
+                        deferredPrompt = null;
+                    }
+                };
+            });
+
+            // beforeinstallprompt 이벤트가 발생하지 않을 경우
+            setTimeout(() => {
+                if (!installPromptShown && !isStandalone && isMobile) {
+                    showManualInstallOption(isAndroid, isIOS);
+                }
+            }, 5000);
+
+            // 설치 완료 후
+            window.addEventListener('appinstalled', () => {
+                console.log('🎉 PWA가 설치되었습니다');
+                installButton.classList.add('hidden');
+                showInstallToast('🎉 앱 설치 완료! 홈 화면에서 확인하세요.', 3000);
+                deferredPrompt = null;
+            });
+        }
+
+        function showManualInstallOption(isAndroid, isIOS) {
+            const installButton = document.getElementById('installButton');
+            const installToast = document.getElementById('installToast');
+            
+            if (!installButton || !installToast) return;
+            
+            installButton.classList.remove('hidden');
+            
+            if (isAndroid) {
+                document.getElementById('installButtonText').textContent = '앱 설치';
+                
+                installButton.onclick = () => {
+                    installToast.innerHTML = `
+                        <strong>📱 Chrome에서 앱 설치하기</strong><br>
+                        1. Chrome 메뉴(⋮) 탭<br>
+                        2. <strong>'앱 설치'</strong> 선택<br>
+                        3. <strong>'설치'</strong> 버튼 탭<br>
+                        <br>
+                        <small style="color:#666;">또는 주소창 옆의 📲 아이콘 클릭</small>
+                    `;
+                    installToast.classList.add('show');
+                    
+                    setTimeout(() => {
+                        installToast.classList.remove('show');
+                        installToast.classList.add('hide');
+                        setTimeout(() => {
+                            installToast.classList.remove('hide');
+                        }, 300);
+                    }, 7000);
+                };
+            }
+            else if (isIOS) {
+                document.getElementById('installButtonText').textContent = '홈 화면에 추가';
+                
+                installButton.onclick = () => {
+                    showIOSQuickGuide();
+                };
+            }
+        }
+
+        function showIOSChromeGuide() {
+            const installToast = document.getElementById('installToast');
+            const currentUrl = window.location.href;
+            
+            installToast.innerHTML = `
+                <strong>📱 Safari에서 앱 설치</strong><br><br>
+                
+                <div style="text-align:center;">
+                    <button onclick="openInSafari()" 
+                            style="background:#007aff; color:white; border:none; padding:14px 20px; border-radius:10px; font-size:16px; font-weight:bold; width:90%; margin:10px 0; box-shadow:0 4px 10px rgba(0,122,255,0.3);">
+                        Safari에서 열기
+                    </button>
+                    
+                    <div style="display:flex; align-items:center; gap:10px; margin:15px 0; justify-content:center;">
+                        <div style="width:40px; height:1px; background:#ddd;"></div>
+                        <span style="color:#999; font-size:13px;">또는</span>
+                        <div style="width:40px; height:1px; background:#ddd;"></div>
+                    </div>
+                    
+                    <button onclick="copyCurrentUrl()" 
+                            style="background:#4CAF50; color:white; border:none; padding:10px 15px; border-radius:8px; font-size:14px; width:90%;">
+                        🔗 링크 복사해서 Safari에 붙여넣기
+                    </button>
+                </div>
+                
+                <div style="margin-top:15px; padding:12px; background:#f8f9fa; border-radius:8px; border-left:4px solid #ff9500; font-size:12px;">
+                    <strong>💡 중요한 안내:</strong><br>
+                    Safari가 열리면 주소가 <strong>${currentUrl}</strong> 인지 확인하세요.<br>
+                    만약 "구글 검색"이라면 위 주소를 직접 입력하세요.
+                </div>
+            `;
+            
+            installToast.classList.add('show');
+            
+            setTimeout(() => {
+                installToast.classList.remove('show');
+                installToast.classList.add('hide');
+                setTimeout(() => {
+                    installToast.classList.remove('hide');
+                }, 300);
+            }, 15000);
+        }
+
+        function showIOSQuickGuide() {
+            const installToast = document.getElementById('installToast');
+            installToast.innerHTML = `
+                <strong>📱 iOS에서 앱 설치하기</strong><br><br>
+                1. Safari에서 이 페이지 열기<br>
+                2. 공유 버튼(📤) 탭하기<br>
+                3. 아래로 스크롤하여<br>
+                4. <strong>'홈 화면에 추가'</strong> 선택<br>
+                5. <strong>'추가'</strong> 버튼 탭하기
+            `;
+            installToast.classList.add('show');
+            
+            setTimeout(() => {
+                installToast.classList.remove('show');
+                installToast.classList.add('hide');
+                setTimeout(() => {
+                    installToast.classList.remove('hide');
+                }, 300);
+            }, 8000);
+        }
+
+        function openInSafari() {
+            const currentUrl = window.location.href;
+            window.location.href = currentUrl;
+            
+            setTimeout(() => {
+                const installToast = document.getElementById('installToast');
+                if (installToast) {
+                    installToast.innerHTML = `
+                        <strong>✅ Safari에서 열었습니다!</strong><br><br>
+                        <strong>주소 확인하기:</strong><br>
+                        1. Safari 주소창 확인<br>
+                        2. 만약 "구글 검색"이라면:<br>
+                        &nbsp;&nbsp;• 주소창 터치<br>
+                        &nbsp;&nbsp;• <span style="color:#007aff; background:#f0f0f0; padding:2px 5px; border-radius:3px;">${currentUrl}</span><br>
+                        &nbsp;&nbsp;• 붙여넣기<br>
+                        3. 공유 버튼(📤) → '홈 화면에 추가'
+                    `;
+                    installToast.classList.add('show');
+                    
+                    setTimeout(() => {
+                        installToast.classList.remove('show');
+                    }, 10000);
+                }
+            }, 2000);
+        }
+
+        function copyCurrentUrl() {
+            const url = window.location.href;
+            navigator.clipboard.writeText(url)
+                .then(() => {
+                    showInstallToast('🔗 링크가 복사되었습니다! Safari에 붙여넣으세요', 3000);
+                    
+                    setTimeout(() => {
+                        if (confirm('링크가 복사되었습니다. Safari에서 열까요?')) {
+                            openInSafari();
+                        }
+                    }, 1000);
+                })
+                .catch(err => {
+                    console.error('복사 실패:', err);
+                    prompt('아래 URL을 복사하세요:', url);
+                });
+        }
+
+        function showInstallToast(message, duration = 3000) {
+            const installToast = document.getElementById('installToast');
+            if (!installToast) return;
+            
+            installToast.innerHTML = message;
+            installToast.classList.remove('hide');
+            installToast.classList.add('show');
+            
+            setTimeout(() => {
+                installToast.classList.remove('show');
+                installToast.classList.add('hide');
+                setTimeout(() => {
+                    installToast.classList.remove('hide');
+                }, 300);
+            }, duration);
+        }
+
+        // Service Worker 등록
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/service-worker.js').catch(error => {
+                    console.log('ServiceWorker 등록 실패:', error);
+                });
+            });
+        }
+
+        // ==================== 환율 API 호출 (수정된 버전) ====================
+        async function fetchRealTimeExchangeRate() {
+            try {
+                console.log('환율 조회 시작...');
+                
+                // Binance USDT/THB 시장 데이터 사용 (CORS 우회)
+                const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+                const targetUrl = 'https://api.binance.com/api/v3/ticker/price?symbol=USDTTHB';
+                
+                // 로컬 프록시 시도
+                try {
+                    const response = await fetch(proxyUrl + targetUrl, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                            'Origin': window.location.origin
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data && data.price) {
+                            const rate = parseFloat(data.price);
+                            if (rate > 0 && rate < 100) {
+                                console.log('환율 조회 성공 (Binance):', rate);
+                                updateExchangeRateDisplay(rate, true);
+                                return;
+                            }
+                        }
+                    }
+                } catch (proxyError) {
+                    console.log('프록시 API 실패:', proxyError.message);
+                }
+                
+                // Coingecko 대체 시도
+                try {
+                    const coingeckoUrl = 'https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=thb';
+                    const response = await fetch(coingeckoUrl, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.tether && data.tether.thb) {
+                            const rate = parseFloat(data.tether.thb);
+                            if (rate > 0) {
+                                console.log('환율 조회 성공 (Coingecko):', rate);
+                                updateExchangeRateDisplay(rate, true);
+                                return;
+                            }
+                        }
+                    }
+                } catch (coingeckoError) {
+                    console.log('Coingecko API 실패:', coingeckoError.message);
+                }
+                
+                // 모든 API 실패 시 기본값 사용
+                console.log('API 실패, 기본 환율 사용:', exchangeRate);
+                updateExchangeRateDisplay(exchangeRate, false);
+                
+            } catch (error) {
+                console.error('환율 조회 최종 실패:', error);
+                updateExchangeRateDisplay(exchangeRate, false);
+            }
+        }
+        
+        function updateExchangeRateDisplay(rate, success) {
+            exchangeRate = rate;
+            
+            const rateElement = document.getElementById('exchangeRate');
+            const calcRateElement = document.getElementById('calcRate');
+            
+            if (success) {
+                rateElement.innerHTML = `<span style="color:#e53e3e;font-weight:bold;">${rate.toFixed(2)}</span>`;
+                if (calcRateElement) calcRateElement.textContent = rate.toFixed(2);
+            } else {
+                rateElement.innerHTML = `<span style="color:#e53e3e;font-weight:bold;">${rate.toFixed(2)}</span> (기본값)`;
+                if (calcRateElement) calcRateElement.textContent = rate.toFixed(2);
+            }
+            
+            const trans = translations[currentLang];
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('ko-KR', { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit',
+                hour12: false 
+            });
+            
+            const rateUpdateElement = document.getElementById('rateUpdate');
+            if (rateUpdateElement) {
+                rateUpdateElement.textContent = trans.lastUpdate + timeString;
+            }
+            
+            updateCalculation();
+        }
+
         // ==================== 페이지 초기화 ====================
         document.addEventListener('DOMContentLoaded', function() {
             console.log('사용자 페이지 로드됨');
             
-            // 간편한 PWA 설치 기능 초기화
-            checkPWAInstallSupport();
+            // PWA 설치 기능 초기화
+            initializePWA();
             
             // 페이지 로드 시 결제 폼 초기화
             resetPaymentForm();
             
-            currentLang = 'ko';
-            
+            // 언어 초기화
             initLanguageButton();
             updateLanguageButtonText();
             updateAllText();
@@ -1772,16 +1830,19 @@ document.addEventListener('DOMContentLoaded', function() {
             // 첫 번째 로딩은 바로 실행
             setTimeout(fetchRealTimeExchangeRate, 100);
             
-            // ✅ 30초에 한 번 환율 업데이트
+            // 30초에 한 번 환율 업데이트
             setInterval(fetchRealTimeExchangeRate, 30000);
             
+            // 데이터 로드
             loadInitialData();
             
+            // 이벤트 리스너 설정
             setupEventListeners();
             
+            // 동기화 체크 시작
             startSyncCheck();
             
-            // 모달 오버레이 클릭 이벤트 추가
+            // 모달 오버레이 클릭 이벤트
             document.getElementById('qrModal').addEventListener('click', function(e) {
                 if (e.target === this) {
                     if (confirm(currentLang === 'en' ? 
@@ -1792,7 +1853,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
             
-            // ESC 키로 모달 닫을 때도 처리
+            // ESC 키로 모달 닫기
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape' && !document.getElementById('qrModal').classList.contains('hidden')) {
                     if (confirm(currentLang === 'en' ? 
@@ -1919,97 +1980,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             updateOrdersList();
-        }
-
-        // ==================== 환율 관련 함수 ====================
-        async function fetchRealTimeExchangeRate() {
-            try {
-                console.log('환율 조회 시작...', new Date().toLocaleTimeString());
-                
-                const apiUrls = [
-                    'https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=thb',
-                    'https://api.binance.com/api/v3/ticker/price?symbol=USDTTHB'
-                ];
-                
-                let rate = 0;
-                let success = false;
-                
-                for (const apiUrl of apiUrls) {
-                    try {
-                        console.log(`API 시도: ${apiUrl}`);
-                        
-                        // 요청 간에 약간의 딜레이 추가
-                        await new Promise(resolve => setTimeout(resolve, 500));
-                        
-                        const response = await fetch(apiUrl, {
-                            method: 'GET',
-                            headers: {
-                                'Accept': 'application/json',
-                                'Content-Type': 'application/json',
-                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                            },
-                            mode: 'cors'
-                        });
-                        
-                        if (response.ok) {
-                            const data = await response.json();
-                            
-                            if (apiUrl.includes('coingecko')) {
-                                if (data.tether && data.tether.thb) {
-                                    rate = parseFloat(data.tether.thb);
-                                    success = true;
-                                }
-                            } else if (apiUrl.includes('binance')) {
-                                if (data.price) {
-                                    rate = parseFloat(data.price);
-                                    success = true;
-                                }
-                            }
-                            
-                            if (rate && rate > 0 && rate < 100) {
-                                console.log('환율 조회 성공:', rate);
-                                break;
-                            }
-                        }
-                    } catch (error) {
-                        console.log(`${apiUrl} 실패:`, error.message);
-                        continue;
-                    }
-                }
-                
-                if (!success || rate <= 0) {
-                    rate = 31.5;
-                    console.log('API 실패, 기본 환율 사용:', rate);
-                    updateExchangeRateDisplay(rate, false);
-                } else {
-                    updateExchangeRateDisplay(rate, true);
-                }
-                
-            } catch (error) {
-                console.error('환율 조회 실패:', error);
-                updateExchangeRateDisplay(31.5, false);
-            }
-        }
-        
-        function updateExchangeRateDisplay(rate, success) {
-            // 환율 업데이트
-            exchangeRate = rate;
-            
-            const rateElement = document.getElementById('exchangeRate');
-            const calcRateElement = document.getElementById('calcRate');
-            
-            if (success) {
-                rateElement.innerHTML = `<span style="color:#e53e3e;font-weight:bold;">${rate.toFixed(2)}</span>`;
-                if (calcRateElement) calcRateElement.textContent = rate.toFixed(2);
-            } else {
-                rateElement.innerHTML = `<span style="color:#e53e3e;font-weight:bold;">${rate.toFixed(2)}</span> (기본값)`;
-                if (calcRateElement) calcRateElement.textContent = rate.toFixed(2);
-            }
-            
-            // 텍스트 업데이트
-            updateAllText();
-            
-            updateCalculation();
         }
 
         // ==================== 계산 및 결제 관련 함수 ====================
@@ -2189,35 +2159,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // 결제 폼 초기화
         function resetPaymentForm() {
-            // 금액 입력 초기화
             document.getElementById('thbAmount').value = '';
-            
-            // 파일 입력 초기화
             document.getElementById('paymentProof').value = '';
-            
-            // 업로드된 파일 변수 초기화
             uploadedFile = null;
             
-            // 업로드 버튼 텍스트 복원
             const trans = translations[currentLang];
             const uploadButtonText = document.getElementById('uploadButtonText');
             if (uploadButtonText) {
                 uploadButtonText.textContent = `📎 ${trans.uploadText}`;
             }
             
-            // 업로드 미리보기 초기화
             const uploadPreview = document.getElementById('uploadPreview');
             if (uploadPreview) {
                 uploadPreview.innerHTML = '';
             }
             
-            // 계산 미리보기 숨기기
             const calcPreview = document.getElementById('calcPreview');
             if (calcPreview) {
                 calcPreview.style.display = 'none';
             }
             
-            // 결제 버튼 비활성화
             document.getElementById('payButton').disabled = true;
             
             console.log('결제 폼이 초기화되었습니다.');
@@ -2268,12 +2229,9 @@ document.addEventListener('DOMContentLoaded', function() {
             reader.onload = function(e) {
                 console.log('파일 읽기 완료');
                 
-                uploadedFile = file; // 파일 업로드 상태 업데이트
-                
-                // 파일 업로드 후 언어 업데이트 적용
+                uploadedFile = file;
                 updateAllText();
                 
-                // 미리보기 업데이트
                 const uploadPreview = document.getElementById('uploadPreview');
                 if (uploadPreview) {
                     uploadPreview.innerHTML = `
@@ -2365,7 +2323,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 };
                 
                 saveOrder(order);
-                
                 updateOrdersList();
                 
                 document.getElementById('qrModal').classList.remove('hidden');
@@ -2410,7 +2367,7 @@ document.addEventListener('DOMContentLoaded', function() {
             allOrders = orders;
         }
 
-        // ==================== 주문 목록 업데이트 (페이지네이션 적용) ====================
+        // ==================== 주문 목록 업데이트 ====================
         function updateOrdersList() {
             const activeOrders = allOrders.filter(order => 
                 order.status === '입금대기' || 
@@ -2426,7 +2383,6 @@ document.addEventListener('DOMContentLoaded', function() {
             updateActiveOrdersPage();
             updateCompletedOrdersPage();
             
-            // 페이지네이션 컨트롤 표시/숨김
             const activePagination = document.getElementById('activeOrdersPagination');
             if (activeOrders.length > ORDERS_PER_PAGE) {
                 activePagination.style.display = 'flex';
@@ -2462,27 +2418,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // 현재 페이지의 주문 계산
             const startIndex = (activeOrdersPage - 1) * ORDERS_PER_PAGE;
             const endIndex = Math.min(startIndex + ORDERS_PER_PAGE, activeOrders.length);
             const currentPageOrders = activeOrders.slice(startIndex, endIndex);
             
-            // 주문 카드 생성
             let html = '';
             currentPageOrders.forEach(order => {
-                html += createOrderCard(order, false); // 진행중인 주문은 증명서만 표시
+                html += createOrderCard(order, false);
             });
             activeOrdersContainer.innerHTML = html;
             
-            // 페이지네이션 컨트롤 업데이트
             const totalPages = Math.ceil(activeOrders.length / ORDERS_PER_PAGE);
             document.getElementById('activeOrdersPageInfo').textContent = `${activeOrdersPage} / ${totalPages}`;
             
-            // 버튼 상태 업데이트
             document.getElementById('activeOrdersPrevBtn').disabled = activeOrdersPage <= 1;
             document.getElementById('activeOrdersNextBtn').disabled = activeOrdersPage >= totalPages;
             
-            // 클릭 이벤트 추가
             addOrderCardClickEvents();
         }
 
@@ -2505,27 +2456,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
             
-            // 현재 페이지의 주문 계산
             const startIndex = (completedOrdersPage - 1) * ORDERS_PER_PAGE;
             const endIndex = Math.min(startIndex + ORDERS_PER_PAGE, completedOrders.length);
             const currentPageOrders = completedOrders.slice(startIndex, endIndex);
             
-            // 주문 카드 생성
             let html = '';
             currentPageOrders.forEach(order => {
-                html += createOrderCard(order, showReceipts); // 완료된 주문은 영수증 표시
+                html += createOrderCard(order, showReceipts);
             });
             completedOrdersContainer.innerHTML = html;
             
-            // 페이지네이션 컨트롤 업데이트
             const totalPages = Math.ceil(completedOrders.length / ORDERS_PER_PAGE);
             document.getElementById('completedOrdersPageInfo').textContent = `${completedOrdersPage} / ${totalPages}`;
             
-            // 버튼 상태 업데이트
             document.getElementById('completedOrdersPrevBtn').disabled = completedOrdersPage <= 1;
             document.getElementById('completedOrdersNextBtn').disabled = completedOrdersPage >= totalPages;
             
-            // 클릭 이벤트 추가
             addOrderCardClickEvents();
         }
 
@@ -2550,12 +2496,8 @@ document.addEventListener('DOMContentLoaded', function() {
             
             const time = new Date(order.time).toLocaleString('ko-KR');
             
-            // 영수증 이미지 HTML (완료된 주문만)
             let receiptHtml = '';
             if (order.receipt && order.receipt.data && order.status === '완료') {
-                const receiptLabel = trans.receipt;
-                const viewReceiptText = trans.viewReceipt;
-                
                 if (order.receipt.type && order.receipt.type.startsWith('image/')) {
                     receiptHtml = `
                         <div class="receipt-image-container ${showReceipt ? 'show' : ''}">
@@ -2602,10 +2544,8 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         function addOrderCardClickEvents() {
-            // 완료된 주문의 영수증 클릭 이벤트
             document.querySelectorAll('#completedOrdersContainer .order-card').forEach(card => {
                 card.addEventListener('click', function(e) {
-                    // 영수증 이미지 표시/숨기기 토글
                     const receiptImageContainer = this.querySelector('.receipt-image-container');
                     if (receiptImageContainer) {
                         receiptImageContainer.classList.toggle('show');
@@ -2659,7 +2599,6 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
         }
 
-        // ==================== QR 코드 표시 함수 ====================
         function updateQRCodeDisplay() {
             if (!activeWallet) {
                 console.log('활성 지갑이 없음');
@@ -2773,9 +2712,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             document.getElementById('qrModal').classList.add('hidden');
-            
             resetPaymentForm();
-            
             alert(currentLang === 'en' ? 'Payment cancelled' : '결제가 취소되었습니다');
         }
 
@@ -2786,7 +2723,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             document.getElementById('qrModal').classList.add('hidden');
-            
             resetPaymentForm();
             
             alert(currentLang === 'en' ? 
@@ -2805,7 +2741,6 @@ document.addEventListener('DOMContentLoaded', function() {
             };
             
             dataManager.saveOrders(allOrders);
-            
             updateOrdersList();
         }
 
@@ -2845,7 +2780,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 dataManager.updateUserSync();
-                
                 setTimeout(hideSyncStatus, 2000);
             }
         }
@@ -2882,14 +2816,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 updated: new Date().toISOString()
             };
             
-            // 영수증 추가
             if (receipt && newStatus === '완료') {
                 allOrders[orderIndex].receipt = receipt;
             }
             
             dataManager.saveOrders(allOrders);
             
-            // 관리자가 취소 처리했을 때
             if (newStatus === '취소' && currentOrderId === orderId) {
                 const modal = document.getElementById('qrModal');
                 if (!modal.classList.contains('hidden')) {
