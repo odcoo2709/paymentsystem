@@ -1813,59 +1813,100 @@ if (!AbortSignal.timeout) {
         }
 
         // ==================== 페이지 초기화 ====================
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('사용자 페이지 로드됨');
-            
-            // PWA 설치 기능 초기화
-            initializePWA();
-            
-            // 페이지 로드 시 결제 폼 초기화
-            resetPaymentForm();
-            
-            // 언어 초기화
-            initLanguageButton();
-            updateLanguageButtonText();
-            updateAllText();
-            
-            // 첫 번째 로딩은 바로 실행
-            setTimeout(fetchRealTimeExchangeRate, 100);
-            
-            // 30초에 한 번 환율 업데이트
-            setInterval(fetchRealTimeExchangeRate, 30000);
-            
-            // 데이터 로드
-            loadInitialData();
-            
-            // 이벤트 리스너 설정
-            setupEventListeners();
-            
-            // 동기화 체크 시작
-            startSyncCheck();
-            
-            // 모달 오버레이 클릭 이벤트
-            document.getElementById('qrModal').addEventListener('click', function(e) {
-                if (e.target === this) {
-                    if (confirm(currentLang === 'en' ? 
-                        'Cancel payment?\n\nCurrent payment will be cancelled and form will be reset.' : 
-                        '결제를 취소하시겠습니까?\n\n현재 결제가 취소되고 폼이 초기화됩니다.')) {
-                        cancelPayment();
+        // HTML 파일의 <script> 태그 내부:
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('사용자 페이지 로드됨');
+    
+    // PWA 설치 기능 초기화
+    initializePWA();
+    
+    // 페이지 로드 시 결제 폼 초기화
+    resetPaymentForm();
+    
+    // 언어 초기화
+    initLanguageButton();
+    updateLanguageButtonText();
+    updateAllText();
+    
+    // 첫 번째 로딩은 바로 실행
+    setTimeout(fetchRealTimeExchangeRate, 100);
+    
+    // 30초에 한 번 환율 업데이트
+    setInterval(fetchRealTimeExchangeRate, 30000);
+    
+    // 데이터 로드
+    loadInitialData();
+    
+    // 이벤트 리스너 설정
+    setupEventListeners();
+    
+    // 동기화 체크 시작
+    startSyncCheck();
+    
+    // Service Worker 등록 (수정된 부분)
+    registerServiceWorker();
+    
+    // 모달 오버레이 클릭 이벤트
+    document.getElementById('qrModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            if (confirm(currentLang === 'en' ? 
+                'Cancel payment?\n\nCurrent payment will be cancelled and form will be reset.' : 
+                '결제를 취소하시겠습니까?\n\n현재 결제가 취소되고 폼이 초기화됩니다.')) {
+                cancelPayment();
+            }
+        }
+    });
+    
+    // ESC 키로 모달 닫기
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && !document.getElementById('qrModal').classList.contains('hidden')) {
+            if (confirm(currentLang === 'en' ? 
+                'Cancel payment?\n\nCurrent payment will be cancelled and form will be reset.' : 
+                '결제를 취소하시겠습니까?\n\n현재 결제가 취소되고 폼이 초기화됩니다.')) {
+                cancelPayment();
+            }
+        }
+    });
+    
+    console.log('사용자 페이지 초기화 완료');
+});
+
+// Service Worker 등록 함수 추가
+function registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+        console.log('Service Worker 지원됨');
+        
+        // GitHub Pages 경로에 맞게 조정
+        const swUrl = 'service-worker.js';
+        
+        navigator.serviceWorker.register(swUrl)
+            .then(registration => {
+                console.log('✅ Service Worker 등록 성공:', registration.scope);
+                
+                // 업데이트 확인
+                registration.onupdatefound = () => {
+                    const installingWorker = registration.installing;
+                    if (installingWorker) {
+                        installingWorker.onstatechange = () => {
+                            if (installingWorker.state === 'installed') {
+                                if (navigator.serviceWorker.controller) {
+                                    console.log('🔄 새 콘텐츠 사용 가능');
+                                } else {
+                                    console.log('✅ 콘텐츠가 캐시됨 (오프라인 사용 가능)');
+                                }
+                            }
+                        };
                     }
-                }
+                };
+            })
+            .catch(error => {
+                console.warn('⚠️ Service Worker 등록 실패:', error);
+                // 실패해도 앱은 정상 작동
             });
-            
-            // ESC 키로 모달 닫기
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape' && !document.getElementById('qrModal').classList.contains('hidden')) {
-                    if (confirm(currentLang === 'en' ? 
-                        'Cancel payment?\n\nCurrent payment will be cancelled and form will be reset.' : 
-                        '결제를 취소하시겠습니까?\n\n현재 결제가 취소되고 폼이 초기화됩니다.')) {
-                        cancelPayment();
-                    }
-                }
-            });
-            
-            console.log('사용자 페이지 초기화 완료');
-        });
+    } else {
+        console.log('Service Worker를 지원하지 않는 브라우저');
+    }
+}
 
         // ==================== 데이터 로드 ====================
         function loadInitialData() {
