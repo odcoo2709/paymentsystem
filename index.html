@@ -1357,14 +1357,21 @@
             document.getElementById('syncText').textContent = trans.syncText;
             
            // 업로드 버튼 텍스트 업데이트
+// 업로드 버튼 텍스트 업데이트
 const uploadButtonText = document.getElementById('uploadButtonText');
 if (uploadButtonText) {
-    if (!uploadedFile) {
-        uploadButtonText.textContent = `📎 ${trans.uploadText}`;
-    } else {
+    // 기본 텍스트 설정
+    let buttonText = `📎 ${trans.uploadText}`;
+    
+    // 파일이 업로드된 경우
+    if (uploadedFile) {
         const uploadCompletedText = currentLang === 'en' ? 'Upload completed' : '업로드 완료';
         uploadButtonText.innerHTML = 
             `✅ ${uploadCompletedText}<br><span style="font-size:11px;color:#718096;">${uploadedFile.name}</span>`;
+    } else {
+        // 파일이 업로드되지 않은 경우
+        uploadButtonText.textContent = buttonText;
+        uploadButtonText.innerHTML = buttonText; // innerHTML도 설정 (일관성을 위해)
     }
 }
             
@@ -2425,6 +2432,7 @@ if (uploadButtonText) {
     </script>
 </body>
 </html>
+
 
 
 
