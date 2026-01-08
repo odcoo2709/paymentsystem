@@ -1731,6 +1731,7 @@
                 this.LAST_NOTIFICATION_KEY = 'last_notification_time';
                 this.BINANCE_SETTINGS_KEY = 'binance_settings';
                 this.AUTO_TRANSITION_KEY = 'auto_transition_settings';
+                this.lastSyncTime = localStorage.getItem('admin_last_sync') || '0';
             }
 
             getOrders() {
@@ -1892,19 +1893,25 @@
             }
 
             checkSync() {
-                return localStorage.getItem(this.SYNC_KEY);
+                const syncKey = localStorage.getItem(this.SYNC_KEY) || '0';
+                const lastAdminSync = localStorage.getItem(this.ADMIN_SYNC_KEY) || '0';
+                
+                if (syncKey !== lastAdminSync) {
+                    localStorage.setItem(this.ADMIN_SYNC_KEY, syncKey);
+                    return true;
+                }
+                return false;
             }
 
             updateAdminSync() {
-                const syncTime = this.checkSync();
-                localStorage.setItem(this.ADMIN_SYNC_KEY, syncTime || '0');
+                const syncTime = localStorage.getItem(this.SYNC_KEY) || '0';
+                localStorage.setItem(this.ADMIN_SYNC_KEY, syncTime);
+                this.lastSyncTime = syncTime;
                 return syncTime;
             }
 
             needsSync() {
-                const lastSync = this.checkSync();
-                const lastAdminSync = localStorage.getItem(this.ADMIN_SYNC_KEY) || '0';
-                return lastSync !== lastAdminSync;
+                return this.checkSync();
             }
 
             notifyUserPage(orderId, newStatus, receipt = null) {
@@ -1995,10 +2002,6 @@
 
             async simulateDepositCheck(orderId, walletAddress, expectedAmount, coin) {
                 // 시뮬레이션: 실제로는 바이낸스 API 호출
-                // 실제 구현시에는 아래 API를 사용해야 합니다:
-                // GET /sapi/v1/capital/deposit/hisrec
-                // 또는 WebSocket stream
-                
                 // 현재는 30% 확률로 입금 확인되는 시뮬레이션
                 const randomCheck = Math.random() > 0.7;
                 
@@ -2070,30 +2073,6 @@
                 return networkToCoin[network] || 'USDT';
             }
 
-            // 실제 바이낸스 API 연동 메서드 (예시)
-            async getBinanceDepositHistory() {
-                // 실제 구현 예시:
-                /*
-                const timestamp = Date.now();
-                const queryString = `timestamp=${timestamp}`;
-                const signature = this.generateSignature(queryString);
-                
-                const response = await fetch(`https://api.binance.com/sapi/v1/capital/deposit/hisrec?${queryString}&signature=${signature}`, {
-                    headers: {
-                        'X-MBX-APIKEY': this.apiKey
-                    }
-                });
-                
-                return await response.json();
-                */
-            }
-
-            generateSignature(queryString) {
-                // HMAC SHA256 서명 생성
-                // 실제 구현 필요
-                return '';
-            }
-
             async testConnection() {
                 if (!this.apiKey || !this.apiSecret) {
                     return { success: false, error: 'API 키가 설정되지 않았습니다' };
@@ -2141,6 +2120,7 @@
                 if (saved && Object.keys(saved).length > 0) {
                     this.settings = { ...this.settings, ...saved };
                 }
+                console.log('⚙️ 자동 전환 설정 로드:', this.settings);
             }
 
             saveSettings() {
@@ -2154,18 +2134,23 @@
             }
 
             scheduleTransition(orderId, fromStatus, toStatus, delaySeconds) {
-                if (!this.settings.enabled) return;
+                if (!this.settings.enabled) {
+                    console.log(`⏹️ 자동 전환 비활성화: ${orderId} ${fromStatus} → ${toStatus}`);
+                    return;
+                }
 
                 const timerKey = `${orderId}_${fromStatus}_${toStatus}`;
                 
                 // 이미 예약된 타이머 취소
                 if (this.timers.has(timerKey)) {
                     clearTimeout(this.timers.get(timerKey));
+                    console.log(`❌ 기존 타이머 취소: ${timerKey}`);
                 }
 
                 console.log(`⏰ 자동 상태 전환 예약: ${orderId} ${fromStatus} → ${toStatus} (${delaySeconds}초 후)`);
                 
                 const timer = setTimeout(() => {
+                    console.log(`⏰ 타이머 실행: ${orderId} ${fromStatus} → ${toStatus}`);
                     this.executeTransition(orderId, fromStatus, toStatus);
                     this.timers.delete(timerKey);
                 }, delaySeconds * 1000);
@@ -2189,7 +2174,7 @@
                 console.log(`🔄 자동 상태 전환 실행: ${orderId} ${fromStatus} → ${toStatus}`);
                 
                 // 실제 상태 변경
-                updateOrderStatus(orderId, toStatus);
+                updateOrderStatus(orderId, toStatus, true);
                 
                 // 텔레그램 알림
                 const order = allOrders.find(o => o.id === orderId);
@@ -3101,11 +3086,15 @@
         function startSyncCheck() {
             if (syncCheckInterval) clearInterval(syncCheckInterval);
             
+            // 즉시 한 번 체크
             checkDataSync();
             
+            // 2초마다 체크 (더 빠른 동기화)
             syncCheckInterval = setInterval(() => {
                 checkDataSync();
-            }, 3000);
+            }, 2000);
+            
+            console.log('🔄 실시간 동기화 시작 (2초 간격)');
         }
 
         function showNotification(message) {
@@ -3996,7 +3985,7 @@
         }
 
         // ==================== 주문 상태 업데이트 ====================
-        async function updateOrderStatus(orderId, newStatus) {
+        async function updateOrderStatus(orderId, newStatus, isAutoTransition = false) {
             const statusText = {
                 '입금대기': currentLang === 'en' ? 'Waiting Deposit' : '입금대기',
                 '입금확인': currentLang === 'en' ? 'Deposit Confirmed' : '입금확인',
@@ -4005,18 +3994,20 @@
                 '취소': currentLang === 'en' ? 'Cancelled' : '취소'
             }[newStatus] || newStatus;
             
-            const confirmMessage = currentLang === 'en' ?
-                `Change order ${orderId} status to "${statusText}"?` :
-                `주문 ${orderId}의 상태를 "${statusText}"로 변경하시겠습니까?`;
-            
-            if (!confirm(confirmMessage)) {
-                return;
+            if (!isAutoTransition) {
+                const confirmMessage = currentLang === 'en' ?
+                    `Change order ${orderId} status to "${statusText}"?` :
+                    `주문 ${orderId}의 상태를 "${statusText}"로 변경하시겠습니까?`;
+                
+                if (!confirm(confirmMessage)) {
+                    return;
+                }
             }
             
             let orderIndex = allOrders.findIndex(o => o.id === orderId);
             
             if (orderIndex === -1) {
-                alert(currentLang === 'en' ? 'Order not found' : '주문을 찾을 수 없습니다');
+                console.error('주문을 찾을 수 없습니다:', orderId);
                 return;
             }
             
@@ -4054,10 +4045,12 @@
             updateOrders();
             dataManager.notifyUserPage(orderId, newStatus);
             
-            const successMessage = currentLang === 'en' ?
-                `Order status changed to "${statusText}"` :
-                `주문 상태가 "${statusText}"로 변경되었습니다`;
-            alert(successMessage);
+            if (!isAutoTransition) {
+                const successMessage = currentLang === 'en' ?
+                    `Order status changed to "${statusText}"` :
+                    `주문 상태가 "${statusText}"로 변경되었습니다`;
+                alert(successMessage);
+            }
             
             if (selectedOrder && selectedOrder.id === orderId) {
                 closeOrderDetail();
@@ -4092,14 +4085,8 @@
                     '처리중', 
                     autoTransition.settings.depositToProcessing
                 );
-            } else if (newStatus === '처리중') {
-                autoTransition.scheduleTransition(
-                    orderId, 
-                    '처리중', 
-                    '완료', 
-                    autoTransition.settings.processingToComplete
-                );
             }
+            // 처리중 -> 완료는 자동 전환하지 않음 (수동으로만)
             
             updateSystemInfo();
         }
@@ -4964,21 +4951,22 @@
 
         // ==================== 데이터 동기화 ====================
         function checkDataSync() {
-            const syncKey = localStorage.getItem('payment_sync_flag');
-            const lastCheck = localStorage.getItem('admin_last_check') || '0';
+            const needsSync = dataManager.needsSync();
             
-            if (syncKey !== lastCheck) {
-                console.log('🔔 관리자: 데이터 변경 감지!');
+            if (needsSync) {
+                console.log('🔄 실시간 동기화: 데이터 변경 감지!');
                 
+                // 새 데이터 로드
                 allOrders = dataManager.getOrders();
                 allWallets = dataManager.getWallets();
                 
+                // UI 업데이트
                 updateStats();
                 updateOrders();
                 updateWallets();
                 updateSystemInfo();
                 
-                localStorage.setItem('admin_last_check', syncKey || '0');
+                console.log(`✅ 동기화 완료: 주문 ${allOrders.length}개, 지갑 ${allWallets.length}개`);
             }
         }
 
