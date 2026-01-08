@@ -1356,17 +1356,17 @@
             document.getElementById('noCompletedOrders').textContent = trans.noCompletedOrders;
             document.getElementById('syncText').textContent = trans.syncText;
             
-            // 업로드 버튼 텍스트 업데이트
-            const uploadButtonText = document.getElementById('uploadButtonText');
-            if (uploadButtonText) {
-                if (!uploadedFile) {
-                    uploadButtonText.textContent = `📎 ${trans.uploadText}`;
-                } else {
-                    const uploadText = currentLang === 'en' ? 'Upload completed' : '업로드 완료';
-                    uploadButtonText.innerHTML = 
-                        `✅ ${uploadText}<br><span style="font-size:11px;color:#718096;">${uploadedFile.name}</span>`;
-                }
-            }
+           // 업로드 버튼 텍스트 업데이트
+const uploadButtonText = document.getElementById('uploadButtonText');
+if (uploadButtonText) {
+    if (!uploadedFile) {
+        uploadButtonText.textContent = `📎 ${trans.uploadText}`;
+    } else {
+        const uploadCompletedText = currentLang === 'en' ? 'Upload completed' : '업로드 완료';
+        uploadButtonText.innerHTML = 
+            `✅ ${uploadCompletedText}<br><span style="font-size:11px;color:#718096;">${uploadedFile.name}</span>`;
+    }
+}
             
             // 영수증 토글 버튼 텍스트 업데이트
             const toggleReceiptBtn = document.getElementById('toggleReceiptBtn');
@@ -1737,30 +1737,27 @@
             
             const reader = new FileReader();
             reader.onload = function(e) {
-                console.log('파일 읽기 완료');
-                
-                const trans = translations[currentLang];
-                const uploadButtonText = document.getElementById('uploadButtonText');
-                const uploadPreview = document.getElementById('uploadPreview');
-                
-                if (uploadButtonText) {
-                    uploadButtonText.innerHTML = 
-                        `✅ ${currentLang === 'en' ? 'Upload completed' : '업로드 완료'}<br>
-                        <span style="font-size:11px;color:#718096;">${file.name}</span>`;
-                }
-                
-                if (uploadPreview) {
-                    uploadPreview.innerHTML = `
-                        <img src="${e.target.result}" alt="Payment proof" class="upload-preview-image">
-                        <div class="file-info">
-                            ${file.name} (${(file.size / 1024).toFixed(1)}KB)
-                        </div>
-                    `;
-                }
-                
-                checkPaymentButton();
-                console.log('파일 업로드 처리 완료');
-            };
+    console.log('파일 읽기 완료');
+    
+    uploadedFile = file; // 파일 업로드 상태 업데이트
+    
+    // 파일 업로드 후 언어 업데이트 적용
+    updateAllText();
+    
+    // 미리보기 업데이트
+    const uploadPreview = document.getElementById('uploadPreview');
+    if (uploadPreview) {
+        uploadPreview.innerHTML = `
+            <img src="${e.target.result}" alt="Payment proof" class="upload-preview-image">
+            <div class="file-info">
+                ${file.name} (${(file.size / 1024).toFixed(1)}KB)
+            </div>
+        `;
+    }
+    
+    checkPaymentButton();
+    console.log('파일 업로드 처리 완료');
+};
             
             reader.onerror = function(e) {
                 console.error('파일 읽기 오류:', e);
@@ -2428,6 +2425,7 @@
     </script>
 </body>
 </html>
+
 
 
 
