@@ -1,12 +1,11 @@
 <!DOCTYPE html>
 <html lang="ko">
-head>
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>USDT/THB Payment System - Anonymous Payment</title>
     
     <!-- ====== PWA 관련 메타 태그 시작 ====== -->
-    <!-- Manifest 파일 링크 - 상대 경로로 수정 -->
     <link rel="manifest" href="./manifest.json">
     
     <!-- 테마 컬러 -->
@@ -1581,30 +1580,20 @@ head>
             const currentUrl = window.location.href;
             
             installToast.innerHTML = `
-                <strong>📱 Safari에서 앱 설치</strong><br><br>
+                <strong>📱 iOS에서 앱 설치하기</strong><br><br>
+                iOS에서는 Chrome 브라우저에서 PWA 설치가 불가능합니다.<br><br>
                 
                 <div style="text-align:center;">
                     <button onclick="openInSafari()" 
                             style="background:#007aff; color:white; border:none; padding:14px 20px; border-radius:10px; font-size:16px; font-weight:bold; width:90%; margin:10px 0; box-shadow:0 4px 10px rgba(0,122,255,0.3);">
                         Safari에서 열기
                     </button>
-                    
-                    <div style="display:flex; align-items:center; gap:10px; margin:15px 0; justify-content:center;">
-                        <div style="width:40px; height:1px; background:#ddd;"></div>
-                        <span style="color:#999; font-size:13px;">또는</span>
-                        <div style="width:40px; height:1px; background:#ddd;"></div>
-                    </div>
-                    
-                    <button onclick="copyCurrentUrl()" 
-                            style="background:#4CAF50; color:white; border:none; padding:10px 15px; border-radius:8px; font-size:14px; width:90%;">
-                        🔗 링크 복사해서 Safari에 붙여넣기
-                    </button>
                 </div>
                 
                 <div style="margin-top:15px; padding:12px; background:#f8f9fa; border-radius:8px; border-left:4px solid #ff9500; font-size:12px;">
                     <strong>💡 중요한 안내:</strong><br>
-                    Safari가 열리면 주소가 <strong>${currentUrl}</strong> 인지 확인하세요.<br>
-                    만약 "구글 검색"이라면 위 주소를 직접 입력하세요.
+                    Safari가 열리면 공유 버튼(📤)을 탭하고<br>
+                    <strong>'홈 화면에 추가'</strong>를 선택하세요.
                 </div>
             `;
             
@@ -1615,7 +1604,7 @@ head>
                 installToast.classList.add('hide');
                 setTimeout(() => {
                     installToast.classList.remove('hide');
-                }, 300);
+                }, 15000);
             }, 15000);
         }
 
@@ -1649,13 +1638,12 @@ head>
                 if (installToast) {
                     installToast.innerHTML = `
                         <strong>✅ Safari에서 열었습니다!</strong><br><br>
-                        <strong>주소 확인하기:</strong><br>
+                        <strong>설치 단계:</strong><br>
                         1. Safari 주소창 확인<br>
-                        2. 만약 "구글 검색"이라면:<br>
-                        &nbsp;&nbsp;• 주소창 터치<br>
-                        &nbsp;&nbsp;• <span style="color:#007aff; background:#f0f0f0; padding:2px 5px; border-radius:3px;">${currentUrl}</span><br>
-                        &nbsp;&nbsp;• 붙여넣기<br>
-                        3. 공유 버튼(📤) → '홈 화면에 추가'
+                        2. 공유 버튼(📤) 탭하기<br>
+                        3. 아래로 스크롤<br>
+                        4. <strong>'홈 화면에 추가'</strong> 선택<br>
+                        5. <strong>'추가'</strong> 버튼 탭하기
                     `;
                     installToast.classList.add('show');
                     
@@ -1664,24 +1652,6 @@ head>
                     }, 10000);
                 }
             }, 2000);
-        }
-
-        function copyCurrentUrl() {
-            const url = window.location.href;
-            navigator.clipboard.writeText(url)
-                .then(() => {
-                    showInstallToast('🔗 링크가 복사되었습니다! Safari에 붙여넣으세요', 3000);
-                    
-                    setTimeout(() => {
-                        if (confirm('링크가 복사되었습니다. Safari에서 열까요?')) {
-                            openInSafari();
-                        }
-                    }, 1000);
-                })
-                .catch(err => {
-                    console.error('복사 실패:', err);
-                    prompt('아래 URL을 복사하세요:', url);
-                });
         }
 
         function showInstallToast(message, duration = 3000) {
@@ -1701,85 +1671,111 @@ head>
             }, duration);
         }
 
-        // Service Worker 등록
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js').catch(error => {
-                    console.log('ServiceWorker 등록 실패:', error);
-                });
-            });
+        // Service Worker 인라인 등록
+        function registerServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                console.log('Service Worker 지원됨');
+                
+                // Service Worker 코드를 인라인으로 생성
+                const swCode = `
+// 간단한 Service Worker
+self.addEventListener('install', event => {
+    console.log('Service Worker 설치 중...');
+    self.skipWaiting();
+});
+
+self.addEventListener('activate', event => {
+    console.log('Service Worker 활성화됨');
+    event.waitUntil(clients.claim());
+});
+
+self.addEventListener('fetch', event => {
+    // 캐시 전략: 네트워크 먼저, 실패 시 캐시
+    event.respondWith(
+        fetch(event.request)
+            .catch(() => {
+                return caches.match(event.request);
+            })
+    );
+});
+                `;
+                
+                // Blob URL로 Service Worker 등록
+                const blob = new Blob([swCode], { type: 'application/javascript' });
+                const swURL = URL.createObjectURL(blob);
+                
+                navigator.serviceWorker.register(swURL)
+                    .then(registration => {
+                        console.log('✅ Service Worker 등록 성공:', registration.scope);
+                        URL.revokeObjectURL(swURL);
+                    })
+                    .catch(error => {
+                        console.warn('⚠️ Service Worker 등록 실패:', error);
+                    });
+            } else {
+                console.log('Service Worker를 지원하지 않는 브라우저');
+            }
         }
 
         // ==================== 가장 안정적인 환율 API ====================
-async function fetchRealTimeExchangeRate() {
-    try {
-        console.log('환율 조회 시작...');
-        
-        // 가장 안정적인 API 1개만 사용 (Frankfurter.app)
-        // 이 API는 CORS를 지원하고 무료이며 안정적입니다.
-        const apiUrl = 'https://api.frankfurter.app/latest?from=USD&to=THB';
-        
-        try {
-            const response = await fetch(apiUrl, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json'
-                },
-                // 타임아웃 설정
-                signal: AbortSignal.timeout(5000)
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                const rate = data.rates?.THB;
+        async function fetchRealTimeExchangeRate() {
+            try {
+                console.log('환율 조회 시작...');
                 
-                if (rate && parseFloat(rate) > 0) {
-                    console.log('Frankfurter API 성공:', rate);
-                    updateExchangeRateDisplay(parseFloat(rate));
-                    return;
-                }
-            }
-        } catch (fetchError) {
-            console.log('Frankfurter API 실패:', fetchError.message);
-        }
-        
-        // 백업 API 시도 (currency-api)
-        try {
-            const backupUrl = 'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json';
-            const response = await fetch(backupUrl);
-            
-            if (response.ok) {
-                const data = await response.json();
-                const rate = data.usd?.thb;
+                // 가장 안정적인 API 1개만 사용 (Frankfurter.app)
+                // 이 API는 CORS를 지원하고 무료이며 안정적입니다.
+                const apiUrl = 'https://api.frankfurter.app/latest?from=USD&to=THB';
                 
-                if (rate && parseFloat(rate) > 0) {
-                    console.log('Currency-API 성공:', rate);
-                    updateExchangeRateDisplay(parseFloat(rate));
-                    return;
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        const rate = data.rates?.THB;
+                        
+                        if (rate && parseFloat(rate) > 0) {
+                            console.log('Frankfurter API 성공:', rate);
+                            updateExchangeRateDisplay(parseFloat(rate), true);
+                            return;
+                        }
+                    }
+                } catch (fetchError) {
+                    console.log('Frankfurter API 실패:', fetchError.message);
                 }
+                
+                // 백업 API 시도 (currency-api)
+                try {
+                    const backupUrl = 'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json';
+                    const response = await fetch(backupUrl);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        const rate = data.usd?.thb;
+                        
+                        if (rate && parseFloat(rate) > 0) {
+                            console.log('Currency-API 성공:', rate);
+                            updateExchangeRateDisplay(parseFloat(rate), true);
+                            return;
+                        }
+                    }
+                } catch (backupError) {
+                    console.log('백업 API 실패:', backupError.message);
+                }
+                
+                // 모두 실패 시 기본값
+                console.log('모든 API 실패, 기본값 사용');
+                updateExchangeRateDisplay(35.5, false);
+                
+            } catch (error) {
+                console.error('환율 조회 오류:', error);
+                updateExchangeRateDisplay(35.5, false);
             }
-        } catch (backupError) {
-            console.log('백업 API 실패:', backupError.message);
         }
-        
-        // 모두 실패 시 기본값
-        console.log('모든 API 실패, 기본값 사용');
-        updateExchangeRateDisplay(35.5);
-        
-    } catch (error) {
-        console.error('환율 조회 오류:', error);
-        updateExchangeRateDisplay(35.5);
-    }
-}
-
-// AbortSignal.timeout 폴리필 (구형 브라우저 지원)
-if (!AbortSignal.timeout) {
-    AbortSignal.timeout = function(ms) {
-        const controller = new AbortController();
-        setTimeout(() => controller.abort(), ms);
-        return controller.signal;
-    };
-}
         
         function updateExchangeRateDisplay(rate, success) {
             exchangeRate = rate;
@@ -1813,100 +1809,62 @@ if (!AbortSignal.timeout) {
         }
 
         // ==================== 페이지 초기화 ====================
-        // HTML 파일의 <script> 태그 내부:
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('사용자 페이지 로드됨');
-    
-    // PWA 설치 기능 초기화
-    initializePWA();
-    
-    // 페이지 로드 시 결제 폼 초기화
-    resetPaymentForm();
-    
-    // 언어 초기화
-    initLanguageButton();
-    updateLanguageButtonText();
-    updateAllText();
-    
-    // 첫 번째 로딩은 바로 실행
-    setTimeout(fetchRealTimeExchangeRate, 100);
-    
-    // 30초에 한 번 환율 업데이트
-    setInterval(fetchRealTimeExchangeRate, 30000);
-    
-    // 데이터 로드
-    loadInitialData();
-    
-    // 이벤트 리스너 설정
-    setupEventListeners();
-    
-    // 동기화 체크 시작
-    startSyncCheck();
-    
-    // Service Worker 등록 (수정된 부분)
-    registerServiceWorker();
-    
-    // 모달 오버레이 클릭 이벤트
-    document.getElementById('qrModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            if (confirm(currentLang === 'en' ? 
-                'Cancel payment?\n\nCurrent payment will be cancelled and form will be reset.' : 
-                '결제를 취소하시겠습니까?\n\n현재 결제가 취소되고 폼이 초기화됩니다.')) {
-                cancelPayment();
-            }
-        }
-    });
-    
-    // ESC 키로 모달 닫기
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && !document.getElementById('qrModal').classList.contains('hidden')) {
-            if (confirm(currentLang === 'en' ? 
-                'Cancel payment?\n\nCurrent payment will be cancelled and form will be reset.' : 
-                '결제를 취소하시겠습니까?\n\n현재 결제가 취소되고 폼이 초기화됩니다.')) {
-                cancelPayment();
-            }
-        }
-    });
-    
-    console.log('사용자 페이지 초기화 완료');
-});
-
-// Service Worker 등록 함수 추가
-function registerServiceWorker() {
-    if ('serviceWorker' in navigator) {
-        console.log('Service Worker 지원됨');
-        
-        // GitHub Pages 경로에 맞게 조정
-        const swUrl = 'service-worker.js';
-        
-        navigator.serviceWorker.register(swUrl)
-            .then(registration => {
-                console.log('✅ Service Worker 등록 성공:', registration.scope);
-                
-                // 업데이트 확인
-                registration.onupdatefound = () => {
-                    const installingWorker = registration.installing;
-                    if (installingWorker) {
-                        installingWorker.onstatechange = () => {
-                            if (installingWorker.state === 'installed') {
-                                if (navigator.serviceWorker.controller) {
-                                    console.log('🔄 새 콘텐츠 사용 가능');
-                                } else {
-                                    console.log('✅ 콘텐츠가 캐시됨 (오프라인 사용 가능)');
-                                }
-                            }
-                        };
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('사용자 페이지 로드됨');
+            
+            // PWA 설치 기능 초기화
+            initializePWA();
+            
+            // Service Worker 등록 (인라인 방식)
+            registerServiceWorker();
+            
+            // 페이지 로드 시 결제 폼 초기화
+            resetPaymentForm();
+            
+            // 언어 초기화
+            initLanguageButton();
+            updateLanguageButtonText();
+            updateAllText();
+            
+            // 첫 번째 로딩은 바로 실행
+            setTimeout(fetchRealTimeExchangeRate, 100);
+            
+            // 30초에 한 번 환율 업데이트
+            setInterval(fetchRealTimeExchangeRate, 30000);
+            
+            // 데이터 로드
+            loadInitialData();
+            
+            // 이벤트 리스너 설정
+            setupEventListeners();
+            
+            // 동기화 체크 시작
+            startSyncCheck();
+            
+            // 모달 오버레이 클릭 이벤트
+            document.getElementById('qrModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    if (confirm(currentLang === 'en' ? 
+                        'Cancel payment?\n\nCurrent payment will be cancelled and form will be reset.' : 
+                        '결제를 취소하시겠습니까?\n\n현재 결제가 취소되고 폼이 초기화됩니다.')) {
+                        cancelPayment();
                     }
-                };
-            })
-            .catch(error => {
-                console.warn('⚠️ Service Worker 등록 실패:', error);
-                // 실패해도 앱은 정상 작동
+                }
             });
-    } else {
-        console.log('Service Worker를 지원하지 않는 브라우저');
-    }
-}
+            
+            // ESC 키로 모달 닫기
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && !document.getElementById('qrModal').classList.contains('hidden')) {
+                    if (confirm(currentLang === 'en' ? 
+                        'Cancel payment?\n\nCurrent payment will be cancelled and form will be reset.' : 
+                        '결제를 취소하시겠습니까?\n\n현재 결제가 취소되고 폼이 초기화됩니다.')) {
+                        cancelPayment();
+                    }
+                }
+            });
+            
+            console.log('사용자 페이지 초기화 완료');
+        });
 
         // ==================== 데이터 로드 ====================
         function loadInitialData() {
