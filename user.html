@@ -1410,31 +1410,31 @@ function showIOSChromeGuide() {
     const currentUrl = window.location.href;
     
     installToast.innerHTML = `
-        <strong>📱 iOS는 Safari에서만 설치 가능</strong><br><br>
-        <strong>설치 방법:</strong><br>
-        1. 아래 링크를 <strong>Safari에서 열기</strong><br>
-        2. 공유 버튼(📤) 탭<br>
-        3. '홈 화면에 추가' 선택<br>
-        4. '추가' 버튼 탭<br><br>
+        <strong>📱 Safari에서 앱 설치</strong><br><br>
         
-        <div style="background:#f8f9fa; padding:10px; border-radius:6px; margin:10px 0; word-break:break-all; font-size:12px;">
-            ${currentUrl}
-        </div>
-        
-        <div style="display: flex; gap: 10px; margin-top: 10px;">
-            <button onclick="copyCurrentUrl()" 
-                    style="flex:1; background:#4CAF50; color:white; border:none; padding:10px; border-radius:8px; font-size:14px;">
-                🔗 링크 복사
-            </button>
+        <div style="text-align:center;">
             <button onclick="openInSafari()" 
-                    style="flex:1; background:#007aff; color:white; border:none; padding:10px; border-radius:8px; font-size:14px;">
+                    style="background:#007aff; color:white; border:none; padding:14px 20px; border-radius:10px; font-size:16px; font-weight:bold; width:90%; margin:10px 0; box-shadow:0 4px 10px rgba(0,122,255,0.3);">
                 Safari에서 열기
             </button>
+            
+            <div style="display:flex; align-items:center; gap:10px; margin:15px 0; justify-content:center;">
+                <div style="width:40px; height:1px; background:#ddd;"></div>
+                <span style="color:#999; font-size:13px;">또는</span>
+                <div style="width:40px; height:1px; background:#ddd;"></div>
+            </div>
+            
+            <button onclick="copyCurrentUrl()" 
+                    style="background:#4CAF50; color:white; border:none; padding:10px 15px; border-radius:8px; font-size:14px; width:90%;">
+                🔗 링크 복사해서 Safari에 붙여넣기
+            </button>
         </div>
         
-        <small style="color:#666; display:block; margin-top:10px; text-align:center;">
-            링크를 복사해서 Safari에 붙여넣으세요
-        </small>
+        <div style="margin-top:15px; padding:12px; background:#f8f9fa; border-radius:8px; border-left:4px solid #ff9500; font-size:12px;">
+            <strong>💡 중요한 안내:</strong><br>
+            Safari가 열리면 주소가 <strong>${currentUrl}</strong> 인지 확인하세요.<br>
+            만약 "구글 검색"이라면 위 주소를 직접 입력하세요.
+        </div>
     `;
     
     installToast.classList.add('show');
@@ -1450,16 +1450,32 @@ function showIOSChromeGuide() {
 
 // Safari에서 열기 함수
 function openInSafari() {
-    // 현재 URL 가져오기
     const currentUrl = window.location.href;
     
-    // 방법 1: 일반 https URL 사용 (가장 안정적)
+    // ✅ 현재 URL 그대로 사용 (구글 검색 방지)
     window.location.href = currentUrl;
     
-    // iOS Safari에서 홈 화면 추가를 유도하기 위한 안내
+    // 2초 후 자세한 안내
     setTimeout(() => {
-        showInstallToast('Safari에서 공유 버튼(📤)을 탭하고 "홈 화면에 추가"를 선택하세요', 5000);
-    }, 1000);
+        const installToast = document.getElementById('installToast');
+        if (installToast) {
+            installToast.innerHTML = `
+                <strong>✅ Safari에서 열었습니다!</strong><br><br>
+                <strong>주소 확인하기:</strong><br>
+                1. Safari 주소창 확인<br>
+                2. 만약 "구글 검색"이라면:<br>
+                &nbsp;&nbsp;• 주소창 터치<br>
+                &nbsp;&nbsp;• <span style="color:#007aff; background:#f0f0f0; padding:2px 5px; border-radius:3px;">${currentUrl}</span><br>
+                &nbsp;&nbsp;• 붙여넣기<br>
+                3. 공유 버튼(📤) → '홈 화면에 추가'
+            `;
+            installToast.classList.add('show');
+            
+            setTimeout(() => {
+                installToast.classList.remove('show');
+            }, 10000);
+        }
+    }, 2000);
 }
 
 // 설치 안내 토스트 표시
