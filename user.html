@@ -56,16 +56,12 @@
             gap: 20px;
         }
 
-        /* PWA 설치 버튼 스타일 - 개선됨 */
+        /* 간편한 PWA 설치 버튼 스타일 */
         .install-button-container {
             position: fixed;
             bottom: 20px;
             right: 20px;
             z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            gap: 10px;
         }
 
         .install-button {
@@ -110,26 +106,56 @@
             100% { transform: scale(1); }
         }
 
-        /* 설치 안내 메시지 */
-        .install-hint {
+        /* 간단한 설치 안내 토스트 */
+        .install-toast {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
             background: rgba(255, 255, 255, 0.95);
             color: #2d3748;
-            padding: 10px 15px;
+            padding: 12px 16px;
             border-radius: 10px;
-            font-size: 13px;
-            max-width: 200px;
-            text-align: center;
+            font-size: 14px;
+            max-width: 250px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             border: 1px solid #cbd5e0;
             display: none;
+            z-index: 1001;
+            backdrop-filter: blur(10px);
         }
 
-        .install-hint.show {
+        .install-toast.show {
             display: block;
-            animation: fadeIn 0.3s ease;
+            animation: slideInUp 0.3s ease;
         }
 
-        /* 두 컬럼 레이아웃 */
+        .install-toast.hide {
+            animation: slideOutDown 0.3s ease forwards;
+        }
+
+        @keyframes slideInUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutDown {
+            from {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+        }
+
+        /* 나머지 CSS는 이전과 동일하게 유지 */
         .main-content {
             display: flex;
             gap: 20px;
@@ -914,10 +940,6 @@
             .install-button-container {
                 display: flex !important;
             }
-            
-            .install-hint {
-                max-width: 250px;
-            }
         }
 
         @media (max-width: 768px) {
@@ -931,6 +953,12 @@
                 padding: 12px 18px;
                 font-size: 14px;
                 min-width: 110px;
+            }
+            
+            .install-toast {
+                bottom: 75px;
+                right: 15px;
+                max-width: 200px;
             }
             
             .main-content {
@@ -963,10 +991,10 @@
                 min-width: 100px;
             }
             
-            .install-hint {
+            .install-toast {
                 max-width: 180px;
-                font-size: 12px;
-                padding: 8px 12px;
+                font-size: 13px;
+                padding: 10px 14px;
             }
             
             .title {
@@ -980,12 +1008,9 @@
     </style>
 </head>
 <body>
-    <!-- 개선된 PWA 설치 버튼 -->
+    <!-- 간편한 PWA 설치 버튼 -->
     <div class="install-button-container" id="installButtonContainer">
-        <div class="install-hint" id="installHint">
-            <strong>📱 앱으로 설치하기</strong><br>
-            홈 화면에서 빠르게 접속
-        </div>
+        <div class="install-toast" id="installToast"></div>
         <button class="install-button hidden" id="installButton">
             <span class="install-icon">📱</span>
             <span id="installButtonText">앱 설치</span>
@@ -1180,7 +1205,7 @@
     </div>
 
     <script>
-        // ==================== 개선된 PWA 설치 기능 ====================
+        // ==================== 간편한 PWA 설치 기능 ====================
         let deferredPrompt;
         let isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         let isAndroid = /Android/.test(navigator.userAgent);
@@ -1189,29 +1214,24 @@
                          document.referrer.includes('android-app://');
         let installPromptShown = false;
 
-        // PWA 설치 가능 여부 체크 - 개선된 버전
+        // PWA 설치 가능 여부 체크 - 간편한 버전
         function checkPWAInstallSupport() {
-            const installContainer = document.getElementById('installButtonContainer');
             const installButton = document.getElementById('installButton');
-            const installHint = document.getElementById('installHint');
+            const installToast = document.getElementById('installToast');
             
-            if (!installContainer || !installButton || !installHint) return;
+            if (!installButton || !installToast) return;
             
             // 이미 설치된 경우 버튼 숨김
             if (isStandalone) {
                 installButton.classList.add('hidden');
-                installHint.classList.remove('show');
-                console.log('PWA already installed, hiding button');
                 return;
             }
             
             // 모바일 장치 체크
             const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             
-            // 데스크톱에서는 안내 메시지만 표시
+            // 데스크톱에서는 버튼 숨김
             if (!isMobile) {
-                installHint.innerHTML = '<strong>💡 팁</strong><br>모바일에서 홈 화면에 추가 가능';
-                installHint.classList.add('show');
                 installButton.classList.add('hidden');
                 return;
             }
@@ -1219,18 +1239,16 @@
             // iOS 장치 - 홈 화면에 추가하기
             if (isIOS) {
                 installButton.classList.remove('hidden');
-                installHint.classList.add('show');
                 document.getElementById('installButtonText').textContent = '홈 화면에 추가';
-                installHint.innerHTML = '<strong>📱 홈 화면에 추가</strong><br>Safari에서 빠르게 접속';
                 
-                // iOS 설치 버튼 클릭 이벤트
+                // iOS 버튼 클릭 이벤트
                 installButton.addEventListener('click', () => {
-                    showIOSInstallPage();
+                    showIOSQuickGuide();
                 });
                 return;
             }
             
-            // Android/데스크톱 Chrome의 경우 - 앱 설치하기
+            // Android/데스크톱 Chrome의 경우 - 클릭 한 번으로 바로 설치
             window.addEventListener('beforeinstallprompt', (e) => {
                 console.log('beforeinstallprompt 이벤트 발생');
                 e.preventDefault();
@@ -1238,19 +1256,19 @@
                 
                 // 설치 버튼 표시
                 installButton.classList.remove('hidden');
-                installHint.classList.add('show');
                 document.getElementById('installButtonText').textContent = '앱 설치';
-                installHint.innerHTML = '<strong>📱 앱 설치하기</strong><br>홈 화면에서 빠르게 접속';
                 installPromptShown = true;
                 
-                // 설치 버튼 클릭 이벤트
+                // 간단한 안내 토스트 표시
+                showInstallToast('📱 앱을 설치하면 더 편리해요!', 3000);
+                
+                // 설치 버튼 클릭 이벤트 - 바로 설치 시도
                 installButton.addEventListener('click', async () => {
                     console.log('설치 버튼 클릭됨');
                     if (deferredPrompt) {
                         installButton.classList.add('hidden');
-                        installHint.classList.remove('show');
                         
-                        // 지연된 프롬프트 표시
+                        // 지연된 프롬프트 표시 - 사용자가 바로 설치 가능
                         deferredPrompt.prompt();
                         
                         const { outcome } = await deferredPrompt.userChoice;
@@ -1258,8 +1276,13 @@
                         
                         if (outcome === 'accepted') {
                             console.log('PWA 설치 수락됨');
-                            // 설치 성공 처리
-                            showInstallSuccessMessage();
+                            showInstallToast('✅ 앱 설치가 시작됩니다!', 2000);
+                        } else {
+                            showInstallToast('설치가 취소되었습니다', 2000);
+                            // 취소 후 3초 뒤에 버튼 다시 표시
+                            setTimeout(() => {
+                                installButton.classList.remove('hidden');
+                            }, 3000);
                         }
                         
                         deferredPrompt = null;
@@ -1280,172 +1303,89 @@
             window.addEventListener('appinstalled', () => {
                 console.log('PWA가 설치되었습니다');
                 installButton.classList.add('hidden');
-                installHint.classList.remove('show');
+                showInstallToast('🎉 앱 설치 완료! 홈 화면에서 확인하세요.', 3000);
                 deferredPrompt = null;
-                showInstallSuccessMessage();
             });
         }
 
-        // 수동 설치 옵션 표시 (beforeinstallprompt 이벤트가 발생하지 않는 경우)
+        // iOS 빠른 가이드 표시
+        function showIOSQuickGuide() {
+            const installToast = document.getElementById('installToast');
+            
+            // 간단한 3단계 안내
+            installToast.innerHTML = `
+                <strong>📱 홈 화면에 추가하기</strong><br>
+                1. Safari 공유 버튼(📤) 탭<br>
+                2. '홈 화면에 추가' 선택<br>
+                3. '추가' 버튼 탭
+            `;
+            installToast.classList.add('show');
+            
+            // 5초 후 자동 숨기기
+            setTimeout(() => {
+                installToast.classList.remove('show');
+                installToast.classList.add('hide');
+                setTimeout(() => {
+                    installToast.classList.remove('hide');
+                }, 300);
+            }, 5000);
+        }
+
+        // 안드로이드 수동 설치 옵션
         function showManualInstallOption() {
             const installButton = document.getElementById('installButton');
-            const installHint = document.getElementById('installHint');
+            const installToast = document.getElementById('installToast');
             
-            if (!installButton || !installHint) return;
-            
-            const trans = translations[currentLang];
-            installButton.classList.remove('hidden');
-            installHint.classList.add('show');
+            if (!installButton || !installToast) return;
             
             // Android Chrome의 경우
             if (isAndroid) {
                 document.getElementById('installButtonText').textContent = '앱 설치';
-                installHint.innerHTML = '<strong>📱 앱 설치</strong><br>Chrome 메뉴 → "앱 설치"';
                 
                 installButton.onclick = () => {
-                    showAndroidInstallGuide();
+                    installToast.innerHTML = `
+                        <strong>📱 Chrome에서 앱 설치</strong><br>
+                        1. Chrome 메뉴(⋮) 탭<br>
+                        2. '앱 설치' 선택<br>
+                        3. '설치' 버튼 탭
+                    `;
+                    installToast.classList.add('show');
+                    
+                    setTimeout(() => {
+                        installToast.classList.remove('show');
+                        installToast.classList.add('hide');
+                        setTimeout(() => {
+                            installToast.classList.remove('hide');
+                        }, 300);
+                    }, 5000);
                 };
             }
             // iOS의 경우
             else if (isIOS) {
                 document.getElementById('installButtonText').textContent = '홈 화면에 추가';
-                installHint.innerHTML = '<strong>📱 홈 화면에 추가</strong><br>Safari 공유 메뉴에서';
                 
                 installButton.onclick = () => {
-                    showIOSInstallPage();
+                    showIOSQuickGuide();
                 };
             }
         }
 
-        // Android 설치 가이드 표시
-        function showAndroidInstallGuide() {
-            const title = currentLang === 'en' ? 'Install App on Android' : 'Android에서 앱 설치하기';
-            const steps = currentLang === 'en' ? 
-                [
-                    '1. Tap the three dots menu (⋮) in Chrome',
-                    '2. Select "Install app" or "Add to Home screen"',
-                    '3. Tap "Install" in the popup',
-                    '4. The app will be installed on your device'
-                ] : [
-                    '1. Chrome에서 점 3개 메뉴(⋮) 탭하기',
-                    '2. "앱 설치" 또는 "홈 화면에 추가" 선택',
-                    '3. 팝업에서 "설치" 탭하기',
-                    '4. 앱이 설치됩니다'
-                ];
+        // 설치 안내 토스트 표시
+        function showInstallToast(message, duration = 3000) {
+            const installToast = document.getElementById('installToast');
+            if (!installToast) return;
             
-            const pageHTML = `
-                <div style="position:fixed;top:0;left:0;right:0;bottom:0;background:white;z-index:9999;padding:20px;overflow-y:auto;">
-                    <button onclick="closeInstallGuide()" style="position:absolute;top:10px;right:10px;background:none;border:none;font-size:24px;cursor:pointer;">✕</button>
-                    <h2 style="color:#1a2980;margin-top:20px;">${title}</h2>
-                    <div style="margin:30px 0;">
-                        <div style="text-align:center;margin:20px 0;">
-                            <div style="font-size:60px;">📱</div>
-                            <div style="color:#4a5568;margin-top:10px;">${currentLang === 'en' ? 'Install for faster access' : '빠른 접속을 위해 설치하세요'}</div>
-                        </div>
-                        ${steps.map((step, index) => `
-                            <div style="margin:15px 0;padding:12px;background:#f7fafc;border-radius:8px;border-left:4px solid #4299e1;">
-                                <strong style="color:#2d3748;">${step}</strong>
-                            </div>
-                        `).join('')}
-                    </div>
-                    <div style="text-align:center;margin-top:40px;">
-                        <button onclick="closeInstallGuide()" style="background:#667eea;color:white;border:none;padding:12px 30px;border-radius:8px;font-size:16px;cursor:pointer;margin:0 10px;">
-                            ${currentLang === 'en' ? 'Close' : '닫기'}
-                        </button>
-                        <button onclick="triggerChromeInstall()" style="background:#38a169;color:white;border:none;padding:12px 30px;border-radius:8px;font-size:16px;cursor:pointer;margin:0 10px;">
-                            ${currentLang === 'en' ? 'Try Install Now' : '지금 설치 시도'}
-                        </button>
-                    </div>
-                </div>
-            `;
+            installToast.innerHTML = message;
+            installToast.classList.remove('hide');
+            installToast.classList.add('show');
             
-            const overlay = document.createElement('div');
-            overlay.id = 'installGuideOverlay';
-            overlay.innerHTML = pageHTML;
-            document.body.appendChild(overlay);
-        }
-
-        // iOS 설치 안내 페이지 표시
-        function showIOSInstallPage() {
-            const title = currentLang === 'en' ? 'Add to Home Screen on iOS' : 'iOS에서 홈 화면에 추가하기';
-            const steps = currentLang === 'en' ? 
-                [
-                    '1. Tap the Share button (📤) at the bottom of Safari',
-                    '2. Scroll down and tap "Add to Home Screen"',
-                    '3. Tap "Add" in the top right corner',
-                    '4. The app will appear on your home screen'
-                ] : [
-                    '1. Safari 하단의 공유 버튼(📤) 탭하기',
-                    '2. 아래로 스크롤하여 "홈 화면에 추가" 탭',
-                    '3. 오른쪽 상단의 "추가" 버튼 탭',
-                    '4. 홈 화면에 앱 아이콘이 생성됩니다'
-                ];
-            
-            const pageHTML = `
-                <div style="position:fixed;top:0;left:0;right:0;bottom:0;background:white;z-index:9999;padding:20px;overflow-y:auto;">
-                    <button onclick="closeInstallGuide()" style="position:absolute;top:10px;right:10px;background:none;border:none;font-size:24px;cursor:pointer;">✕</button>
-                    <h2 style="color:#1a2980;margin-top:20px;">${title}</h2>
-                    <div style="margin:30px 0;">
-                        <div style="text-align:center;margin:20px 0;">
-                            <div style="font-size:60px;">📱</div>
-                            <div style="color:#4a5568;margin-top:10px;">${currentLang === 'en' ? 'Add to home screen for quick access' : '빠른 접속을 위해 홈 화면에 추가하세요'}</div>
-                        </div>
-                        ${steps.map((step, index) => `
-                            <div style="margin:15px 0;padding:12px;background:#f7fafc;border-radius:8px;border-left:4px solid #9f7aea;">
-                                <strong style="color:#2d3748;">${step}</strong>
-                            </div>
-                        `).join('')}
-                    </div>
-                    <div style="text-align:center;margin-top:40px;">
-                        <button onclick="closeInstallGuide()" style="background:#667eea;color:white;border:none;padding:12px 30px;border-radius:8px;font-size:16px;cursor:pointer;">
-                            ${currentLang === 'en' ? 'Close' : '닫기'}
-                        </button>
-                    </div>
-                </div>
-            `;
-            
-            const overlay = document.createElement('div');
-            overlay.id = 'iosInstallOverlay';
-            overlay.innerHTML = pageHTML;
-            document.body.appendChild(overlay);
-        }
-
-        function closeInstallGuide() {
-            const overlay = document.getElementById('installGuideOverlay');
-            if (overlay) {
-                document.body.removeChild(overlay);
-            }
-            const iosOverlay = document.getElementById('iosInstallOverlay');
-            if (iosOverlay) {
-                document.body.removeChild(iosOverlay);
-            }
-        }
-
-        // Chrome 설치 트리거 시도
-        function triggerChromeInstall() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        console.log('User accepted the install prompt');
-                    }
-                    deferredPrompt = null;
-                });
-            } else {
-                alert(currentLang === 'en' ? 
-                    'Install prompt not available. Please use Chrome menu → "Install app".' : 
-                    '설치 프롬프트를 사용할 수 없습니다. Chrome 메뉴 → "앱 설치"를 사용해주세요.');
-            }
-            closeInstallGuide();
-        }
-
-        // 설치 성공 메시지 표시
-        function showInstallSuccessMessage() {
-            const message = currentLang === 'en' ? 
-                'App installed successfully! You can now open it from your home screen.' : 
-                '앱이 성공적으로 설치되었습니다! 이제 홈 화면에서 열 수 있습니다.';
-            
-            alert(message);
+            setTimeout(() => {
+                installToast.classList.remove('show');
+                installToast.classList.add('hide');
+                setTimeout(() => {
+                    installToast.classList.remove('hide');
+                }, 300);
+            }, duration);
         }
 
         // Service Worker 등록
@@ -1681,7 +1621,7 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log('사용자 페이지 로드됨');
             
-            // 개선된 PWA 설치 기능 초기화
+            // 간편한 PWA 설치 기능 초기화
             checkPWAInstallSupport();
             
             // 페이지 로드 시 결제 폼 초기화
@@ -2874,7 +2814,7 @@
             alert(`테스트 주문 ${testOrder.id} 생성됨`);
         };
         
-        console.log('개선된 PWA 통합 유저 페이지 스크립트 로드 완료');
+        console.log('간편한 PWA 통합 유저 페이지 스크립트 로드 완료');
     </script>
 </body>
 </html>
