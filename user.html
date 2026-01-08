@@ -1447,11 +1447,11 @@
             // iOS Chrome 감지
             const isChromeIOS = /CriOS|Chrome/.test(navigator.userAgent) && isIOS;
 
-            // iOS Chrome이면 링크 복사만 제공
+            // iOS Chrome이면 홈 화면 추가만 제공
             if (isChromeIOS) {
-                console.log('iOS Chrome 감지 - 링크 복사 기능 제공');
+                console.log('iOS Chrome 감지 - 홈 화면 추가 기능 제공');
                 installButton.classList.remove('hidden');
-                document.getElementById('installButtonText').textContent = '링크 복사';
+                document.getElementById('installButtonText').textContent = '홈 화면 추가';
                 
                 installButton.onclick = () => {
                     copyCurrentUrl();
