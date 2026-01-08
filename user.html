@@ -1855,80 +1855,112 @@ function showAndroidInstallGuide() {
         }
 
         function updateAllText() {
-            const trans = translations[currentLang];
-            
-            // 모든 텍스트 요소 업데이트
-            const elements = {
-                'pageTitle': trans.title,
-                'pageSubtitle': trans.subtitle,
-                'exchangeTitle': '💱 ' + (currentLang === 'en' ? 'Real-time Exchange Rate' : '실시간 환율'),
-                'amountLabel': trans.amountLabel,
-                'amountLimit': trans.amountLimit,
-                'calcAmountLabel': trans.calcAmountLabel,
-                'calcRateLabel': trans.calcRateLabel,
-                'calcUsdtLabel': trans.calcUsdtLabel,
-                'calcFeeLabel': trans.calcFeeLabel,
-                'calcTotalLabel': trans.calcTotalLabel,
-                'uploadRequired': trans.uploadRequired,
-                'payButtonText': trans.payNow,
-                'activeOrdersTitle': trans.activeOrders,
-                'completedOrdersTitle': trans.completedOrders,
-                'noActiveOrders': trans.noActiveOrders,
-                'noCompletedOrders': trans.noCompletedOrders,
-                'syncText': trans.syncText,
-                'toggleReceiptBtn': showReceipts ? trans.hideReceipts : trans.showReceipts
-            };
-            
-            // 기본 텍스트 업데이트
-            for (const [id, text] of Object.entries(elements)) {
-                const element = document.getElementById(id);
-                if (element) {
-                    element.textContent = text;
-                }
-            }
-            
-            // ✅ 환율 업데이트 텍스트
-            const rateUpdateElement = document.getElementById('rateUpdate');
-            if (rateUpdateElement) {
-                if (exchangeRate > 0) {
-                    const now = new Date();
-                    const timeString = now.toLocaleTimeString('ko-KR', { 
-                        hour: '2-digit', 
-                        minute: '2-digit', 
-                        second: '2-digit',
-                        hour12: false 
-                    });
-                    rateUpdateElement.textContent = trans.lastUpdate + timeString;
-                } else {
-                    rateUpdateElement.textContent = trans.lastUpdate + trans.rateLoading;
-                }
-            }
-            
-            // ✅ 업로드 버튼 텍스트
-            const uploadButtonText = document.getElementById('uploadButtonText');
-            if (uploadButtonText) {
-                if (!uploadedFile) {
-                    uploadButtonText.textContent = `📎 ${trans.uploadText}`;
-                } else {
-                    const uploadCompletedText = currentLang === 'en' ? 'Upload completed' : '업로드 완료';
-                    uploadButtonText.innerHTML = 
-                        `✅ ${uploadCompletedText}<br><span style="font-size:11px;color:#718096;">${uploadedFile.name}</span>`;
-                }
-            }
-            
-            // 환율 숫자 표시
-            if (exchangeRate > 0) {
-                document.getElementById('exchangeRate').innerHTML = 
-                    `<span style="color:#e53e3e;font-weight:bold;">${exchangeRate.toFixed(2)}</span>`;
-            }
-            
-            // 모달 텍스트 업데이트
-            if (!document.getElementById('qrModal').classList.contains('hidden')) {
-                updateModalText();
-            }
-            
-            updateOrdersList();
+    const trans = translations[currentLang];
+    
+    // 모든 텍스트 요소 업데이트
+    const elements = {
+        'pageTitle': trans.title,
+        'pageSubtitle': trans.subtitle,
+        'exchangeTitle': '💱 ' + (currentLang === 'en' ? 'Real-time Exchange Rate' : '실시간 환율'),
+        'amountLabel': trans.amountLabel,
+        'amountLimit': trans.amountLimit,
+        'calcAmountLabel': trans.calcAmountLabel,
+        'calcRateLabel': trans.calcRateLabel,
+        'calcUsdtLabel': trans.calcUsdtLabel,
+        'calcFeeLabel': trans.calcFeeLabel,
+        'calcTotalLabel': trans.calcTotalLabel,
+        'uploadRequired': trans.uploadRequired,
+        'payButtonText': trans.payNow,
+        'activeOrdersTitle': trans.activeOrders,
+        'completedOrdersTitle': trans.completedOrders,
+        'noActiveOrders': trans.noActiveOrders,
+        'noCompletedOrders': trans.noCompletedOrders,
+        'syncText': trans.syncText,
+        'toggleReceiptBtn': showReceipts ? trans.hideReceipts : trans.showReceipts,
+        'languageBtnText': trans.languageBtnText
+    };
+    
+    // 기본 텍스트 업데이트
+    for (const [id, text] of Object.entries(elements)) {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = text;
         }
+    }
+    
+    // ✅ PWA 설치 버튼 텍스트 업데이트
+    updateInstallButtonText();
+    
+    // ✅ 환율 업데이트 텍스트
+    const rateUpdateElement = document.getElementById('rateUpdate');
+    if (rateUpdateElement) {
+        if (exchangeRate > 0) {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('ko-KR', { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit',
+                hour12: false 
+            });
+            rateUpdateElement.textContent = trans.lastUpdate + timeString;
+        } else {
+            rateUpdateElement.textContent = trans.lastUpdate + trans.rateLoading;
+        }
+    }
+    
+    // ✅ 업로드 버튼 텍스트
+    const uploadButtonText = document.getElementById('uploadButtonText');
+    if (uploadButtonText) {
+        if (!uploadedFile) {
+            uploadButtonText.textContent = `📎 ${trans.uploadText}`;
+        } else {
+            const uploadCompletedText = currentLang === 'en' ? 'Upload completed' : '업로드 완료';
+            uploadButtonText.innerHTML = 
+                `✅ ${uploadCompletedText}<br><span style="font-size:11px;color:#718096;">${uploadedFile.name}</span>`;
+        }
+    }
+    
+    // 환율 숫자 표시
+    if (exchangeRate > 0) {
+        document.getElementById('exchangeRate').innerHTML = 
+            `<span style="color:#e53e3e;font-weight:bold;">${exchangeRate.toFixed(2)}</span>`;
+    }
+    
+    // 모달 텍스트 업데이트
+    if (!document.getElementById('qrModal').classList.contains('hidden')) {
+        updateModalText();
+    }
+    
+    updateOrdersList();
+} // ← updateAllText 함수 끝
+
+// PWA 설치 버튼 텍스트 업데이트 함수 추가 (바로 이 줄부터 붙여넣기 시작)
+function updateInstallButtonText() {
+    const installButton = document.getElementById('installButton');
+    const installButtonText = document.getElementById('installButtonText');
+    const trans = translations[currentLang];
+    
+    if (!installButton || !installButtonText) return;
+    
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                        window.navigator.standalone === true;
+    
+    // 이미 설치된 경우 버튼 숨김
+    if (isStandalone) {
+        installButton.classList.add('hidden');
+        return;
+    }
+    
+    // iOS인 경우
+    if (isIOS) {
+        installButtonText.textContent = trans.addToHomeScreen;
+    } 
+    // Android/기타인 경우
+    else {
+        installButtonText.textContent = trans.installApp;
+    }
+}
 
         // ==================== 계산 및 결제 관련 함수 ====================
         function updateCalculation() {
