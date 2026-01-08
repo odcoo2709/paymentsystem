@@ -5,28 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>USDT/THB Payment System - Anonymous Payment</title>
     
-    <!-- ====== PWA 관련 메타 태그 시작 ====== -->
-    <!-- Manifest 파일 링크 -->
+    <!-- ====== PWA 관련 메타 태그 ====== -->
     <link rel="manifest" href="/manifest.json">
-    
-    <!-- 테마 컬러 -->
     <meta name="theme-color" content="#1a2980">
-    
-    <!-- iOS PWA 설정 -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="USDT/THB 결제">
     
-    <!-- 💵 + USDT 텍스트 -->
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a2980'/><text x='50' y='75' font-size='60' text-anchor='middle' fill='white'>💵</text></svg>">
     <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a2980'/><text x='50' y='75' font-size='60' text-anchor='middle' fill='white'>💵</text></svg>">
     
-    <!-- 설명 -->
     <meta name="description" content="로그인 없이 USDT로 태국 바트(THB) 결제하기">
-    
-    <!-- Windows/Microsoft 타일 -->
     <meta name="msapplication-TileColor" content="#1a2980">
-    <!-- ====== PWA 관련 메타 태그 끝 ====== -->
     
     <style>
         * {
@@ -56,7 +46,7 @@
             gap: 20px;
         }
 
-        /* PWA 설치 버튼 스타일 - 개선됨 */
+        /* 개선된 PWA 설치 버튼 */
         .install-button-container {
             position: fixed;
             bottom: 20px;
@@ -129,195 +119,193 @@
             animation: fadeIn 0.3s ease;
         }
 
-        /* 두 컬럼 레이아웃 */
-        .main-content {
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
-        .payment-column {
-            flex: 1;
-            min-width: 280px;
-        }
-
-        .orders-column {
-            flex: 1;
-            min-width: 280px;
-        }
-
+        /* 헤더 스타일 */
         .header {
             text-align: center;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             position: relative;
-            padding-top: 40px;
-            width: 100%;
         }
 
         .language-container {
             position: absolute;
             top: 0;
             right: 0;
-            left: 0;
-            display: flex;
-            justify-content: center;
-            margin-bottom: 10px;
         }
 
         .language-toggle-btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
+            background: #f7fafc;
+            border: 1px solid #cbd5e0;
             border-radius: 20px;
-            padding: 8px 18px;
-            font-size: 13px;
-            font-weight: 600;
+            padding: 8px 15px;
+            font-size: 14px;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
             transition: all 0.3s ease;
-            box-shadow: 0 3px 10px rgba(102, 126, 234, 0.2);
         }
 
         .language-toggle-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
-        }
-
-        .language-toggle-btn:active {
-            transform: translateY(0);
-        }
-
-        .lang-icon {
-            font-size: 14px;
+            background: #edf2f7;
         }
 
         .title {
             color: #1a2980;
-            font-size: 22px;
-            font-weight: bold;
+            font-size: 28px;
             margin-bottom: 8px;
-            background: linear-gradient(135deg, #1a2980, #26d0ce);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
         }
 
         .subtitle {
             color: #4a5568;
-            font-size: 12px;
+            font-size: 16px;
         }
 
+        /* 메인 콘텐츠 */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* 환율 섹션 */
         .exchange-section {
-            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
-            border-radius: 12px;
+            background: #f7fafc;
             padding: 15px;
+            border-radius: 10px;
             margin-bottom: 20px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .exchange-section h4 {
             color: #2d3748;
-            text-align: center;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
 
         .rate-display {
-            font-size: 18px;
+            font-size: 24px;
             font-weight: bold;
-            color: #2d3748;
-            margin: 8px 0;
+            color: #1a2980;
+            margin-bottom: 5px;
         }
 
         .rate-value {
             color: #e53e3e;
         }
 
+        .rate-loading {
+            color: #718096;
+            font-size: 14px;
+        }
+
+        #rateUpdate {
+            font-size: 12px;
+            color: #718096;
+        }
+
+        /* 결제 폼 */
         .payment-form {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 20px;
         }
 
         .input-group {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 8px;
         }
 
         .input-label {
-            color: #2d3748;
-            font-size: 14px;
             font-weight: 600;
+            color: #2d3748;
         }
 
         .amount-input {
-            width: 100%;
-            padding: 12px;
-            font-size: 16px;
+            padding: 12px 15px;
             border: 2px solid #cbd5e0;
-            border-radius: 10px;
-            text-align: center;
-            outline: none;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
         }
 
         .amount-input:focus {
+            outline: none;
             border-color: #667eea;
         }
 
         .amount-limit {
             font-size: 12px;
             color: #718096;
-            text-align: center;
-            margin-top: 3px;
         }
 
+        /* 계산 미리보기 */
         .calculation-preview {
-            background: #f7fafc;
-            padding: 12px;
-            border-radius: 10px;
-            border: 2px solid #e2e8f0;
+            background: #f0fff4;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #c6f6d5;
         }
 
         .calc-row {
             display: flex;
             justify-content: space-between;
-            padding: 6px 0;
-            border-bottom: 1px solid #e2e8f0;
-            font-size: 13px;
-            color: #4a5568;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .calc-row:last-child {
+            margin-bottom: 0;
         }
 
         .calc-total {
             font-weight: bold;
-            color: #2d3748;
-            font-size: 15px;
+            color: #38a169;
         }
 
+        /* 업로드 섹션 */
         .upload-section {
-            margin: 10px 0;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
 
         .upload-label {
             display: block;
-            cursor: pointer;
-            width: 100%;
         }
 
         .upload-button {
-            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
-            color: #2d3748;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: bold;
+            background: #edf2f7;
             border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            padding: 20px;
             text-align: center;
             cursor: pointer;
-            width: 100%;
-            display: block;
-            transition: all 0.3s;
+            transition: all 0.3s ease;
+            color: #4a5568;
         }
 
         .upload-button:hover {
-            border-color: #667eea;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 10px rgba(102, 126, 234, 0.15);
+            background: #e2e8f0;
+            border-color: #a0aec0;
+        }
+
+        .upload-required {
+            font-size: 12px;
+            color: #e53e3e;
         }
 
         .upload-input {
@@ -325,40 +313,40 @@
         }
 
         .upload-preview {
-            margin-top: 8px;
-            text-align: center;
+            margin-top: 10px;
+            display: none;
         }
 
         .upload-preview-image {
-            max-width: 150px;
-            max-height: 150px;
-            border-radius: 6px;
-            border: 2px solid #cbd5e0;
-            object-fit: contain;
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 4px;
+            border: 1px solid #e2e8f0;
         }
 
         .file-info {
-            font-size: 11px;
+            font-size: 12px;
             color: #718096;
-            margin-top: 3px;
+            margin-top: 5px;
+            text-align: center;
         }
 
+        /* 결제 버튼 */
         .pay-button {
-            width: 100%;
-            padding: 12px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             border: none;
-            border-radius: 10px;
-            font-size: 14px;
-            font-weight: bold;
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 600;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: all 0.3s ease;
         }
 
         .pay-button:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
         }
 
         .pay-button:disabled {
@@ -366,70 +354,85 @@
             cursor: not-allowed;
         }
 
-        /* 주문 목록 스타일 - 페이지네이션 적용 */
-        .orders-section {
+        /* 주문 섹션 */
+        .orders-section, .completed-orders-section {
             background: #f7fafc;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
             padding: 15px;
-            margin-top: 0;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            height: fit-content;
         }
 
         .section-title {
             color: #2d3748;
-            font-size: 16px;
-            font-weight: bold;
             margin-bottom: 15px;
             display: flex;
             align-items: center;
-            justify-content: flex-start;
             gap: 8px;
         }
 
-        .toggle-receipt-btn {
-            background: #9b59b6;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-size: 11px;
-            cursor: pointer;
+        .completed-section-title {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
         }
 
+        .toggle-receipt-btn {
+            background: #edf2f7;
+            border: 1px solid #cbd5e0;
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .toggle-receipt-btn:hover {
+            background: #e2e8f0;
+        }
+
+        /* 주문 카드 */
         .orders-container {
             display: flex;
             flex-direction: column;
             gap: 12px;
-            max-height: 320px;
-            overflow-y: auto;
-            padding-right: 5px;
+            min-height: 100px;
         }
 
         .order-card {
             background: white;
-            border-radius: 10px;
-            padding: 15px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            border: 2px solid #e2e8f0;
-            transition: all 0.2s ease;
+            border-radius: 8px;
+            padding: 12px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid;
         }
 
-        .order-card:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
+        .order-card.status-waiting {
+            border-left-color: #ed8936;
         }
 
-        .order-card.status-waiting { border-color: #f6ad55; }
-        .order-card.status-confirmed { border-color: #4299e1; }
-        .order-card.status-processing { border-color: #9f7aea; }
-        .order-card.status-completed { border-color: #38a169; }
-        .order-card.status-cancelled { border-color: #e53e3c; }
+        .order-card.status-confirmed {
+            border-left-color: #4299e1;
+        }
+
+        .order-card.status-processing {
+            border-left-color: #9f7aea;
+        }
+
+        .order-card.status-completed {
+            border-left-color: #38a169;
+        }
+
+        .order-card.status-cancelled {
+            border-left-color: #e53e3e;
+        }
 
         .order-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
+            align-items: flex-start;
+            margin-bottom: 8px;
         }
 
         .order-id {
@@ -441,43 +444,52 @@
         .order-time {
             font-size: 11px;
             color: #718096;
+            margin-top: 2px;
         }
 
         .status-badge {
-            display: inline-block;
-            padding: 3px 10px;
-            border-radius: 15px;
+            padding: 4px 8px;
+            border-radius: 4px;
             font-size: 11px;
             font-weight: bold;
             color: white;
         }
 
-        .status-waiting { background: #f6ad55; }
-        .status-confirmed { background: #4299e1; }
-        .status-processing { background: #9f7aea; }
-        .status-completed { background: #38a169; }
-        .status-cancelled { background: #e53e3c; }
+        .status-badge.status-waiting {
+            background: #ed8936;
+        }
+
+        .status-badge.status-confirmed {
+            background: #4299e1;
+        }
+
+        .status-badge.status-processing {
+            background: #9f7aea;
+        }
+
+        .status-badge.status-completed {
+            background: #38a169;
+        }
+
+        .status-badge.status-cancelled {
+            background: #e53e3e;
+        }
 
         .order-details {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+            margin-top: 8px;
         }
 
         .order-amount {
-            font-size: 16px;
+            font-size: 18px;
             font-weight: bold;
-            color: #2d3748;
-            text-align: center;
-            padding: 8px;
-            background: #f1f5f9;
-            border-radius: 6px;
+            color: #1a2980;
+            margin-bottom: 8px;
         }
 
         .order-breakdown {
             display: flex;
             flex-direction: column;
-            gap: 6px;
+            gap: 4px;
         }
 
         .breakdown-item {
@@ -487,441 +499,131 @@
             color: #4a5568;
         }
 
-        /* 영수증 이미지 스타일 */
-        .receipt-image-container {
-            display: none;
-            text-align: center;
-            margin-top: 8px;
-            animation: fadeIn 0.3s ease;
-        }
-
-        .receipt-image-container.show {
-            display: block;
-        }
-
-        .receipt-image {
-            max-width: 100%;
-            max-height: 150px;
-            border-radius: 6px;
-            margin-top: 8px;
-            border: 1px solid #ddd;
-            cursor: pointer;
-        }
-
-        .no-orders {
-            text-align: center;
-            padding: 30px 15px;
-            color: #a0aec0;
-            font-size: 14px;
-            background: white;
-            border-radius: 8px;
-            border: 2px dashed #cbd5e0;
-        }
-
-        /* 완료된 주문 섹션 */
-        .completed-orders-section {
-            background: #f0fff4;
-            border: 2px solid #c6f6d5;
-            border-radius: 12px;
-            padding: 15px;
-            margin-top: 15px;
-        }
-
-        .completed-section-title {
-            color: #38a169;
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .completed-section-title::before {
-            content: '✓';
-            background: #38a169;
-            color: white;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
-        }
-
-        /* 페이지네이션 스타일 */
+        /* 페이지네이션 */
         .pagination-controls {
             display: flex;
             justify-content: center;
             align-items: center;
-            gap: 10px;
-            margin-top: 12px;
-            padding-top: 12px;
+            gap: 15px;
+            margin-top: 15px;
+            padding-top: 15px;
             border-top: 1px solid #e2e8f0;
         }
 
         .page-btn {
-            background: #667eea;
-            color: white;
-            border: none;
-            width: 28px;
-            height: 28px;
-            border-radius: 6px;
+            background: #edf2f7;
+            border: 1px solid #cbd5e0;
+            border-radius: 4px;
+            padding: 6px 12px;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .page-btn:hover:not(:disabled) {
+            background: #e2e8f0;
         }
 
         .page-btn:disabled {
-            background: #cbd5e0;
+            opacity: 0.5;
             cursor: not-allowed;
         }
 
         .page-info {
-            font-size: 12px;
+            font-size: 14px;
             color: #4a5568;
         }
 
-        /* 모달 스타일 - 컴팩트 버전 */
+        /* 동기화 상태 */
+        .sync-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: #38a169;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            z-index: 1001;
+            box-shadow: 0 2px 8px rgba(56, 161, 105, 0.3);
+        }
+
+        .sync-status.visible {
+            display: flex;
+            animation: slideIn 0.3s ease;
+        }
+
+        .sync-pulse {
+            width: 8px;
+            height: 8px;
+            background: #68d391;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        /* 모달 */
         .modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.85);
+            background: rgba(0, 0, 0, 0.5);
             display: flex;
             justify-content: center;
             align-items: center;
             z-index: 1000;
-            padding: 10px;
+            padding: 20px;
+        }
+
+        .modal-overlay.hidden {
+            display: none;
         }
 
         .modal-content {
             background: white;
             border-radius: 12px;
-            padding: 15px;
-            width: 100%;
+            padding: 20px;
             max-width: 400px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
-            max-height: 95vh;
+            width: 100%;
+            max-height: 90vh;
             overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
         }
 
         .modal-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 12px;
+            margin-bottom: 20px;
         }
 
         .modal-title {
-            color: #2d3748;
-            font-size: 16px;
-            font-weight: bold;
+            color: #1a2980;
+            font-size: 18px;
         }
 
         .modal-close {
             background: none;
             border: none;
-            font-size: 18px;
-            color: #718096;
+            font-size: 20px;
             cursor: pointer;
-            padding: 3px;
-            line-height: 1;
+            color: #718096;
         }
 
-        .qr-container {
-            text-align: center;
-            margin: 8px 0;
-        }
-
-        .qr-code {
-            width: 140px;
-            height: 140px;
-            margin: 0 auto 8px;
-            background: #f7fafc;
-            border-radius: 6px;
-            padding: 6px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border: 2px solid #e2e8f0;
-        }
-
-        .qr-code img {
-            max-width: 100%;
-            max-height: 100%;
-            border-radius: 4px;
-        }
-
-        .qr-placeholder {
-            font-size: 40px;
-        }
-
-        .wallet-address {
-            background: #f7fafc;
-            padding: 10px;
-            border-radius: 6px;
-            margin: 12px 0;
-            word-break: break-all;
-            font-family: monospace;
-            font-size: 12px;
-            border: 1px solid #e2e8f0;
-            max-height: 60px;
-            overflow-y: auto;
-        }
-
-        .wallet-info {
-            margin: 6px 0;
-            padding: 6px;
-            background: #f0fff4;
-            border-radius: 5px;
-            border: 1px solid #c6f6d5;
-            font-size: 12px;
-        }
-
-        .wallet-name {
-            font-weight: bold;
+        .modal-close:hover {
             color: #2d3748;
-        }
-
-        .copy-button {
-            background: #4299e1;
-            color: white;
-            border: none;
-            padding: 8px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 6px;
-            width: 100%;
-            font-size: 13px;
-        }
-
-        .deposit-complete-button {
-            background: #27ae60;
-            color: white;
-            border: none;
-            padding: 10px;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 12px;
-            width: 100%;
-        }
-
-        .timer {
-            background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 16px;
-            color: white;
-            font-weight: bold;
-            text-align: center;
-            margin: 12px 0;
-        }
-
-        .payment-info {
-            background: #f8fafc;
-            padding: 10px;
-            border-radius: 6px;
-            margin: 10px 0;
-            border: 2px solid #e2e8f0;
-        }
-
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 5px 0;
-            font-size: 12px;
-        }
-
-        .info-row:not(:last-child) {
-            border-bottom: 1px solid #eee;
-        }
-
-        .info-label {
-            font-weight: 600;
-            color: #2d3748;
-        }
-
-        .info-value {
-            color: #4a5568;
-            font-weight: 500;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .spinner {
-            width: 35px;
-            height: 35px;
-            border: 3px solid #e2e8f0;
-            border-top: 3px solid #4299e1;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 12px auto;
-        }
-
-        .wallet-selection {
-            margin: 8px 0;
-            padding: 8px;
-            background: #f8fafc;
-            border-radius: 6px;
-            border: 1px solid #e2e8f0;
-        }
-
-        .wallet-selection-title {
-            font-size: 12px;
-            color: #4a5568;
-            margin-bottom: 4px;
-            font-weight: 600;
-        }
-
-        .selected-wallet {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 6px;
-            background: white;
-            border-radius: 5px;
-            border: 1px solid #c6f6d5;
-        }
-
-        .wallet-icon {
-            font-size: 16px;
-        }
-
-        .wallet-details {
-            flex: 1;
-        }
-
-        .wallet-network {
-            font-size: 11px;
-            color: #718096;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .network-badge {
-            display: inline-block;
-            padding: 2px 6px;
-            border-radius: 8px;
-            font-size: 10px;
-            font-weight: bold;
-            color: white;
-        }
-
-        .network-trc20 { background: #f56565; }
-        .network-erc20 { background: #4299e1; }
-        .network-bep20 { background: #38a169; }
-
-        .rate-loading {
-            color: #718096;
-            font-size: 14px;
-        }
-        
-        .rate-error {
-            color: #e53e3e;
-            font-size: 14px;
-        }
-        
-        .upload-required {
-            color: #e53e3e;
-            font-size: 11px;
-            text-align: center;
-            margin-top: 3px;
-        }
-        
-        .sync-status {
-            position: fixed;
-            top: 8px;
-            right: 8px;
-            background: #38a169;
-            color: white;
-            padding: 4px 8px;
-            border-radius: 15px;
-            font-size: 11px;
-            z-index: 1000;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-        
-        .sync-status.visible {
-            opacity: 1;
-        }
-        
-        .sync-pulse {
-            width: 6px;
-            height: 6px;
-            background: #38a169;
-            border-radius: 50%;
-            animation: pulse 1.5s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(1.5); }
-            100% { opacity: 1; transform: scale(1); }
-        }
-        
-        .wallet-loading {
-            text-align: center;
-            color: #718096;
-            font-size: 12px;
-            padding: 12px;
-        }
-
-        .step-description {
-            font-size: 12px;
-            color: #4a5568;
-            margin-bottom: 8px;
-            text-align: center;
-        }
-
-        .status-update-message {
-            font-size: 11px;
-            color: #718096;
-            text-align: center;
-            margin-top: 8px;
-            padding: 6px;
-            background: #f7fafc;
-            border-radius: 5px;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
         }
 
         /* 반응형 디자인 */
-        @media (min-width: 769px) {
-            /* PC에서는 설치 버튼 숨김 */
-            .install-button-container {
-                display: flex !important;
-            }
-            
-            .install-hint {
-                max-width: 250px;
-            }
-        }
-
         @media (max-width: 768px) {
-            /* 모바일에서만 설치 버튼 표시 */
             .install-button-container {
                 bottom: 15px;
                 right: 15px;
@@ -931,28 +633,6 @@
                 padding: 12px 18px;
                 font-size: 14px;
                 min-width: 110px;
-            }
-            
-            .main-content {
-                flex-direction: column;
-            }
-            
-            .payment-column, .orders-column {
-                width: 100%;
-            }
-            
-            .container {
-                padding: 15px;
-            }
-            
-            .modal-content {
-                padding: 12px;
-                max-width: 95%;
-            }
-            
-            .qr-code {
-                width: 120px;
-                height: 120px;
             }
         }
         
@@ -968,23 +648,22 @@
                 font-size: 12px;
                 padding: 8px 12px;
             }
-            
-            .title {
-                font-size: 18px;
-            }
-            
-            .rate-display {
-                font-size: 16px;
+        }
+
+        /* 데스크톱에서는 PWA 설치 버튼 숨김 */
+        @media (min-width: 769px) {
+            .install-button-container {
+                display: none !important;
             }
         }
     </style>
 </head>
 <body>
-    <!-- 개선된 PWA 설치 버튼 -->
+    <!-- PWA 설치 버튼 (iOS: 홈화면에 추가하기, Android: 앱으로 설치하기) -->
     <div class="install-button-container" id="installButtonContainer">
         <div class="install-hint" id="installHint">
-            <strong>📱 앱으로 설치하기</strong><br>
-            홈 화면에서 빠르게 접속
+            <strong>📱 빠른 접속</strong><br>
+            홈 화면에서 바로 실행
         </div>
         <button class="install-button hidden" id="installButton">
             <span class="install-icon">📱</span>
@@ -992,7 +671,7 @@
         </button>
     </div>
     
-    <!-- 동기화 상태 표시 -->
+    <!-- 동기화 상태 -->
     <div class="sync-status" id="syncStatus">
         <div class="sync-pulse"></div>
         <span id="syncText">동기화 중...</span>
@@ -1014,7 +693,7 @@
             <!-- 왼쪽 열: 결제 폼 -->
             <div class="payment-column">
                 <div class="exchange-section">
-                    <h4 id="exchangeTitle">실시간 환율</h4>
+                    <h4 id="exchangeTitle">💱 실시간 환율</h4>
                     <div class="rate-display">
                         1 USDT = <span class="rate-value" id="exchangeRate">
                             <span class="rate-loading">로딩 중...</span>
@@ -1072,7 +751,7 @@
                         </div>
                         <input type="file" class="upload-input" id="paymentProof" accept="image/*,.pdf,.png,.jpg,.jpeg">
                         <div class="upload-preview" id="uploadPreview">
-                            <!-- 초기에는 미리보기 없음 -->
+                            <!-- 업로드 미리보기 -->
                         </div>
                     </div>
 
@@ -1091,7 +770,7 @@
                     <div class="orders-container" id="activeOrdersContainer">
                         <div class="no-orders" id="noActiveOrders">진행 중인 주문이 없습니다</div>
                     </div>
-                    <!-- 페이지네이션 컨트롤 -->
+                    <!-- 페이지네이션 -->
                     <div class="pagination-controls" id="activeOrdersPagination" style="display: none;">
                         <button class="page-btn" id="activeOrdersPrevBtn" disabled>◀</button>
                         <div class="page-info" id="activeOrdersPageInfo">1 / 1</div>
@@ -1109,7 +788,7 @@
                     <div class="orders-container" id="completedOrdersContainer">
                         <div class="no-orders" id="noCompletedOrders">완료된 주문이 없습니다</div>
                     </div>
-                    <!-- 페이지네이션 컨트롤 -->
+                    <!-- 페이지네이션 -->
                     <div class="pagination-controls" id="completedOrdersPagination" style="display: none;">
                         <button class="page-btn" id="completedOrdersPrevBtn" disabled>◀</button>
                         <div class="page-info" id="completedOrdersPageInfo">1 / 1</div>
@@ -1120,7 +799,7 @@
         </div>
     </div>
 
-    <!-- 간단한 결제 모달 (개선된 컴팩트 버전) -->
+    <!-- 결제 모달 -->
     <div class="modal-overlay hidden" id="qrModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -1180,16 +859,15 @@
     </div>
 
     <script>
-        // ==================== 개선된 PWA 설치 기능 ====================
+        // ==================== PWA 설치 기능 (수정됨) ====================
         let deferredPrompt;
         let isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
         let isAndroid = /Android/.test(navigator.userAgent);
         let isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
                          (window.navigator.standalone) || 
                          document.referrer.includes('android-app://');
-        let installPromptShown = false;
 
-        // PWA 설치 가능 여부 체크 - 개선된 버전
+        // PWA 설치 가능 여부 체크
         function checkPWAInstallSupport() {
             const installContainer = document.getElementById('installButtonContainer');
             const installButton = document.getElementById('installButton');
@@ -1201,14 +879,11 @@
             if (isStandalone) {
                 installButton.classList.add('hidden');
                 installHint.classList.remove('show');
-                console.log('PWA already installed, hiding button');
                 return;
             }
             
-            // 모바일 장치 체크
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-            
             // 데스크톱에서는 안내 메시지만 표시
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             if (!isMobile) {
                 installHint.innerHTML = '<strong>💡 팁</strong><br>모바일에서 홈 화면에 추가 가능';
                 installHint.classList.add('show');
@@ -1216,49 +891,39 @@
                 return;
             }
             
-            // iOS 장치 - 홈 화면에 추가하기
+            // iOS 장치
             if (isIOS) {
+                // iOS에서는 무조건 "홈화면에 추가하기" 버튼만 표시
+                installButtonText.textContent = '홈화면에 추가하기';
                 installButton.classList.remove('hidden');
                 installHint.classList.add('show');
-                document.getElementById('installButtonText').textContent = '홈 화면에 추가';
-                installHint.innerHTML = '<strong>📱 홈 화면에 추가</strong><br>Safari에서 빠르게 접속';
                 
-                // iOS 설치 버튼 클릭 이벤트
-                installButton.addEventListener('click', () => {
-                    showIOSInstallPage();
-                });
+                installButton.addEventListener('click', showIOSInstallGuide);
                 return;
             }
             
-            // Android/데스크톱 Chrome의 경우 - 앱 설치하기
+            // Android/데스크톱 Chrome
             window.addEventListener('beforeinstallprompt', (e) => {
                 console.log('beforeinstallprompt 이벤트 발생');
                 e.preventDefault();
                 deferredPrompt = e;
                 
-                // 설치 버튼 표시
+                // Android에서는 "앱으로 설치하기" 버튼 표시
+                installButtonText.textContent = '앱으로 설치하기';
                 installButton.classList.remove('hidden');
                 installHint.classList.add('show');
-                document.getElementById('installButtonText').textContent = '앱 설치';
-                installHint.innerHTML = '<strong>📱 앱 설치하기</strong><br>홈 화면에서 빠르게 접속';
-                installPromptShown = true;
                 
-                // 설치 버튼 클릭 이벤트
                 installButton.addEventListener('click', async () => {
-                    console.log('설치 버튼 클릭됨');
                     if (deferredPrompt) {
                         installButton.classList.add('hidden');
                         installHint.classList.remove('show');
                         
-                        // 지연된 프롬프트 표시
                         deferredPrompt.prompt();
                         
                         const { outcome } = await deferredPrompt.userChoice;
                         console.log(`사용자 응답: ${outcome}`);
                         
                         if (outcome === 'accepted') {
-                            console.log('PWA 설치 수락됨');
-                            // 설치 성공 처리
                             showInstallSuccessMessage();
                         }
                         
@@ -1266,15 +931,6 @@
                     }
                 });
             });
-            
-            // beforeinstallprompt 이벤트가 즉시 발생하지 않을 수 있으므로
-            // 일정 시간 후에도 이벤트가 발생하지 않으면 수동으로 버튼 표시
-            setTimeout(() => {
-                if (!installPromptShown && !isStandalone && isMobile) {
-                    console.log('수동으로 설치 버튼 표시');
-                    showManualInstallOption();
-                }
-            }, 3000);
             
             // 설치 완료 후 버튼 숨기기
             window.addEventListener('appinstalled', () => {
@@ -1286,52 +942,15 @@
             });
         }
 
-        // 수동 설치 옵션 표시 (beforeinstallprompt 이벤트가 발생하지 않는 경우)
-        function showManualInstallOption() {
-            const installButton = document.getElementById('installButton');
-            const installHint = document.getElementById('installHint');
-            
-            if (!installButton || !installHint) return;
-            
-            const trans = translations[currentLang];
-            installButton.classList.remove('hidden');
-            installHint.classList.add('show');
-            
-            // Android Chrome의 경우
-            if (isAndroid) {
-                document.getElementById('installButtonText').textContent = '앱 설치';
-                installHint.innerHTML = '<strong>📱 앱 설치</strong><br>Chrome 메뉴 → "앱 설치"';
-                
-                installButton.onclick = () => {
-                    showAndroidInstallGuide();
-                };
-            }
-            // iOS의 경우
-            else if (isIOS) {
-                document.getElementById('installButtonText').textContent = '홈 화면에 추가';
-                installHint.innerHTML = '<strong>📱 홈 화면에 추가</strong><br>Safari 공유 메뉴에서';
-                
-                installButton.onclick = () => {
-                    showIOSInstallPage();
-                };
-            }
-        }
-
-        // Android 설치 가이드 표시
-        function showAndroidInstallGuide() {
-            const title = currentLang === 'en' ? 'Install App on Android' : 'Android에서 앱 설치하기';
-            const steps = currentLang === 'en' ? 
-                [
-                    '1. Tap the three dots menu (⋮) in Chrome',
-                    '2. Select "Install app" or "Add to Home screen"',
-                    '3. Tap "Install" in the popup',
-                    '4. The app will be installed on your device'
-                ] : [
-                    '1. Chrome에서 점 3개 메뉴(⋮) 탭하기',
-                    '2. "앱 설치" 또는 "홈 화면에 추가" 선택',
-                    '3. 팝업에서 "설치" 탭하기',
-                    '4. 앱이 설치됩니다'
-                ];
+        // iOS 설치 가이드
+        function showIOSInstallGuide() {
+            const title = 'iOS에서 앱 설치하기';
+            const steps = [
+                '1. Safari 하단의 공유 버튼(📤) 탭하기',
+                '2. 아래로 스크롤하여 "홈 화면에 추가" 탭',
+                '3. 오른쪽 상단의 "추가" 버튼 탭',
+                '4. 홈 화면에 앱 아이콘이 생성됩니다'
+            ];
             
             const pageHTML = `
                 <div style="position:fixed;top:0;left:0;right:0;bottom:0;background:white;z-index:9999;padding:20px;overflow-y:auto;">
@@ -1340,7 +959,7 @@
                     <div style="margin:30px 0;">
                         <div style="text-align:center;margin:20px 0;">
                             <div style="font-size:60px;">📱</div>
-                            <div style="color:#4a5568;margin-top:10px;">${currentLang === 'en' ? 'Install for faster access' : '빠른 접속을 위해 설치하세요'}</div>
+                            <div style="color:#4a5568;margin-top:10px;">빠른 접속을 위해 설치하세요</div>
                         </div>
                         ${steps.map((step, index) => `
                             <div style="margin:15px 0;padding:12px;background:#f7fafc;border-radius:8px;border-left:4px solid #4299e1;">
@@ -1350,10 +969,7 @@
                     </div>
                     <div style="text-align:center;margin-top:40px;">
                         <button onclick="closeInstallGuide()" style="background:#667eea;color:white;border:none;padding:12px 30px;border-radius:8px;font-size:16px;cursor:pointer;margin:0 10px;">
-                            ${currentLang === 'en' ? 'Close' : '닫기'}
-                        </button>
-                        <button onclick="triggerChromeInstall()" style="background:#38a169;color:white;border:none;padding:12px 30px;border-radius:8px;font-size:16px;cursor:pointer;margin:0 10px;">
-                            ${currentLang === 'en' ? 'Try Install Now' : '지금 설치 시도'}
+                            닫기
                         </button>
                     </div>
                 </div>
@@ -1365,99 +981,19 @@
             document.body.appendChild(overlay);
         }
 
-        // iOS 설치 안내 페이지 표시
-        function showIOSInstallPage() {
-            const title = currentLang === 'en' ? 'Add to Home Screen on iOS' : 'iOS에서 홈 화면에 추가하기';
-            const steps = currentLang === 'en' ? 
-                [
-                    '1. Tap the Share button (📤) at the bottom of Safari',
-                    '2. Scroll down and tap "Add to Home Screen"',
-                    '3. Tap "Add" in the top right corner',
-                    '4. The app will appear on your home screen'
-                ] : [
-                    '1. Safari 하단의 공유 버튼(📤) 탭하기',
-                    '2. 아래로 스크롤하여 "홈 화면에 추가" 탭',
-                    '3. 오른쪽 상단의 "추가" 버튼 탭',
-                    '4. 홈 화면에 앱 아이콘이 생성됩니다'
-                ];
-            
-            const pageHTML = `
-                <div style="position:fixed;top:0;left:0;right:0;bottom:0;background:white;z-index:9999;padding:20px;overflow-y:auto;">
-                    <button onclick="closeInstallGuide()" style="position:absolute;top:10px;right:10px;background:none;border:none;font-size:24px;cursor:pointer;">✕</button>
-                    <h2 style="color:#1a2980;margin-top:20px;">${title}</h2>
-                    <div style="margin:30px 0;">
-                        <div style="text-align:center;margin:20px 0;">
-                            <div style="font-size:60px;">📱</div>
-                            <div style="color:#4a5568;margin-top:10px;">${currentLang === 'en' ? 'Add to home screen for quick access' : '빠른 접속을 위해 홈 화면에 추가하세요'}</div>
-                        </div>
-                        ${steps.map((step, index) => `
-                            <div style="margin:15px 0;padding:12px;background:#f7fafc;border-radius:8px;border-left:4px solid #9f7aea;">
-                                <strong style="color:#2d3748;">${step}</strong>
-                            </div>
-                        `).join('')}
-                    </div>
-                    <div style="text-align:center;margin-top:40px;">
-                        <button onclick="closeInstallGuide()" style="background:#667eea;color:white;border:none;padding:12px 30px;border-radius:8px;font-size:16px;cursor:pointer;">
-                            ${currentLang === 'en' ? 'Close' : '닫기'}
-                        </button>
-                    </div>
-                </div>
-            `;
-            
-            const overlay = document.createElement('div');
-            overlay.id = 'iosInstallOverlay';
-            overlay.innerHTML = pageHTML;
-            document.body.appendChild(overlay);
-        }
-
         function closeInstallGuide() {
             const overlay = document.getElementById('installGuideOverlay');
             if (overlay) {
                 document.body.removeChild(overlay);
             }
-            const iosOverlay = document.getElementById('iosInstallOverlay');
-            if (iosOverlay) {
-                document.body.removeChild(iosOverlay);
-            }
         }
 
-        // Chrome 설치 트리거 시도
-        function triggerChromeInstall() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        console.log('User accepted the install prompt');
-                    }
-                    deferredPrompt = null;
-                });
-            } else {
-                alert(currentLang === 'en' ? 
-                    'Install prompt not available. Please use Chrome menu → "Install app".' : 
-                    '설치 프롬프트를 사용할 수 없습니다. Chrome 메뉴 → "앱 설치"를 사용해주세요.');
-            }
-            closeInstallGuide();
-        }
-
-        // 설치 성공 메시지 표시
+        // 설치 성공 메시지
         function showInstallSuccessMessage() {
-            const message = currentLang === 'en' ? 
-                'App installed successfully! You can now open it from your home screen.' : 
-                '앱이 성공적으로 설치되었습니다! 이제 홈 화면에서 열 수 있습니다.';
-            
-            alert(message);
+            alert('앱이 성공적으로 설치되었습니다! 이제 홈 화면에서 열 수 있습니다.');
         }
 
-        // Service Worker 등록
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/service-worker.js').catch(error => {
-                    console.log('ServiceWorker 등록 실패:', error);
-                });
-            });
-        }
-        
-        // ==================== 데이터 관리자 클래스 ====================
+        // ==================== 데이터 관리자 ====================
         class DataManager {
             constructor() {
                 this.ORDERS_KEY = 'payment_orders';
@@ -1468,9 +1004,7 @@
 
             getOrders() {
                 try {
-                    let orders = JSON.parse(localStorage.getItem(this.ORDERS_KEY) || '[]');
-                    sessionStorage.setItem(this.ORDERS_KEY, JSON.stringify(orders));
-                    return orders;
+                    return JSON.parse(localStorage.getItem(this.ORDERS_KEY) || '[]');
                 } catch (error) {
                     console.error('Error loading orders:', error);
                     return [];
@@ -1480,7 +1014,6 @@
             saveOrders(orders) {
                 try {
                     localStorage.setItem(this.ORDERS_KEY, JSON.stringify(orders));
-                    sessionStorage.setItem(this.ORDERS_KEY, JSON.stringify(orders));
                     localStorage.setItem(this.SYNC_KEY, Date.now().toString());
                     return true;
                 } catch (error) {
@@ -1553,9 +1086,8 @@
             }
         }
 
-        // ==================== 전역 변수 및 DataManager 인스턴스 ====================
+        // ==================== 전역 변수 ====================
         const dataManager = new DataManager();
-        
         let exchangeRate = 0;
         let timeLeft = 300;
         let timerInterval = null;
@@ -1566,13 +1098,9 @@
         let currentLang = 'ko';
         let syncCheckInterval = null;
         let currentOrderId = '';
-        
-        // 주문 페이지네이션 관련 변수
         let activeOrdersPage = 1;
         let completedOrdersPage = 1;
         const ORDERS_PER_PAGE = 1;
-        
-        // 영수증 표시 상태
         let showReceipts = false;
 
         // 번역 데이터
@@ -1618,13 +1146,7 @@
                 languageBtnText: "한국어",
                 syncText: "Syncing...",
                 showReceipts: "Show Receipts",
-                hideReceipts: "Hide Receipts",
-                proof: "Proof:",
-                attached: "Attached",
-                receipt: "Receipt:",
-                viewReceipt: "View Receipt",
-                installApp: "Install App",
-                addToHomeScreen: "Add to Home Screen"
+                hideReceipts: "Hide Receipts"
             },
             ko: {
                 title: "USDT → THB 결제",
@@ -1667,45 +1189,32 @@
                 languageBtnText: "English",
                 syncText: "동기화 중...",
                 showReceipts: "영수증 보기",
-                hideReceipts: "영수증 숨기기",
-                proof: "증명서:",
-                attached: "첨부됨",
-                receipt: "영수증:",
-                viewReceipt: "영수증 보기",
-                installApp: "앱 설치",
-                addToHomeScreen: "홈 화면에 추가"
+                hideReceipts: "영수증 숨기기"
             }
         };
 
         // ==================== 페이지 초기화 ====================
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('사용자 페이지 로드됨');
-            
-            // 개선된 PWA 설치 기능 초기화
+            // PWA 설치 기능 초기화
             checkPWAInstallSupport();
             
-            // 페이지 로드 시 결제 폼 초기화
+            // 페이지 초기화
             resetPaymentForm();
-            
             currentLang = 'ko';
             
             initLanguageButton();
             updateLanguageButtonText();
             updateAllText();
             
-            // 첫 번째 로딩은 바로 실행
+            // 환율 업데이트
             setTimeout(fetchRealTimeExchangeRate, 100);
-            
-            // ✅ 30초에 한 번 환율 업데이트
             setInterval(fetchRealTimeExchangeRate, 30000);
             
             loadInitialData();
-            
             setupEventListeners();
-            
             startSyncCheck();
             
-            // 모달 오버레이 클릭 이벤트 추가
+            // 모달 이벤트
             document.getElementById('qrModal').addEventListener('click', function(e) {
                 if (e.target === this) {
                     if (confirm(currentLang === 'en' ? 
@@ -1716,7 +1225,6 @@
                 }
             });
             
-            // ESC 키로 모달 닫을 때도 처리
             document.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape' && !document.getElementById('qrModal').classList.contains('hidden')) {
                     if (confirm(currentLang === 'en' ? 
@@ -1726,28 +1234,21 @@
                     }
                 }
             });
-            
-            console.log('사용자 페이지 초기화 완료');
         });
 
         // ==================== 데이터 로드 ====================
         function loadInitialData() {
             allOrders = dataManager.getOrders();
-            console.log('주문 데이터 로드:', allOrders.length, '개');
-            
             allWallets = dataManager.getWallets();
             activeWallet = dataManager.getActiveWallet();
-            console.log('지갑 데이터 로드:', allWallets.length, '개', '활성 지갑:', activeWallet?.name);
             
             updateOrdersList();
             updateWalletDisplay();
-            
             checkPaymentButton();
-            
             dataManager.updateUserSync();
         }
 
-        // ==================== 언어 관련 함수 ====================
+        // ==================== 언어 관련 ====================
         function initLanguageButton() {
             const languageBtn = document.getElementById('languageToggleBtn');
             if (!languageBtn) return;
@@ -1772,11 +1273,9 @@
         function updateAllText() {
             const trans = translations[currentLang];
             
-            // 모든 텍스트 요소 업데이트
             const elements = {
                 'pageTitle': trans.title,
                 'pageSubtitle': trans.subtitle,
-                'exchangeTitle': '💱 ' + (currentLang === 'en' ? 'Real-time Exchange Rate' : '실시간 환율'),
                 'amountLabel': trans.amountLabel,
                 'amountLimit': trans.amountLimit,
                 'calcAmountLabel': trans.calcAmountLabel,
@@ -1794,7 +1293,6 @@
                 'toggleReceiptBtn': showReceipts ? trans.hideReceipts : trans.showReceipts
             };
             
-            // 기본 텍스트 업데이트
             for (const [id, text] of Object.entries(elements)) {
                 const element = document.getElementById(id);
                 if (element) {
@@ -1802,7 +1300,7 @@
                 }
             }
             
-            // ✅ 환율 업데이트 텍스트
+            // 환율 업데이트 텍스트
             const rateUpdateElement = document.getElementById('rateUpdate');
             if (rateUpdateElement) {
                 if (exchangeRate > 0) {
@@ -1819,7 +1317,7 @@
                 }
             }
             
-            // ✅ 업로드 버튼 텍스트
+            // 업로드 버튼 텍스트
             const uploadButtonText = document.getElementById('uploadButtonText');
             if (uploadButtonText) {
                 if (!uploadedFile) {
@@ -1845,11 +1343,9 @@
             updateOrdersList();
         }
 
-        // ==================== 환율 관련 함수 ====================
+        // ==================== 환율 관련 ====================
         async function fetchRealTimeExchangeRate() {
             try {
-                console.log('환율 조회 시작...', new Date().toLocaleTimeString());
-                
                 const apiUrls = [
                     'https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=thb',
                     'https://api.binance.com/api/v3/ticker/price?symbol=USDTTHB'
@@ -1860,17 +1356,11 @@
                 
                 for (const apiUrl of apiUrls) {
                     try {
-                        console.log(`API 시도: ${apiUrl}`);
-                        
-                        // 요청 간에 약간의 딜레이 추가
-                        await new Promise(resolve => setTimeout(resolve, 500));
-                        
                         const response = await fetch(apiUrl, {
                             method: 'GET',
                             headers: {
                                 'Accept': 'application/json',
-                                'Content-Type': 'application/json',
-                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                                'Content-Type': 'application/json'
                             },
                             mode: 'cors'
                         });
@@ -1891,32 +1381,27 @@
                             }
                             
                             if (rate && rate > 0 && rate < 100) {
-                                console.log('환율 조회 성공:', rate);
                                 break;
                             }
                         }
                     } catch (error) {
-                        console.log(`${apiUrl} 실패:`, error.message);
                         continue;
                     }
                 }
                 
                 if (!success || rate <= 0) {
                     rate = 31.5;
-                    console.log('API 실패, 기본 환율 사용:', rate);
                     updateExchangeRateDisplay(rate, false);
                 } else {
                     updateExchangeRateDisplay(rate, true);
                 }
                 
             } catch (error) {
-                console.error('환율 조회 실패:', error);
                 updateExchangeRateDisplay(31.5, false);
             }
         }
         
         function updateExchangeRateDisplay(rate, success) {
-            // 환율 업데이트
             exchangeRate = rate;
             
             const rateElement = document.getElementById('exchangeRate');
@@ -1930,13 +1415,11 @@
                 if (calcRateElement) calcRateElement.textContent = rate.toFixed(2);
             }
             
-            // 텍스트 업데이트
             updateAllText();
-            
             updateCalculation();
         }
 
-        // ==================== 계산 및 결제 관련 함수 ====================
+        // ==================== 계산 및 결제 ====================
         function updateCalculation() {
             const amount = parseInt(document.getElementById('thbAmount').value) || 0;
             const calcPreview = document.getElementById('calcPreview');
@@ -1980,7 +1463,7 @@
             }
         }
 
-        // ==================== 이벤트 리스너 설정 ====================
+        // ==================== 이벤트 리스너 ====================
         function setupEventListeners() {
             document.getElementById('thbAmount').addEventListener('input', updateCalculation);
             
@@ -2005,14 +1488,12 @@
             });
             
             document.getElementById('payButton').addEventListener('click', function() {
-                // 이미 진행 중인 결제가 있는지 확인
                 const modal = document.getElementById('qrModal');
                 if (!modal.classList.contains('hidden')) {
                     if (confirm(currentLang === 'en' ? 
                         'There is a payment in progress.\n\nDo you want to cancel it and start a new payment?' : 
                         '진행 중인 결제가 있습니다.\n\n취소하고 새 결제를 시작하시겠습니까?')) {
                         cancelPayment();
-                        // 잠시 후 새 결제 시작
                         setTimeout(() => startPayment(), 100);
                     }
                     return;
@@ -2041,7 +1522,7 @@
                 }
             });
             
-            // 영수증 토글 버튼 이벤트
+            // 영수증 토글 버튼
             document.getElementById('toggleReceiptBtn').addEventListener('click', function() {
                 showReceipts = !showReceipts;
                 updateReceiptButtonText();
@@ -2088,6 +1569,7 @@
                 }
             });
             
+            // 드래그 앤 드롭
             const uploadButton = document.querySelector('.upload-button');
             uploadButton.addEventListener('dragover', function(e) {
                 e.preventDefault();
@@ -2111,40 +1593,28 @@
             });
         }
 
-        // 결제 폼 초기화
         function resetPaymentForm() {
-            // 금액 입력 초기화
             document.getElementById('thbAmount').value = '';
-            
-            // 파일 입력 초기화
             document.getElementById('paymentProof').value = '';
-            
-            // 업로드된 파일 변수 초기화
             uploadedFile = null;
             
-            // 업로드 버튼 텍스트 복원
             const trans = translations[currentLang];
             const uploadButtonText = document.getElementById('uploadButtonText');
             if (uploadButtonText) {
                 uploadButtonText.textContent = `📎 ${trans.uploadText}`;
             }
             
-            // 업로드 미리보기 초기화
             const uploadPreview = document.getElementById('uploadPreview');
             if (uploadPreview) {
                 uploadPreview.innerHTML = '';
             }
             
-            // 계산 미리보기 숨기기
             const calcPreview = document.getElementById('calcPreview');
             if (calcPreview) {
                 calcPreview.style.display = 'none';
             }
             
-            // 결제 버튼 비활성화
             document.getElementById('payButton').disabled = true;
-            
-            console.log('결제 폼이 초기화되었습니다.');
         }
 
         function updateReceiptButtonText() {
@@ -2156,10 +1626,7 @@
             }
         }
 
-        // ==================== 파일 업로드 처리 ====================
         function handleFileUpload(file) {
-            console.log('파일 업로드 처리 시작:', file.name, file.type, file.size);
-            
             if (!file) {
                 uploadedFile = null;
                 checkPaymentButton();
@@ -2190,14 +1657,9 @@
             
             const reader = new FileReader();
             reader.onload = function(e) {
-                console.log('파일 읽기 완료');
-                
-                uploadedFile = file; // 파일 업로드 상태 업데이트
-                
-                // 파일 업로드 후 언어 업데이트 적용
+                uploadedFile = file;
                 updateAllText();
                 
-                // 미리보기 업데이트
                 const uploadPreview = document.getElementById('uploadPreview');
                 if (uploadPreview) {
                     uploadPreview.innerHTML = `
@@ -2209,11 +1671,9 @@
                 }
                 
                 checkPaymentButton();
-                console.log('파일 업로드 처리 완료');
             };
             
             reader.onerror = function(e) {
-                console.error('파일 읽기 오류:', e);
                 alert(currentLang === 'en' ? 
                     'Failed to read file. Please try again.' : 
                     '파일을 읽을 수 없습니다. 다시 시도해주세요.');
@@ -2224,7 +1684,6 @@
             reader.readAsDataURL(file);
         }
 
-        // ==================== 결제 시작 ====================
         function startPayment() {
             const amount = parseInt(document.getElementById('thbAmount').value);
             const trans = translations[currentLang];
@@ -2289,13 +1748,10 @@
                 };
                 
                 saveOrder(order);
-                
                 updateOrdersList();
-                
                 document.getElementById('qrModal').classList.remove('hidden');
                 updateModalText();
                 updateQRCodeDisplay();
-                
                 startTimer();
             };
             
@@ -2308,7 +1764,6 @@
             reader.readAsDataURL(uploadedFile);
         }
 
-        // ==================== 주문 저장 ====================
         function saveOrder(order) {
             let orders = dataManager.getOrders();
             
@@ -2324,17 +1779,11 @@
                 orders = orders.slice(0, 50);
             }
             
-            const saved = dataManager.saveOrders(orders);
-            if (saved) {
-                console.log('주문 저장됨:', order.id);
-            } else {
-                console.error('주문 저장 실패:', order.id);
-            }
-            
+            dataManager.saveOrders(orders);
             allOrders = orders;
         }
 
-        // ==================== 주문 목록 업데이트 (페이지네이션 적용) ====================
+        // ==================== 주문 목록 업데이트 ====================
         function updateOrdersList() {
             const activeOrders = allOrders.filter(order => 
                 order.status === '입금대기' || 
@@ -2386,28 +1835,21 @@
                 return;
             }
             
-            // 현재 페이지의 주문 계산
             const startIndex = (activeOrdersPage - 1) * ORDERS_PER_PAGE;
             const endIndex = Math.min(startIndex + ORDERS_PER_PAGE, activeOrders.length);
             const currentPageOrders = activeOrders.slice(startIndex, endIndex);
             
-            // 주문 카드 생성
             let html = '';
             currentPageOrders.forEach(order => {
-                html += createOrderCard(order, false); // 진행중인 주문은 증명서만 표시
+                html += createOrderCard(order, false);
             });
             activeOrdersContainer.innerHTML = html;
             
-            // 페이지네이션 컨트롤 업데이트
             const totalPages = Math.ceil(activeOrders.length / ORDERS_PER_PAGE);
             document.getElementById('activeOrdersPageInfo').textContent = `${activeOrdersPage} / ${totalPages}`;
             
-            // 버튼 상태 업데이트
             document.getElementById('activeOrdersPrevBtn').disabled = activeOrdersPage <= 1;
             document.getElementById('activeOrdersNextBtn').disabled = activeOrdersPage >= totalPages;
-            
-            // 클릭 이벤트 추가
-            addOrderCardClickEvents();
         }
 
         function updateCompletedOrdersPage() {
@@ -2429,28 +1871,21 @@
                 return;
             }
             
-            // 현재 페이지의 주문 계산
             const startIndex = (completedOrdersPage - 1) * ORDERS_PER_PAGE;
             const endIndex = Math.min(startIndex + ORDERS_PER_PAGE, completedOrders.length);
             const currentPageOrders = completedOrders.slice(startIndex, endIndex);
             
-            // 주문 카드 생성
             let html = '';
             currentPageOrders.forEach(order => {
-                html += createOrderCard(order, showReceipts); // 완료된 주문은 영수증 표시
+                html += createOrderCard(order, showReceipts);
             });
             completedOrdersContainer.innerHTML = html;
             
-            // 페이지네이션 컨트롤 업데이트
             const totalPages = Math.ceil(completedOrders.length / ORDERS_PER_PAGE);
             document.getElementById('completedOrdersPageInfo').textContent = `${completedOrdersPage} / ${totalPages}`;
             
-            // 버튼 상태 업데이트
             document.getElementById('completedOrdersPrevBtn').disabled = completedOrdersPage <= 1;
             document.getElementById('completedOrdersNextBtn').disabled = completedOrdersPage >= totalPages;
-            
-            // 클릭 이벤트 추가
-            addOrderCardClickEvents();
         }
 
         function createOrderCard(order, showReceipt = false) {
@@ -2474,16 +1909,12 @@
             
             const time = new Date(order.time).toLocaleString('ko-KR');
             
-            // 영수증 이미지 HTML (완료된 주문만)
             let receiptHtml = '';
             if (order.receipt && order.receipt.data && order.status === '완료') {
-                const receiptLabel = trans.receipt;
-                const viewReceiptText = trans.viewReceipt;
-                
                 if (order.receipt.type && order.receipt.type.startsWith('image/')) {
                     receiptHtml = `
-                        <div class="receipt-image-container ${showReceipt ? 'show' : ''}">
-                            <img src="${order.receipt.data}" alt="Payment receipt" class="receipt-image">
+                        <div class="receipt-image-container ${showReceipt ? 'show' : ''}" style="margin-top:10px;display:${showReceipt ? 'block' : 'none'};">
+                            <img src="${order.receipt.data}" alt="Payment receipt" style="max-width:100%;border-radius:4px;border:1px solid #e2e8f0;">
                         </div>
                     `;
                 }
@@ -2525,20 +1956,7 @@
             `;
         }
 
-        function addOrderCardClickEvents() {
-            // 완료된 주문의 영수증 클릭 이벤트
-            document.querySelectorAll('#completedOrdersContainer .order-card').forEach(card => {
-                card.addEventListener('click', function(e) {
-                    // 영수증 이미지 표시/숨기기 토글
-                    const receiptImageContainer = this.querySelector('.receipt-image-container');
-                    if (receiptImageContainer) {
-                        receiptImageContainer.classList.toggle('show');
-                    }
-                });
-            });
-        }
-
-        // ==================== 모달 관련 함수 ====================
+        // ==================== 모달 관련 ====================
         function updateModalText() {
             const trans = translations[currentLang];
             
@@ -2555,12 +1973,8 @@
         }
 
         function updateWalletDisplay() {
-            if (!activeWallet) {
-                console.log('활성 지갑이 없습니다');
-                return;
-            }
+            if (!activeWallet) return;
             
-            console.log('지갑 정보 업데이트:', activeWallet.name);
             document.getElementById('walletAddress').textContent = activeWallet.address;
             const networkClass = `network-${activeWallet.network.toLowerCase()}`;
             
@@ -2583,12 +1997,8 @@
             `;
         }
 
-        // ==================== QR 코드 표시 함수 ====================
         function updateQRCodeDisplay() {
-            if (!activeWallet) {
-                console.log('활성 지갑이 없음');
-                return;
-            }
+            if (!activeWallet) return;
             
             const qrCodeContainer = document.getElementById('qrCodeContainer');
             if (!qrCodeContainer) return;
@@ -2602,8 +2012,6 @@
                 typeof activeWallet.qrCode === 'string' && 
                 activeWallet.qrCode.startsWith('data:image/')) {
                 
-                console.log('QR 코드 표시 시도:', activeWallet.id);
-                
                 const img = document.createElement('img');
                 img.src = activeWallet.qrCode;
                 img.alt = 'QR Code';
@@ -2611,26 +2019,9 @@
                 img.style.maxHeight = '100%';
                 img.style.borderRadius = '4px';
                 
-                img.onerror = function() {
-                    console.log('QR 코드 이미지 로드 실패');
-                    this.style.display = 'none';
-                    const errorDiv = document.createElement('div');
-                    errorDiv.style.color = '#999';
-                    errorDiv.style.fontSize = '12px';
-                    errorDiv.style.textAlign = 'center';
-                    errorDiv.style.padding = '20px';
-                    errorDiv.textContent = 'QR 코드 로드 실패';
-                    qrCodeContainer.appendChild(errorDiv);
-                };
-                
-                img.onload = function() {
-                    console.log('QR 코드 이미지 로드 성공');
-                };
-                
                 qrCodeContainer.appendChild(img);
                 
             } else {
-                console.log('QR 코드 없음, 플레이스홀더 표시');
                 const placeholder = document.createElement('div');
                 placeholder.className = 'qr-placeholder';
                 placeholder.textContent = '🔳';
@@ -2697,9 +2088,7 @@
             }
             
             document.getElementById('qrModal').classList.add('hidden');
-            
             resetPaymentForm();
-            
             alert(currentLang === 'en' ? 'Payment cancelled' : '결제가 취소되었습니다');
         }
 
@@ -2710,7 +2099,6 @@
             }
             
             document.getElementById('qrModal').classList.add('hidden');
-            
             resetPaymentForm();
             
             alert(currentLang === 'en' ? 
@@ -2729,7 +2117,6 @@
             };
             
             dataManager.saveOrders(allOrders);
-            
             updateOrdersList();
         }
 
@@ -2742,7 +2129,6 @@
                 const updatedWallets = dataManager.getWallets();
                 
                 if (JSON.stringify(updatedOrders) !== JSON.stringify(allOrders)) {
-                    console.log('📊 주문 데이터 업데이트됨');
                     allOrders = updatedOrders;
                     updateOrdersList();
                     
@@ -2756,7 +2142,6 @@
                 }
                 
                 if (JSON.stringify(updatedWallets) !== JSON.stringify(allWallets)) {
-                    console.log('👛 지갑 데이터 업데이트됨');
                     allWallets = updatedWallets;
                     activeWallet = dataManager.getActiveWallet();
                     
@@ -2769,7 +2154,6 @@
                 }
                 
                 dataManager.updateUserSync();
-                
                 setTimeout(hideSyncStatus, 2000);
             }
         }
@@ -2777,7 +2161,6 @@
         function startSyncCheck() {
             if (syncCheckInterval) clearInterval(syncCheckInterval);
             
-            console.log('🔄 동기화 체크 시작 (1초 간격)');
             syncCheckInterval = setInterval(() => {
                 checkDataSync();
             }, 1000);
@@ -2793,10 +2176,8 @@
             syncElement.classList.remove('visible');
         }
 
-        // ==================== 관리자 페이지 통신 함수 ====================
+        // ==================== 관리자 통신 ====================
         window.updateOrderStatusFromAdmin = function(orderId, newStatus, receipt = null) {
-            console.log('관리자로부터 상태 업데이트:', orderId, newStatus, receipt);
-            
             const orderIndex = allOrders.findIndex(o => o.id === orderId);
             if (orderIndex === -1) return;
             
@@ -2806,14 +2187,12 @@
                 updated: new Date().toISOString()
             };
             
-            // 영수증 추가
             if (receipt && newStatus === '완료') {
                 allOrders[orderIndex].receipt = receipt;
             }
             
             dataManager.saveOrders(allOrders);
             
-            // 관리자가 취소 처리했을 때
             if (newStatus === '취소' && currentOrderId === orderId) {
                 const modal = document.getElementById('qrModal');
                 if (!modal.classList.contains('hidden')) {
@@ -2831,13 +2210,9 @@
         };
 
         window.updateWalletsFromAdmin = function(wallets) {
-            console.log('👛 사용자 페이지: 관리자로부터 지갑 업데이트 받음', wallets.length, '개');
-            
             localStorage.setItem('payment_wallets', JSON.stringify(wallets));
-            
             allWallets = wallets;
             activeWallet = dataManager.getActiveWallet();
-            
             updateWalletDisplay();
             
             if (!document.getElementById('qrModal').classList.contains('hidden')) {
@@ -2845,7 +2220,7 @@
             }
         };
 
-        // ==================== 테스트 함수 ====================
+        // ==================== 테스트 ====================
         window.createTestOrder = function() {
             const testOrder = {
                 id: dataManager.generateOrderId(),
@@ -2870,11 +2245,8 @@
             
             saveOrder(testOrder);
             updateOrdersList();
-            
             alert(`테스트 주문 ${testOrder.id} 생성됨`);
         };
-        
-        console.log('개선된 PWA 통합 유저 페이지 스크립트 로드 완료');
     </script>
 </body>
 </html>
