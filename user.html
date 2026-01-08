@@ -5,16 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>USDT/THB Payment System - Anonymous Payment</title>
     
-    <!-- PWA 메타 태그 -->
-    <meta name="theme-color" content="#1a2980">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="USDT/THB 결제">
-    <meta name="description" content="로그인 없이 USDT로 태국 바트(THB) 결제하기">
-    
-    <!-- 아이콘 링크 (기본 아이콘) -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💳</text></svg>">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💳</text></svg>">
+   <!-- ====== PWA 관련 메타 태그 시작 ====== -->
+<!-- Manifest 파일 링크 -->
+<link rel="manifest" href="manifest.json">
+
+<!-- 테마 컬러 -->
+<meta name="theme-color" content="#1a2980">
+
+<!-- iOS PWA 설정 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="USDT/THB 결제">
+
+<!-- 💵 + USDT 텍스트 -->
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a2980'/><text x='50' y='75' font-size='60' text-anchor='middle' fill='white'>💵</text></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231a2980'/><text x='50' y='75' font-size='60' text-anchor='middle' fill='white'>💵</text></svg>">
+<!-- 설명 -->
+<meta name="description" content="로그인 없이 USDT로 태국 바트(THB) 결제하기">
+
+<!-- Windows/Microsoft 타일 -->
+<meta name="msapplication-TileColor" content="#1a2980">
+<!-- ====== PWA 관련 메타 태그 끝 ====== -->
     
     <style>
         * {
@@ -1134,95 +1145,125 @@
 
     <script>
         // ==================== PWA 설치 기능 ====================
-        let deferredPrompt;
-        let isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        let isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                          (window.navigator.standalone) || 
-                          document.referrer.includes('android-app://');
+let deferredPrompt;
+let isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+let isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                  (window.navigator.standalone) || 
+                  document.referrer.includes('android-app://');
 
-        // PWA 설치 가능 여부 체크
-        function checkPWAInstallSupport() {
-            const installContainer = document.getElementById('installButtonContainer');
-            const installButton = document.getElementById('installButton');
-            
-            if (!installContainer || !installButton) return;
-            
-            // 이미 설치된 경우 버튼 숨김
-            if (isStandalone) {
-                installButton.classList.add('hidden');
-                return;
-            }
-            
-            // iOS는 다른 방식으로 처리
-            if (isIOS) {
-                showIOSInstallInstructions();
-                return;
-            }
-            
-            // Android/데스크톱 Chrome의 경우
-            window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                deferredPrompt = e;
-                
-                // 설치 버튼 표시
-                installButton.classList.remove('hidden');
-                
-                // 설치 버튼 클릭 이벤트
-                installButton.addEventListener('click', async () => {
-                    installButton.classList.add('hidden');
-                    deferredPrompt.prompt();
-                    
-                    const { outcome } = await deferredPrompt.userChoice;
-                    console.log(`사용자 응답: ${outcome}`);
-                    deferredPrompt = null;
-                });
-            });
-            
-            // 설치 완료 후 버튼 숨기기
-            window.addEventListener('appinstalled', () => {
-                console.log('PWA가 설치되었습니다');
-                installButton.classList.add('hidden');
-                deferredPrompt = null;
-            });
-        }
+// PWA 설치 가능 여부 체크
+function checkPWAInstallSupport() {
+    const installContainer = document.getElementById('installButtonContainer');
+    const installButton = document.getElementById('installButton');
+    
+    if (!installContainer || !installButton) return;
+    
+    // 이미 설치된 경우 버튼 숨김
+    if (isStandalone) {
+        installButton.classList.add('hidden');
+        return;
+    }
+    
+    // iOS는 별도의 설치 안내 페이지로 이동
+    if (isIOS) {
+        installButton.classList.remove('hidden');
+        updateInstallButtonText();
         
-        // iOS 설치 안내 표시
-        function showIOSInstallInstructions() {
-            const installContainer = document.getElementById('installButtonContainer');
-            const installButton = document.getElementById('installButton');
-            
-            if (!installContainer || !installButton) return;
-            
-            // iOS 설치 버튼 표시
-            installButton.classList.remove('hidden');
-            updateInstallButtonText();
-            
-            installButton.addEventListener('click', () => {
-                showIOSInstallGuide();
-            });
-        }
+        // iOS 설치 버튼 클릭 이벤트
+        installButton.addEventListener('click', () => {
+            showIOSInstallPage();
+        });
+        return;
+    }
+    
+    // Android/데스크톱 Chrome의 경우
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
         
-        // iOS 설치 가이드 표시
-        function showIOSInstallGuide() {
-            const trans = translations[currentLang];
-            const message = currentLang === 'en' ? 
-                'To install this app:\n\n1. Tap the Share button (📤)\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add" in the top right' :
-                '앱 설치 방법:\n\n1. 공유 버튼(📤) 탭하기\n2. 아래로 스크롤하여 "홈 화면에 추가" 탭\n3. 오른쪽 상단의 "추가" 탭하기';
-            
-            alert(message);
-        }
+        // 설치 버튼 표시
+        installButton.classList.remove('hidden');
+        updateInstallButtonText();
         
-        // Service Worker 등록
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                // 간단한 서비스 워커 등록
-                navigator.serviceWorker.register('/service-worker.js').catch(error => {
-                    console.log('ServiceWorker 등록 실패:', error);
-                    // 오프라인 대체 로직
-                    registerSimpleServiceWorker();
-                });
-            });
-        }
+        // 설치 버튼 클릭 이벤트
+        installButton.addEventListener('click', async () => {
+            installButton.classList.add('hidden');
+            deferredPrompt.prompt();
+            
+            const { outcome } = await deferredPrompt.userChoice;
+            console.log(`사용자 응답: ${outcome}`);
+            deferredPrompt = null;
+        });
+    });
+    
+    // 설치 완료 후 버튼 숨기기
+    window.addEventListener('appinstalled', () => {
+        console.log('PWA가 설치되었습니다');
+        installButton.classList.add('hidden');
+        deferredPrompt = null;
+    });
+}
+
+// iOS 설치 안내 페이지 표시
+function showIOSInstallPage() {
+    const trans = translations[currentLang];
+    const title = currentLang === 'en' ? 'Install App on iOS' : 'iOS에서 앱 설치하기';
+    const steps = currentLang === 'en' ? 
+        [
+            '1. Tap the Share button (📤) at the bottom of Safari',
+            '2. Scroll down and tap "Add to Home Screen"',
+            '3. Tap "Add" in the top right corner',
+            '4. The app will appear on your home screen'
+        ] : [
+            '1. Safari 하단의 공유 버튼(📤) 탭하기',
+            '2. 아래로 스크롤하여 "홈 화면에 추가" 탭',
+            '3. 오른쪽 상단의 "추가" 버튼 탭',
+            '4. 홈 화면에 앱 아이콘이 생성됩니다'
+        ];
+    
+    const pageHTML = `
+        <div style="position:fixed;top:0;left:0;right:0;bottom:0;background:white;z-index:9999;padding:20px;overflow-y:auto;">
+            <button onclick="closeIOSInstallPage()" style="position:absolute;top:10px;right:10px;background:none;border:none;font-size:24px;cursor:pointer;">✕</button>
+            <h2 style="color:#1a2980;margin-top:20px;">${title}</h2>
+            <div style="margin:30px 0;">
+                ${steps.map((step, index) => `
+                    <div style="margin:15px 0;padding:10px;background:#f7fafc;border-radius:8px;">
+                        <strong style="color:#667eea;">${step}</strong>
+                    </div>
+                `).join('')}
+            </div>
+            <div style="text-align:center;margin-top:40px;">
+                <button onclick="closeIOSInstallPage()" style="background:#667eea;color:white;border:none;padding:12px 30px;border-radius:8px;font-size:16px;cursor:pointer;">
+                    ${currentLang === 'en' ? 'Close' : '닫기'}
+                </button>
+            </div>
+        </div>
+    `;
+    
+    const overlay = document.createElement('div');
+    overlay.id = 'iosInstallOverlay';
+    overlay.innerHTML = pageHTML;
+    document.body.appendChild(overlay);
+}
+
+function closeIOSInstallPage() {
+    const overlay = document.getElementById('iosInstallOverlay');
+    if (overlay) {
+        document.body.removeChild(overlay);
+    }
+}
+
+// Service Worker 등록
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        // 간단한 서비스 워커 등록
+        navigator.serviceWorker.register('/service-worker.js').catch(error => {
+            console.log('ServiceWorker 등록 실패:', error);
+            // 오프라인 대체 로직
+            registerSimpleServiceWorker();
+        });
+    });
+}
         
         // 간단한 서비스 워커 등록 (fallback)
         function registerSimpleServiceWorker() {
@@ -2698,3 +2739,6 @@
     </script>
 </body>
 </html>
+
+
+
