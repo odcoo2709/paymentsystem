@@ -473,7 +473,7 @@
             font-size: 14px;
         }
 
-        /* 모달 스타일 - 단순화 */
+        /* 모달 스타일 - 개선된 컴팩트 버전 */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -485,17 +485,17 @@
             justify-content: center;
             align-items: center;
             z-index: 1000;
-            padding: 20px;
+            padding: 10px;
         }
 
         .modal-content {
             background: white;
-            border-radius: 25px;
-            padding: 40px;
+            border-radius: 15px;
+            padding: 20px;
             width: 100%;
-            max-width: 500px;
-            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
-            max-height: 90vh;
+            max-width: 450px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            max-height: 95vh;
             overflow-y: auto;
         }
 
@@ -503,35 +503,37 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
+            margin-bottom: 15px;
         }
 
         .modal-title {
             color: #2d3748;
-            font-size: 24px;
+            font-size: 18px;
             font-weight: bold;
         }
 
         .modal-close {
             background: none;
             border: none;
-            font-size: 24px;
+            font-size: 20px;
             color: #718096;
             cursor: pointer;
+            padding: 5px;
+            line-height: 1;
         }
 
         .qr-container {
             text-align: center;
-            margin: 20px 0;
+            margin: 10px 0;
         }
 
         .qr-code {
-            width: 200px;
-            height: 200px;
-            margin: 0 auto 20px;
+            width: 160px;
+            height: 160px;
+            margin: 0 auto 10px;
             background: #f7fafc;
-            border-radius: 10px;
-            padding: 10px;
+            border-radius: 8px;
+            padding: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -545,27 +547,29 @@
         }
 
         .qr-placeholder {
-            font-size: 60px;
-            margin-bottom: 15px;
+            font-size: 50px;
         }
 
         .wallet-address {
             background: #f7fafc;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 20px 0;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 15px 0;
             word-break: break-all;
             font-family: monospace;
+            font-size: 13px;
             border: 1px solid #e2e8f0;
+            max-height: 80px;
+            overflow-y: auto;
         }
 
         .wallet-info {
-            text-align: center;
-            margin: 10px 0;
-            padding: 10px;
+            margin: 8px 0;
+            padding: 8px;
             background: #f0fff4;
-            border-radius: 8px;
+            border-radius: 6px;
             border: 1px solid #c6f6d5;
+            font-size: 13px;
         }
 
         .wallet-name {
@@ -577,20 +581,21 @@
             background: #4299e1;
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 8px;
+            padding: 10px;
+            border-radius: 6px;
             cursor: pointer;
-            margin-top: 10px;
+            margin-top: 8px;
             width: 100%;
+            font-size: 14px;
         }
 
         .deposit-complete-button {
             background: #27ae60;
             color: white;
             border: none;
-            padding: 12px 24px;
+            padding: 12px;
             border-radius: 8px;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: bold;
             cursor: pointer;
             margin-top: 15px;
@@ -599,32 +604,32 @@
 
         .timer {
             background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
-            padding: 20px;
-            border-radius: 15px;
-            font-size: 22px;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 18px;
             color: white;
             font-weight: bold;
             text-align: center;
-            margin: 20px 0;
+            margin: 15px 0;
         }
 
         .payment-info {
             background: #f8fafc;
-            padding: 15px;
-            border-radius: 10px;
-            margin: 15px 0;
+            padding: 12px;
+            border-radius: 8px;
+            margin: 12px 0;
             border: 2px solid #e2e8f0;
         }
 
         .info-row {
             display: flex;
             justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #eee;
+            padding: 6px 0;
+            font-size: 13px;
         }
 
-        .info-row:last-child {
-            border-bottom: none;
+        .info-row:not(:last-child) {
+            border-bottom: 1px solid #eee;
         }
 
         .info-label {
@@ -634,6 +639,7 @@
 
         .info-value {
             color: #4a5568;
+            font-weight: 500;
         }
 
         .hidden {
@@ -646,41 +652,42 @@
         }
 
         .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid #e2e8f0;
-            border-top: 4px solid #4299e1;
+            width: 40px;
+            height: 40px;
+            border: 3px solid #e2e8f0;
+            border-top: 3px solid #4299e1;
             border-radius: 50%;
             animation: spin 1s linear infinite;
-            margin: 20px auto;
+            margin: 15px auto;
         }
 
         .wallet-selection {
-            margin: 15px 0;
-            padding: 15px;
+            margin: 10px 0;
+            padding: 10px;
             background: #f8fafc;
-            border-radius: 10px;
-            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
         }
 
         .wallet-selection-title {
-            font-size: 14px;
+            font-size: 13px;
             color: #4a5568;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
+            font-weight: 600;
         }
 
         .selected-wallet {
             display: flex;
             align-items: center;
-            gap: 10px;
-            padding: 10px;
+            gap: 8px;
+            padding: 8px;
             background: white;
-            border-radius: 8px;
+            border-radius: 6px;
             border: 1px solid #c6f6d5;
         }
 
         .wallet-icon {
-            font-size: 20px;
+            font-size: 18px;
         }
 
         .wallet-details {
@@ -691,16 +698,18 @@
             font-size: 12px;
             color: #718096;
             margin-top: 2px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
 
         .network-badge {
             display: inline-block;
             padding: 2px 8px;
-            border-radius: 12px;
+            border-radius: 10px;
             font-size: 11px;
             font-weight: bold;
             color: white;
-            margin-left: 5px;
         }
 
         .network-trc20 { background: #f56565; }
@@ -762,8 +771,25 @@
         .wallet-loading {
             text-align: center;
             color: #718096;
-            font-size: 14px;
-            padding: 20px;
+            font-size: 13px;
+            padding: 15px;
+        }
+
+        .step-description {
+            font-size: 13px;
+            color: #4a5568;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .status-update-message {
+            font-size: 12px;
+            color: #718096;
+            text-align: center;
+            margin-top: 10px;
+            padding: 8px;
+            background: #f7fafc;
+            border-radius: 6px;
         }
 
         @keyframes fadeIn {
@@ -782,7 +808,17 @@
             }
             
             .container {
-                padding: 20px;
+                padding: 15px;
+            }
+            
+            .modal-content {
+                padding: 15px;
+                max-width: 95%;
+            }
+            
+            .qr-code {
+                width: 140px;
+                height: 140px;
             }
         }
     </style>
@@ -904,7 +940,7 @@
         </div>
     </div>
 
-    <!-- 간단한 결제 모달 -->
+    <!-- 간단한 결제 모달 (개선된 컴팩트 버전) -->
     <div class="modal-overlay hidden" id="qrModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -913,7 +949,7 @@
             </div>
 
             <div class="wallet-selection" id="walletSelection">
-                <div class="wallet-selection-title" id="walletSelectionTitle">선택된 지갑:</div>
+                <div class="wallet-selection-title" id="walletSelectionTitle">네트워크:</div>
                 <div class="selected-wallet" id="selectedWalletInfo">
                     <div class="wallet-loading">지갑 정보 로딩 중...</div>
                 </div>
@@ -1105,7 +1141,7 @@
                 noActiveOrders: "No active orders",
                 noCompletedOrders: "No completed orders",
                 modalTitle: "🔳 USDT Transfer Guide",
-                walletSelectionTitle: "Selected Wallet:",
+                walletSelectionTitle: "Network:",
                 step1Description: "Send USDT to the wallet address below",
                 copyButtonText: "Copy Address",
                 modalTotalLabel: "Total Payment:",
@@ -1152,7 +1188,7 @@
                 noActiveOrders: "진행 중인 주문이 없습니다",
                 noCompletedOrders: "완료된 주문이 없습니다",
                 modalTitle: "🔳 USDT 전송 안내",
-                walletSelectionTitle: "선택된 지갑:",
+                walletSelectionTitle: "네트워크:",
                 step1Description: "아래 지갑 주소로 USDT를 전송해주세요",
                 copyButtonText: "주소 복사",
                 modalTotalLabel: "총 결제 금액:",
@@ -1986,7 +2022,6 @@
             document.getElementById('selectedWalletInfo').innerHTML = `
                 <div class="wallet-icon">👛</div>
                 <div class="wallet-details">
-                    <div class="wallet-name">${activeWallet.name}</div>
                     <div class="wallet-network">
                         ${networkText}
                         <span class="network-badge ${networkClass}">${activeWallet.network}</span>
@@ -2046,8 +2081,8 @@
                 const placeholder = document.createElement('div');
                 placeholder.className = 'qr-placeholder';
                 placeholder.textContent = '🔳';
-                placeholder.style.fontSize = '60px';
-                placeholder.style.marginBottom = '15px';
+                placeholder.style.fontSize = '50px';
+                placeholder.style.marginBottom = '10px';
                 placeholder.style.textAlign = 'center';
                 qrCodeContainer.appendChild(placeholder);
             }
@@ -2290,3 +2325,4 @@
     </script>
 </body>
 </html>
+
