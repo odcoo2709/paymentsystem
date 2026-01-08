@@ -1735,13 +1735,13 @@ async function fetchRealTimeExchangeRate() {
             }
         }
         
-        // API 실패 시 기본값 사용 (35.5 THB/USD)
+        // API 실패 시 기본값 사용 (31.5 THB/USD)
         console.log('환율 API 실패, 기본값 사용');
-        updateExchangeRateDisplay(35.5, false);
+        updateExchangeRateDisplay(31.5, false);
         
     } catch (error) {
         console.error('환율 조회 실패:', error);
-        updateExchangeRateDisplay(35.5, false);
+        updateExchangeRateDisplay(31.5, false);
     }
 }
         
