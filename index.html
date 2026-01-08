@@ -1249,51 +1249,54 @@
         };
 
         // ==================== 페이지 초기화 ====================
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('사용자 페이지 로드됨');
-            
-            // 페이지 로드 시 결제 폼 초기화
-            resetPaymentForm();
-            
-            currentLang = 'ko';
-            
-            initLanguageButton();
-            updateLanguageButtonText();
-            updateAllText();
-            
-            setTimeout(fetchRealTimeExchangeRate, 100);
-            setInterval(fetchRealTimeExchangeRate, 10000);
-            
-            loadInitialData();
-            
-            setupEventListeners();
-            
-            startSyncCheck();
-            
-            // 모달 오버레이 클릭 이벤트 추가
-            document.getElementById('qrModal').addEventListener('click', function(e) {
-                if (e.target === this) {
-                    if (confirm(currentLang === 'en' ? 
-                        'Cancel payment?\n\nCurrent payment will be cancelled and form will be reset.' : 
-                        '결제를 취소하시겠습니까?\n\n현재 결제가 취소되고 폼이 초기화됩니다.')) {
-                        cancelPayment();
-                    }
-                }
-            });
-            
-            // ESC 키로 모달 닫을 때도 처리
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape' && !document.getElementById('qrModal').classList.contains('hidden')) {
-                    if (confirm(currentLang === 'en' ? 
-                        'Cancel payment?\n\nCurrent payment will be cancelled and form will be reset.' : 
-                        '결제를 취소하시겠습니까?\n\n현재 결제가 취소되고 폼이 초기화됩니다.')) {
-                        cancelPayment();
-                    }
-                }
-            });
-            
-            console.log('사용자 페이지 초기화 완료');
-        });
+       document.addEventListener('DOMContentLoaded', function() {
+    console.log('사용자 페이지 로드됨');
+    
+    // 페이지 로드 시 결제 폼 초기화
+    resetPaymentForm();
+    
+    currentLang = 'ko';
+    
+    initLanguageButton();
+    updateLanguageButtonText();
+    updateAllText();
+    
+    // 첫 번째 로딩은 바로 실행
+    setTimeout(fetchRealTimeExchangeRate, 100);
+    
+    // ✅ 1분에 한 번만 환율 업데이트 (60초 = 60000ms)
+    setInterval(fetchRealTimeExchangeRate, 30000);
+    
+    loadInitialData();
+    
+    setupEventListeners();
+    
+    startSyncCheck();
+    
+    // 모달 오버레이 클릭 이벤트 추가
+    document.getElementById('qrModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            if (confirm(currentLang === 'en' ? 
+                'Cancel payment?\n\nCurrent payment will be cancelled and form will be reset.' : 
+                '결제를 취소하시겠습니까?\n\n현재 결제가 취소되고 폼이 초기화됩니다.')) {
+                cancelPayment();
+            }
+        }
+    });
+    
+    // ESC 키로 모달 닫을 때도 처리
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && !document.getElementById('qrModal').classList.contains('hidden')) {
+            if (confirm(currentLang === 'en' ? 
+                'Cancel payment?\n\nCurrent payment will be cancelled and form will be reset.' : 
+                '결제를 취소하시겠습니까?\n\n현재 결제가 취소되고 폼이 초기화됩니다.')) {
+                cancelPayment();
+            }
+        }
+    });
+    
+    console.log('사용자 페이지 초기화 완료');
+});
 
         // ==================== 데이터 로드 ====================
         function loadInitialData() {
@@ -1415,7 +1418,7 @@
         // ==================== 환율 관련 함수 ====================
         async function fetchRealTimeExchangeRate() {
     try {
-        console.log('환율 조회 시작...');
+        console.log('환율 조회 시작...', new Date().toLocaleTimeString());
         
         const apiUrls = [
             'https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=thb',
@@ -1423,17 +1426,23 @@
         ];
         
         let rate = 0;
+        let success = false;
         
         for (const apiUrl of apiUrls) {
             try {
                 console.log(`API 시도: ${apiUrl}`);
                 
+                // 요청 간에 약간의 딜레이 추가
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
                 const response = await fetch(apiUrl, {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    }
+                        'Content-Type': 'application/json',
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                    },
+                    mode: 'cors'
                 });
                 
                 if (response.ok) {
@@ -1442,17 +1451,18 @@
                     if (apiUrl.includes('coingecko')) {
                         if (data.tether && data.tether.thb) {
                             rate = parseFloat(data.tether.thb);
+                            success = true;
                         }
                     } else if (apiUrl.includes('binance')) {
                         if (data.price) {
                             rate = parseFloat(data.price);
+                            success = true;
                         }
                     }
                     
                     if (rate && rate > 0 && rate < 100) {
                         console.log('환율 조회 성공:', rate);
-                        updateExchangeRateDisplay(rate, true);
-                        return; // 성공하면 함수 종료
+                        break;
                     }
                 }
             } catch (error) {
@@ -1461,17 +1471,19 @@
             }
         }
         
-        // 모든 API 실패 시 기본값 사용
-        rate = 31.5;
-        console.log('API 실패, 기본 환율 사용:', rate);
-        updateExchangeRateDisplay(rate, false);
+        if (!success || rate <= 0) {
+            rate = 35.5;
+            console.log('API 실패, 기본 환율 사용:', rate);
+            updateExchangeRateDisplay(rate, false);
+        } else {
+            updateExchangeRateDisplay(rate, true);
+        }
         
     } catch (error) {
         console.error('환율 조회 실패:', error);
-        updateExchangeRateDisplay(31.5, false);
+        updateExchangeRateDisplay(35.5, false);
     }
 }
-
         function updateExchangeRateDisplay(rate, success) {
     // 환율 업데이트
     exchangeRate = rate;
@@ -2434,6 +2446,7 @@
     </script>
 </body>
 </html>
+
 
 
 
