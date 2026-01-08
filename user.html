@@ -1716,7 +1716,7 @@
                 console.log('환율 조회 시작...');
                 
                 // Binance USDT/THB 시장 데이터 사용 (CORS 우회)
-                const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+                const proxyUrl = 'https://api.allorigins.win/raw?url=';
                 const targetUrl = 'https://api.binance.com/api/v3/ticker/price?symbol=USDTTHB';
                 
                 // 로컬 프록시 시도
