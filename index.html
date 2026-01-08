@@ -2,8 +2,20 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>USDT/THB Payment System - Anonymous Payment</title>
+    
+    <!-- PWA 메타 태그 -->
+    <meta name="theme-color" content="#1a2980">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="USDT/THB 결제">
+    <meta name="description" content="로그인 없이 USDT로 태국 바트(THB) 결제하기">
+    
+    <!-- 아이콘 링크 (기본 아이콘) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💳</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>💳</text></svg>">
+    
     <style>
         * {
             margin: 0;
@@ -16,6 +28,7 @@
             background: linear-gradient(135deg, #1a2980 0%, #26d0ce 100%);
             min-height: 100vh;
             padding: 15px;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .container {
@@ -29,6 +42,55 @@
             display: flex;
             flex-direction: column;
             gap: 20px;
+        }
+
+        /* PWA 설치 버튼 스타일 */
+        .install-button-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: none;
+        }
+
+        .install-button {
+            background: linear-gradient(135deg, #38a169 0%, #2f855a 100%);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 15px rgba(56, 161, 105, 0.3);
+            transition: all 0.3s ease;
+            animation: pulse 2s infinite;
+        }
+
+        .install-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(56, 161, 105, 0.4);
+        }
+
+        .install-button:active {
+            transform: translateY(0);
+        }
+
+        .install-button.hidden {
+            display: none;
+        }
+
+        .install-icon {
+            font-size: 16px;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
         }
 
         /* 두 컬럼 레이아웃 */
@@ -811,7 +873,19 @@
         }
 
         /* 반응형 디자인 */
+        @media (min-width: 769px) {
+            /* PC에서는 설치 버튼 숨김 */
+            .install-button-container {
+                display: none !important;
+            }
+        }
+
         @media (max-width: 768px) {
+            /* 모바일에서만 설치 버튼 표시 */
+            .install-button-container {
+                display: block;
+            }
+            
             .main-content {
                 flex-direction: column;
             }
@@ -833,10 +907,44 @@
                 width: 120px;
                 height: 120px;
             }
+            
+            /* 모바일에서 버튼 위치 조정 */
+            .install-button-container {
+                bottom: 15px;
+                right: 15px;
+            }
+            
+            .install-button {
+                padding: 10px 16px;
+                font-size: 13px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .install-button {
+                padding: 8px 14px;
+                font-size: 12px;
+            }
+            
+            .title {
+                font-size: 18px;
+            }
+            
+            .rate-display {
+                font-size: 16px;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- PWA 설치 버튼 (모바일에서만 표시) -->
+    <div class="install-button-container" id="installButtonContainer">
+        <button class="install-button hidden" id="installButton">
+            <span class="install-icon">📱</span>
+            <span id="installButtonText">앱 설치</span>
+        </button>
+    </div>
+    
     <!-- 동기화 상태 표시 -->
     <div class="sync-status" id="syncStatus">
         <div class="sync-pulse"></div>
@@ -859,7 +967,7 @@
             <!-- 왼쪽 열: 결제 폼 -->
             <div class="payment-column">
                 <div class="exchange-section">
-                    <h4 id="exchangeTitle">💱 실시간 환율</h4>
+                    <h4 id="exchangeTitle">실시간 환율</h4>
                     <div class="rate-display">
                         1 USDT = <span class="rate-value" id="exchangeRate">
                             <span class="rate-loading">로딩 중...</span>
@@ -1025,6 +1133,126 @@
     </div>
 
     <script>
+        // ==================== PWA 설치 기능 ====================
+        let deferredPrompt;
+        let isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        let isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
+                          (window.navigator.standalone) || 
+                          document.referrer.includes('android-app://');
+
+        // PWA 설치 가능 여부 체크
+        function checkPWAInstallSupport() {
+            const installContainer = document.getElementById('installButtonContainer');
+            const installButton = document.getElementById('installButton');
+            
+            if (!installContainer || !installButton) return;
+            
+            // 이미 설치된 경우 버튼 숨김
+            if (isStandalone) {
+                installButton.classList.add('hidden');
+                return;
+            }
+            
+            // iOS는 다른 방식으로 처리
+            if (isIOS) {
+                showIOSInstallInstructions();
+                return;
+            }
+            
+            // Android/데스크톱 Chrome의 경우
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                
+                // 설치 버튼 표시
+                installButton.classList.remove('hidden');
+                
+                // 설치 버튼 클릭 이벤트
+                installButton.addEventListener('click', async () => {
+                    installButton.classList.add('hidden');
+                    deferredPrompt.prompt();
+                    
+                    const { outcome } = await deferredPrompt.userChoice;
+                    console.log(`사용자 응답: ${outcome}`);
+                    deferredPrompt = null;
+                });
+            });
+            
+            // 설치 완료 후 버튼 숨기기
+            window.addEventListener('appinstalled', () => {
+                console.log('PWA가 설치되었습니다');
+                installButton.classList.add('hidden');
+                deferredPrompt = null;
+            });
+        }
+        
+        // iOS 설치 안내 표시
+        function showIOSInstallInstructions() {
+            const installContainer = document.getElementById('installButtonContainer');
+            const installButton = document.getElementById('installButton');
+            
+            if (!installContainer || !installButton) return;
+            
+            // iOS 설치 버튼 표시
+            installButton.classList.remove('hidden');
+            updateInstallButtonText();
+            
+            installButton.addEventListener('click', () => {
+                showIOSInstallGuide();
+            });
+        }
+        
+        // iOS 설치 가이드 표시
+        function showIOSInstallGuide() {
+            const trans = translations[currentLang];
+            const message = currentLang === 'en' ? 
+                'To install this app:\n\n1. Tap the Share button (📤)\n2. Scroll down and tap "Add to Home Screen"\n3. Tap "Add" in the top right' :
+                '앱 설치 방법:\n\n1. 공유 버튼(📤) 탭하기\n2. 아래로 스크롤하여 "홈 화면에 추가" 탭\n3. 오른쪽 상단의 "추가" 탭하기';
+            
+            alert(message);
+        }
+        
+        // Service Worker 등록
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                // 간단한 서비스 워커 등록
+                navigator.serviceWorker.register('/service-worker.js').catch(error => {
+                    console.log('ServiceWorker 등록 실패:', error);
+                    // 오프라인 대체 로직
+                    registerSimpleServiceWorker();
+                });
+            });
+        }
+        
+        // 간단한 서비스 워커 등록 (fallback)
+        function registerSimpleServiceWorker() {
+            const swContent = `
+                self.addEventListener('install', event => {
+                    console.log('Service Worker 설치 중...');
+                    self.skipWaiting();
+                });
+                
+                self.addEventListener('activate', event => {
+                    console.log('Service Worker 활성화됨');
+                });
+                
+                self.addEventListener('fetch', event => {
+                    // 기본 fetch 동작
+                });
+            `;
+            
+            const blob = new Blob([swContent], { type: 'application/javascript' });
+            const swURL = URL.createObjectURL(blob);
+            
+            navigator.serviceWorker.register(swURL)
+                .then(registration => {
+                    console.log('ServiceWorker 등록 성공:', registration.scope);
+                })
+                .catch(error => {
+                    console.log('ServiceWorker 등록 실패:', error);
+                });
+        }
+        
         // ==================== 데이터 관리자 클래스 ====================
         class DataManager {
             constructor() {
@@ -1197,7 +1425,9 @@
                 proof: "Proof:",
                 attached: "Attached",
                 receipt: "Receipt:",
-                viewReceipt: "View Receipt"
+                viewReceipt: "View Receipt",
+                installApp: "Install App",
+                addToHomeScreen: "Add to Home Screen"
             },
             ko: {
                 title: "USDT → THB 결제",
@@ -1244,59 +1474,64 @@
                 proof: "증명서:",
                 attached: "첨부됨",
                 receipt: "영수증:",
-                viewReceipt: "영수증 보기"
+                viewReceipt: "영수증 보기",
+                installApp: "앱 설치",
+                addToHomeScreen: "홈 화면에 추가"
             }
         };
 
         // ==================== 페이지 초기화 ====================
-       document.addEventListener('DOMContentLoaded', function() {
-    console.log('사용자 페이지 로드됨');
-    
-    // 페이지 로드 시 결제 폼 초기화
-    resetPaymentForm();
-    
-    currentLang = 'ko';
-    
-    initLanguageButton();
-    updateLanguageButtonText();
-    updateAllText();
-    
-    // 첫 번째 로딩은 바로 실행
-    setTimeout(fetchRealTimeExchangeRate, 100);
-    
-    // ✅ 1분에 한 번만 환율 업데이트 (60초 = 60000ms)
-    setInterval(fetchRealTimeExchangeRate, 30000);
-    
-    loadInitialData();
-    
-    setupEventListeners();
-    
-    startSyncCheck();
-    
-    // 모달 오버레이 클릭 이벤트 추가
-    document.getElementById('qrModal').addEventListener('click', function(e) {
-        if (e.target === this) {
-            if (confirm(currentLang === 'en' ? 
-                'Cancel payment?\n\nCurrent payment will be cancelled and form will be reset.' : 
-                '결제를 취소하시겠습니까?\n\n현재 결제가 취소되고 폼이 초기화됩니다.')) {
-                cancelPayment();
-            }
-        }
-    });
-    
-    // ESC 키로 모달 닫을 때도 처리
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && !document.getElementById('qrModal').classList.contains('hidden')) {
-            if (confirm(currentLang === 'en' ? 
-                'Cancel payment?\n\nCurrent payment will be cancelled and form will be reset.' : 
-                '결제를 취소하시겠습니까?\n\n현재 결제가 취소되고 폼이 초기화됩니다.')) {
-                cancelPayment();
-            }
-        }
-    });
-    
-    console.log('사용자 페이지 초기화 완료');
-});
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('사용자 페이지 로드됨');
+            
+            // PWA 설치 기능 초기화
+            checkPWAInstallSupport();
+            
+            // 페이지 로드 시 결제 폼 초기화
+            resetPaymentForm();
+            
+            currentLang = 'ko';
+            
+            initLanguageButton();
+            updateLanguageButtonText();
+            updateAllText();
+            
+            // 첫 번째 로딩은 바로 실행
+            setTimeout(fetchRealTimeExchangeRate, 100);
+            
+            // ✅ 30초에 한 번 환율 업데이트
+            setInterval(fetchRealTimeExchangeRate, 30000);
+            
+            loadInitialData();
+            
+            setupEventListeners();
+            
+            startSyncCheck();
+            
+            // 모달 오버레이 클릭 이벤트 추가
+            document.getElementById('qrModal').addEventListener('click', function(e) {
+                if (e.target === this) {
+                    if (confirm(currentLang === 'en' ? 
+                        'Cancel payment?\n\nCurrent payment will be cancelled and form will be reset.' : 
+                        '결제를 취소하시겠습니까?\n\n현재 결제가 취소되고 폼이 초기화됩니다.')) {
+                        cancelPayment();
+                    }
+                }
+            });
+            
+            // ESC 키로 모달 닫을 때도 처리
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape' && !document.getElementById('qrModal').classList.contains('hidden')) {
+                    if (confirm(currentLang === 'en' ? 
+                        'Cancel payment?\n\nCurrent payment will be cancelled and form will be reset.' : 
+                        '결제를 취소하시겠습니까?\n\n현재 결제가 취소되고 폼이 초기화됩니다.')) {
+                        cancelPayment();
+                    }
+                }
+            });
+            
+            console.log('사용자 페이지 초기화 완료');
+        });
 
         // ==================== 데이터 로드 ====================
         function loadInitialData() {
@@ -1329,6 +1564,20 @@
             updateAllText();
         }
 
+        function updateInstallButtonText() {
+            const installButtonText = document.getElementById('installButtonText');
+            if (!installButtonText) return;
+            
+            const trans = translations[currentLang];
+            const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            
+            if (isIOSDevice && !isStandalone) {
+                installButtonText.textContent = trans.addToHomeScreen;
+            } else if (!isStandalone) {
+                installButtonText.textContent = trans.installApp;
+            }
+        }
+
         function updateLanguageButtonText() {
             const trans = translations[currentLang];
             const btnText = document.getElementById('languageBtnText');
@@ -1338,172 +1587,175 @@
         }
 
         function updateAllText() {
-    const trans = translations[currentLang];
-    
-    // 모든 텍스트 요소 업데이트
-    const elements = {
-        'pageTitle': trans.title,
-        'pageSubtitle': trans.subtitle,
-        'exchangeTitle': trans.exchangeTitle,
-        'amountLabel': trans.amountLabel,
-        'amountLimit': trans.amountLimit,
-        'calcAmountLabel': trans.calcAmountLabel,
-        'calcRateLabel': trans.calcRateLabel,
-        'calcUsdtLabel': trans.calcUsdtLabel,
-        'calcFeeLabel': trans.calcFeeLabel,
-        'calcTotalLabel': trans.calcTotalLabel,
-        'uploadRequired': trans.uploadRequired,
-        'payButtonText': trans.payNow,
-        'activeOrdersTitle': trans.activeOrders,
-        'completedOrdersTitle': trans.completedOrders,
-        'noActiveOrders': trans.noActiveOrders,
-        'noCompletedOrders': trans.noCompletedOrders,
-        'syncText': trans.syncText,
-        'toggleReceiptBtn': showReceipts ? trans.hideReceipts : trans.showReceipts
-    };
-    
-    // 기본 텍스트 업데이트
-    for (const [id, text] of Object.entries(elements)) {
-        const element = document.getElementById(id);
-        if (element) {
-            element.textContent = text;
+            const trans = translations[currentLang];
+            
+            // 모든 텍스트 요소 업데이트
+            const elements = {
+                'pageTitle': trans.title,
+                'pageSubtitle': trans.subtitle,
+                'exchangeTitle': '💱 ' + (currentLang === 'en' ? 'Real-time Exchange Rate' : '실시간 환율'),
+                'amountLabel': trans.amountLabel,
+                'amountLimit': trans.amountLimit,
+                'calcAmountLabel': trans.calcAmountLabel,
+                'calcRateLabel': trans.calcRateLabel,
+                'calcUsdtLabel': trans.calcUsdtLabel,
+                'calcFeeLabel': trans.calcFeeLabel,
+                'calcTotalLabel': trans.calcTotalLabel,
+                'uploadRequired': trans.uploadRequired,
+                'payButtonText': trans.payNow,
+                'activeOrdersTitle': trans.activeOrders,
+                'completedOrdersTitle': trans.completedOrders,
+                'noActiveOrders': trans.noActiveOrders,
+                'noCompletedOrders': trans.noCompletedOrders,
+                'syncText': trans.syncText,
+                'toggleReceiptBtn': showReceipts ? trans.hideReceipts : trans.showReceipts
+            };
+            
+            // 기본 텍스트 업데이트
+            for (const [id, text] of Object.entries(elements)) {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.textContent = text;
+                }
+            }
+            
+            // ✅ 환율 업데이트 텍스트
+            const rateUpdateElement = document.getElementById('rateUpdate');
+            if (rateUpdateElement) {
+                if (exchangeRate > 0) {
+                    const now = new Date();
+                    const timeString = now.toLocaleTimeString('ko-KR', { 
+                        hour: '2-digit', 
+                        minute: '2-digit', 
+                        second: '2-digit',
+                        hour12: false 
+                    });
+                    rateUpdateElement.textContent = trans.lastUpdate + timeString;
+                } else {
+                    rateUpdateElement.textContent = trans.lastUpdate + trans.rateLoading;
+                }
+            }
+            
+            // ✅ 업로드 버튼 텍스트
+            const uploadButtonText = document.getElementById('uploadButtonText');
+            if (uploadButtonText) {
+                if (!uploadedFile) {
+                    uploadButtonText.textContent = `📎 ${trans.uploadText}`;
+                } else {
+                    const uploadCompletedText = currentLang === 'en' ? 'Upload completed' : '업로드 완료';
+                    uploadButtonText.innerHTML = 
+                        `✅ ${uploadCompletedText}<br><span style="font-size:11px;color:#718096;">${uploadedFile.name}</span>`;
+                }
+            }
+            
+            // 환율 숫자 표시
+            if (exchangeRate > 0) {
+                document.getElementById('exchangeRate').innerHTML = 
+                    `<span style="color:#e53e3e;font-weight:bold;">${exchangeRate.toFixed(2)}</span>`;
+            }
+            
+            // 모달 텍스트 업데이트
+            if (!document.getElementById('qrModal').classList.contains('hidden')) {
+                updateModalText();
+            }
+            
+            updateOrdersList();
+            
+            // 설치 버튼 텍스트 업데이트
+            updateInstallButtonText();
         }
-    }
-    
-    // ✅ 환율 업데이트 텍스트
-    const rateUpdateElement = document.getElementById('rateUpdate');
-    if (rateUpdateElement) {
-        if (exchangeRate > 0) {
-            const now = new Date();
-            const timeString = now.toLocaleTimeString('ko-KR', { 
-                hour: '2-digit', 
-                minute: '2-digit', 
-                second: '2-digit',
-                hour12: false 
-            });
-            rateUpdateElement.textContent = trans.lastUpdate + timeString;
-        } else {
-            rateUpdateElement.textContent = trans.lastUpdate + trans.rateLoading;
-        }
-    }
-    
-    // ✅ 업로드 버튼 텍스트 - 이 부분이 핵심!
-    const uploadButtonText = document.getElementById('uploadButtonText');
-    if (uploadButtonText) {
-        if (!uploadedFile) {
-            // 파일 없을 때
-            uploadButtonText.textContent = `📎 ${trans.uploadText}`;
-        } else {
-            // 파일 있을 때
-            const uploadCompletedText = currentLang === 'en' ? 'Upload completed' : '업로드 완료';
-            uploadButtonText.innerHTML = 
-                `✅ ${uploadCompletedText}<br><span style="font-size:11px;color:#718096;">${uploadedFile.name}</span>`;
-        }
-    }
-    
-    // 환율 숫자 표시
-    if (exchangeRate > 0) {
-        document.getElementById('exchangeRate').innerHTML = 
-            `<span style="color:#e53e3e;font-weight:bold;">${exchangeRate.toFixed(2)}</span>`;
-    }
-    
-    // 모달 텍스트 업데이트
-    if (!document.getElementById('qrModal').classList.contains('hidden')) {
-        updateModalText();
-    }
-    
-    updateOrdersList();
-}
 
         // ==================== 환율 관련 함수 ====================
         async function fetchRealTimeExchangeRate() {
-    try {
-        console.log('환율 조회 시작...', new Date().toLocaleTimeString());
-        
-        const apiUrls = [
-            'https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=thb',
-            'https://api.binance.com/api/v3/ticker/price?symbol=USDTTHB'
-        ];
-        
-        let rate = 0;
-        let success = false;
-        
-        for (const apiUrl of apiUrls) {
             try {
-                console.log(`API 시도: ${apiUrl}`);
+                console.log('환율 조회 시작...', new Date().toLocaleTimeString());
                 
-                // 요청 간에 약간의 딜레이 추가
-                await new Promise(resolve => setTimeout(resolve, 500));
+                const apiUrls = [
+                    'https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=thb',
+                    'https://api.binance.com/api/v3/ticker/price?symbol=USDTTHB'
+                ];
                 
-                const response = await fetch(apiUrl, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                    },
-                    mode: 'cors'
-                });
+                let rate = 0;
+                let success = false;
                 
-                if (response.ok) {
-                    const data = await response.json();
-                    
-                    if (apiUrl.includes('coingecko')) {
-                        if (data.tether && data.tether.thb) {
-                            rate = parseFloat(data.tether.thb);
-                            success = true;
+                for (const apiUrl of apiUrls) {
+                    try {
+                        console.log(`API 시도: ${apiUrl}`);
+                        
+                        // 요청 간에 약간의 딜레이 추가
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        
+                        const response = await fetch(apiUrl, {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json',
+                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                            },
+                            mode: 'cors'
+                        });
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            
+                            if (apiUrl.includes('coingecko')) {
+                                if (data.tether && data.tether.thb) {
+                                    rate = parseFloat(data.tether.thb);
+                                    success = true;
+                                }
+                            } else if (apiUrl.includes('binance')) {
+                                if (data.price) {
+                                    rate = parseFloat(data.price);
+                                    success = true;
+                                }
+                            }
+                            
+                            if (rate && rate > 0 && rate < 100) {
+                                console.log('환율 조회 성공:', rate);
+                                break;
+                            }
                         }
-                    } else if (apiUrl.includes('binance')) {
-                        if (data.price) {
-                            rate = parseFloat(data.price);
-                            success = true;
-                        }
-                    }
-                    
-                    if (rate && rate > 0 && rate < 100) {
-                        console.log('환율 조회 성공:', rate);
-                        break;
+                    } catch (error) {
+                        console.log(`${apiUrl} 실패:`, error.message);
+                        continue;
                     }
                 }
+                
+                if (!success || rate <= 0) {
+                    rate = 31.5;
+                    console.log('API 실패, 기본 환율 사용:', rate);
+                    updateExchangeRateDisplay(rate, false);
+                } else {
+                    updateExchangeRateDisplay(rate, true);
+                }
+                
             } catch (error) {
-                console.log(`${apiUrl} 실패:`, error.message);
-                continue;
+                console.error('환율 조회 실패:', error);
+                updateExchangeRateDisplay(31.5, false);
             }
         }
         
-        if (!success || rate <= 0) {
-            rate = 35.5;
-            console.log('API 실패, 기본 환율 사용:', rate);
-            updateExchangeRateDisplay(rate, false);
-        } else {
-            updateExchangeRateDisplay(rate, true);
-        }
-        
-    } catch (error) {
-        console.error('환율 조회 실패:', error);
-        updateExchangeRateDisplay(35.5, false);
-    }
-}
         function updateExchangeRateDisplay(rate, success) {
-    // 환율 업데이트
-    exchangeRate = rate;
-    
-    const rateElement = document.getElementById('exchangeRate');
-    const calcRateElement = document.getElementById('calcRate');
-    
-    if (success) {
-        rateElement.innerHTML = `<span style="color:#e53e3e;font-weight:bold;">${rate.toFixed(2)}</span>`;
-        if (calcRateElement) calcRateElement.textContent = rate.toFixed(2);
-    } else {
-        rateElement.innerHTML = `<span style="color:#e53e3e;font-weight:bold;">${rate.toFixed(2)}</span> (기본값)`;
-        if (calcRateElement) calcRateElement.textContent = rate.toFixed(2);
-    }
-    
-    // 텍스트 업데이트
-    updateAllText();
-    
-    updateCalculation();
-}
+            // 환율 업데이트
+            exchangeRate = rate;
+            
+            const rateElement = document.getElementById('exchangeRate');
+            const calcRateElement = document.getElementById('calcRate');
+            
+            if (success) {
+                rateElement.innerHTML = `<span style="color:#e53e3e;font-weight:bold;">${rate.toFixed(2)}</span>`;
+                if (calcRateElement) calcRateElement.textContent = rate.toFixed(2);
+            } else {
+                rateElement.innerHTML = `<span style="color:#e53e3e;font-weight:bold;">${rate.toFixed(2)}</span> (기본값)`;
+                if (calcRateElement) calcRateElement.textContent = rate.toFixed(2);
+            }
+            
+            // 텍스트 업데이트
+            updateAllText();
+            
+            updateCalculation();
+        }
+
         // ==================== 계산 및 결제 관련 함수 ====================
         function updateCalculation() {
             const amount = parseInt(document.getElementById('thbAmount').value) || 0;
@@ -1758,27 +2010,27 @@
             
             const reader = new FileReader();
             reader.onload = function(e) {
-    console.log('파일 읽기 완료');
-    
-    uploadedFile = file; // 파일 업로드 상태 업데이트
-    
-    // 파일 업로드 후 언어 업데이트 적용
-    updateAllText();
-    
-    // 미리보기 업데이트
-    const uploadPreview = document.getElementById('uploadPreview');
-    if (uploadPreview) {
-        uploadPreview.innerHTML = `
-            <img src="${e.target.result}" alt="Payment proof" class="upload-preview-image">
-            <div class="file-info">
-                ${file.name} (${(file.size / 1024).toFixed(1)}KB)
-            </div>
-        `;
-    }
-    
-    checkPaymentButton();
-    console.log('파일 업로드 처리 완료');
-};
+                console.log('파일 읽기 완료');
+                
+                uploadedFile = file; // 파일 업로드 상태 업데이트
+                
+                // 파일 업로드 후 언어 업데이트 적용
+                updateAllText();
+                
+                // 미리보기 업데이트
+                const uploadPreview = document.getElementById('uploadPreview');
+                if (uploadPreview) {
+                    uploadPreview.innerHTML = `
+                        <img src="${e.target.result}" alt="Payment proof" class="upload-preview-image">
+                        <div class="file-info">
+                            ${file.name} (${(file.size / 1024).toFixed(1)}KB)
+                        </div>
+                    `;
+                }
+                
+                checkPaymentButton();
+                console.log('파일 업로드 처리 완료');
+            };
             
             reader.onerror = function(e) {
                 console.error('파일 읽기 오류:', e);
@@ -2442,15 +2694,7 @@
             alert(`테스트 주문 ${testOrder.id} 생성됨`);
         };
         
-        console.log('유저 페이지 스크립트 로드 완료');
+        console.log('PWA 통합 유저 페이지 스크립트 로드 완료');
     </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
