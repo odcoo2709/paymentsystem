@@ -4045,16 +4045,18 @@ if (wallet.qrCode &&
             reader.onload = function(e) {
                 const qrPreview = document.getElementById('qrCodePreview');
                 qrPreview.innerHTML = `
-                    <div style="margin-top: 10px;">
-                        <label style="font-size: 12px; color: #718096;">QR 코드 미리보기:</label>
-                        <div style="margin-top: 5px;">
-                            <img src="${e.target.result}" 
-                                 style="max-width: 100px; max-height: 100px; border-radius: 4px; border: 1px solid #ddd;"
-                                 onerror="this.style.display='none';this.parentElement.innerHTML='<div style=\"color:#e74c3c;font-size:11px;\">이미지 로드 실패</div>'">
-                        </div>
-                    </div>
-                `;
-            };
+    <div style="margin-top: 10px;">
+        <label style="font-size: 12px; color: #718096;">QR 코드 미리보기:</label>
+        <div style="margin-top: 5px; text-align: center;">
+            <img src="${e.target.result}" 
+                 style="max-width: 100px; max-height: 100px; border-radius: 4px; border: 1px solid #ddd; display: block; margin: 0 auto;"
+                 onerror="
+                     this.style.display='none';
+                     this.parentElement.innerHTML='<div style=\"padding:10px;color:#666;font-size:11px;background:#f8f9fa;border-radius:4px;border:1px solid #dee2e6;\">미리보기 표시 실패<br>파일은 정상 저장됩니다</div>';
+                 ">
+        </div>
+    </div>
+`;
             reader.readAsDataURL(file);
             
             qrCodeFile = file;
@@ -4117,9 +4119,17 @@ if (wallet.qrCode &&
                 };
                 
                 reader.onerror = function(e) {
-                    console.error('이미지 읽기 오류:', e);
-                    alert('이미지 파일을 읽을 수 없습니다.');
-                };
+    console.error('이미지 읽기 오류:', e);
+    const qrPreview = document.getElementById('qrCodePreview');
+    qrPreview.innerHTML = `
+        <div style="margin-top: 10px; padding: 10px; background: #fed7d7; border-radius: 6px; border: 1px solid #fc8181;">
+            <div style="color: #c53030; font-size: 12px;">
+                이미지 파일을 불러올 수 없습니다.<br>
+                다른 이미지 파일을 선택해주세요.
+            </div>
+        </div>
+    `;
+};
                 
                 reader.readAsDataURL(qrCodeFile);
             } else {
