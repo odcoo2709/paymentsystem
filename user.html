@@ -1655,7 +1655,78 @@ function showIOSChromeGuide() {
         clearTimeout(autoCloseTimer);
     });
 }
+// iOS Safari 설치 가이드 표시
+function showIOSInstallGuide() {
+    const installToast = document.getElementById('installToast');
+    const trans = translations[currentLang];
+    
+    installToast.innerHTML = `
+        <strong>📱 ${currentLang === 'en' ? 'Add to Home Screen' : '홈 화면에 추가하기'}</strong><br><br>
+        1. ${currentLang === 'en' ? 'Tap the share button (📤) below' : '아래의 공유 버튼(📤)을 탭하세요'}<br>
+        2. ${currentLang === 'en' ? 'Scroll down and find' : '아래로 스크롤하여 찾으세요'}<br>
+        3. <strong>'${trans.addToHomeScreen}'</strong> ${currentLang === 'en' ? 'select' : '선택'}<br>
+        4. <strong>'${currentLang === 'en' ? 'Add' : '추가'}'</strong> ${currentLang === 'en' ? 'button tap' : '버튼 탭하기'}
+    `;
+    installToast.classList.add('show');
+    
+    setTimeout(() => {
+        installToast.classList.remove('show');
+        installToast.classList.add('hide');
+        setTimeout(() => {
+            installToast.classList.remove('hide');
+        }, 300);
+    }, 8000);
+}
 
+// Android 설치 가이드 표시
+function showAndroidInstallGuide() {
+    const installButton = document.getElementById('installButton');
+    const installToast = document.getElementById('installToast');
+    
+    if (!installButton || !installToast) return;
+    
+    installButton.classList.remove('hidden');
+    const trans = translations[currentLang];
+    document.getElementById('installButtonText').textContent = trans.installApp;
+    
+    installButton.onclick = () => {
+        const isChrome = /Chrome/.test(navigator.userAgent);
+        const trans = translations[currentLang];
+        
+        if (isChrome) {
+            // 크롬인 경우
+            installToast.innerHTML = `
+                <strong>📱 ${currentLang === 'en' ? 'Install app in Chrome' : 'Chrome에서 앱 설치하기'}</strong><br>
+                1. ${currentLang === 'en' ? 'Tap Chrome menu (⋮)' : 'Chrome 메뉴(⋮) 탭'}<br>
+                2. <strong>'${trans.installApp}'</strong> ${currentLang === 'en' ? 'select' : '선택'}<br>
+                3. <strong>'${currentLang === 'en' ? 'Install' : '설치'}'</strong> ${currentLang === 'en' ? 'button tap' : '버튼 탭'}<br>
+                <br>
+                <small style="color:#666;">${currentLang === 'en' ? 'Or tap the 📲 icon next to address bar' : '또는 주소창 옆의 📲 아이콘 탭'}</small>
+            `;
+        } else {
+            // 다른 브라우저인 경우
+            installToast.innerHTML = `
+                <strong>📱 ${currentLang === 'en' ? 'Install app in browser' : '브라우저에서 앱 설치하기'}</strong><br>
+                1. ${currentLang === 'en' ? 'Tap browser menu (⋮ or ...)' : '브라우저 메뉴(⋮ 또는 ...) 탭'}<br>
+                2. ${currentLang === 'en' ? 'Look for' : '아래 항목을 찾으세요'}:<br>
+                - <strong>'${trans.installApp}'</strong><br>
+                - ${currentLang === 'en' ? "'Add to Home Screen'" : "'홈 화면에 추가'"}<br>
+                - ${currentLang === 'en' ? "'Install App'" : "'앱 설치'"}<br>
+                3. ${currentLang === 'en' ? 'Follow the prompts to install' : '안내에 따라 설치하세요'}<br>
+            `;
+        }
+        
+        installToast.classList.add('show');
+        
+        setTimeout(() => {
+            installToast.classList.remove('show');
+            installToast.classList.add('hide');
+            setTimeout(() => {
+                installToast.classList.remove('hide');
+            }, 300);
+        }, 7000);
+    };
+}
         // ==================== Service Worker 오류 수정 ====================
         function registerServiceWorker() {
             if ('serviceWorker' in navigator) {
