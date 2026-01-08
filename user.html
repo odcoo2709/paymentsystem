@@ -1710,39 +1710,75 @@
             });
         }
 
-        // ==================== 간단한 환율 처리 ====================
+        // ==================== 가장 안정적인 환율 API ====================
 async function fetchRealTimeExchangeRate() {
     try {
         console.log('환율 조회 시작...');
         
-        // USDT는 USD와 동일하므로 USD/THB 환율 사용
-        // ExchangeRate-API는 CORS를 지원함
-        const response = await fetch('https://api.exchangerate-api.com/v4/latest/USD', {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            }
-        });
+        // 가장 안정적인 API 1개만 사용 (Frankfurter.app)
+        // 이 API는 CORS를 지원하고 무료이며 안정적입니다.
+        const apiUrl = 'https://api.frankfurter.app/latest?from=USD&to=THB';
         
-        if (response.ok) {
-            const data = await response.json();
-            if (data.rates && data.rates.THB) {
-                const rate = parseFloat(data.rates.THB);
-                console.log('USD/THB 환율 조회 성공:', rate);
-                updateExchangeRateDisplay(rate, true);
-                return;
+        try {
+            const response = await fetch(apiUrl, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                },
+                // 타임아웃 설정
+                signal: AbortSignal.timeout(5000)
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                const rate = data.rates?.THB;
+                
+                if (rate && parseFloat(rate) > 0) {
+                    console.log('Frankfurter API 성공:', rate);
+                    updateExchangeRateDisplay(parseFloat(rate));
+                    return;
+                }
             }
+        } catch (fetchError) {
+            console.log('Frankfurter API 실패:', fetchError.message);
         }
         
-        // API 실패 시 기본값 사용 (31.5 THB/USD)
-        console.log('환율 API 실패, 기본값 사용');
-        updateExchangeRateDisplay(31.5, false);
+        // 백업 API 시도 (currency-api)
+        try {
+            const backupUrl = 'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json';
+            const response = await fetch(backupUrl);
+            
+            if (response.ok) {
+                const data = await response.json();
+                const rate = data.usd?.thb;
+                
+                if (rate && parseFloat(rate) > 0) {
+                    console.log('Currency-API 성공:', rate);
+                    updateExchangeRateDisplay(parseFloat(rate));
+                    return;
+                }
+            }
+        } catch (backupError) {
+            console.log('백업 API 실패:', backupError.message);
+        }
+        
+        // 모두 실패 시 기본값
+        console.log('모든 API 실패, 기본값 사용');
+        updateExchangeRateDisplay(35.5);
         
     } catch (error) {
-        console.error('환율 조회 실패:', error);
-        updateExchangeRateDisplay(31.5, false);
+        console.error('환율 조회 오류:', error);
+        updateExchangeRateDisplay(35.5);
     }
+}
+
+// AbortSignal.timeout 폴리필 (구형 브라우저 지원)
+if (!AbortSignal.timeout) {
+    AbortSignal.timeout = function(ms) {
+        const controller = new AbortController();
+        setTimeout(() => controller.abort(), ms);
+        return controller.signal;
+    };
 }
         
         function updateExchangeRateDisplay(rate, success) {
