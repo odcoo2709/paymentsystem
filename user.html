@@ -1220,7 +1220,22 @@ function checkPWAInstallSupport() {
     const installToast = document.getElementById('installToast');
     
     if (!installButton || !installToast) return;
+
+    // ✅ iOS Chrome인지 먼저 체크
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isChromeIOS = /CriOS|Chrome/.test(navigator.userAgent) && isIOS;
     
+    // iOS Chrome이면 별도 처리
+    if (isChromeIOS) {
+        console.log('iOS Chrome 감지 - Safari 리디렉션 안내');
+        installButton.classList.remove('hidden');
+        document.getElementById('installButtonText').textContent = '앱 설치하기';
+        
+        installButton.onclick = () => {
+            showIOSChromeGuide();
+        };
+        return; // ✅ 여기서 함수 종료!
+    }
     // ✅ 모바일 장치인지 먼저 확인
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
