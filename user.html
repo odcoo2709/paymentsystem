@@ -1206,12 +1206,9 @@
 
     <script>
       // ==================== 간편한 PWA 설치 기능 ====================
+// ==================== 간편한 PWA 설치 기능 ====================
 let deferredPrompt;
-let isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-let isAndroid = /Android/.test(navigator.userAgent);
-let isStandalone = window.matchMedia('(display-mode: standalone)').matches || 
-                 (window.navigator.standalone) || 
-                 document.referrer.includes('android-app://');
+// ✅ 이미 전역에 isIOS, isAndroid, isStandalone 변수 있음
 let installPromptShown = false;
 
 // PWA 설치 가능 여부 체크 - 수정된 버전
@@ -1220,9 +1217,9 @@ function checkPWAInstallSupport() {
     const installToast = document.getElementById('installToast');
     
     if (!installButton || !installToast) return;
-
-    // ✅ iOS Chrome인지 먼저 체크
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    
+    // ================ ✅ iOS Chrome 체크 (수정됨) ================
+    // ✅ isIOS는 이미 전역 변수로 있으므로 재선언하지 않음!
     const isChromeIOS = /CriOS|Chrome/.test(navigator.userAgent) && isIOS;
     
     // iOS Chrome이면 별도 처리
@@ -1231,12 +1228,15 @@ function checkPWAInstallSupport() {
         installButton.classList.remove('hidden');
         document.getElementById('installButtonText').textContent = '앱 설치하기';
         
+        // ✅ onclick 이벤트 리스너로 변경 (addEventListener 대신)
         installButton.onclick = () => {
             showIOSChromeGuide();
         };
         return; // ✅ 여기서 함수 종료!
     }
-    // ✅ 모바일 장치인지 먼저 확인
+    // ================ ✅ 추가 끝 ================
+    
+    // ✅ 모바일 장치인지 먼저 확인 (기존 코드)
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
     // 모바일이 아니면 버튼 숨김
@@ -1258,14 +1258,15 @@ function checkPWAInstallSupport() {
         document.getElementById('installButtonText').textContent = isAndroid ? '앱 열기' : '홈에서 열기';
         installButton.classList.remove('hidden');
         
-        installButton.addEventListener('click', () => {
+        // ✅ onclick 사용으로 통일
+        installButton.onclick = () => {
             if (isAndroid) {
                 // 안드로이드 PWA 열기 시도
                 window.location.reload();
             } else {
                 showIOSQuickGuide();
             }
-        });
+        };
         return;
     }
     
@@ -1283,8 +1284,8 @@ function checkPWAInstallSupport() {
         // 간단한 안내 토스트 표시
         showInstallToast('📱 앱을 설치하면 더 편리해요!', 3000);
         
-        // 설치 버튼 클릭 이벤트 - 바로 설치 시도
-        installButton.addEventListener('click', async () => {
+        // ✅ onclick으로 통일 (addEventListener 중복 방지)
+        installButton.onclick = async () => {
             console.log('설치 버튼 클릭됨');
             if (deferredPrompt) {
                 installButton.classList.add('hidden');
@@ -1308,7 +1309,7 @@ function checkPWAInstallSupport() {
                 
                 deferredPrompt = null;
             }
-        });
+        };
     });
     
     // beforeinstallprompt 이벤트가 즉시 발생하지 않을 수 있으므로
@@ -1333,29 +1334,6 @@ function checkPWAInstallSupport() {
         showInstallToast('🎉 앱 설치 완료! 홈 화면에서 확인하세요.', 3000);
         deferredPrompt = null;
     });
-}
-
-// iOS 빠른 가이드 표시
-function showIOSQuickGuide() {
-    const installToast = document.getElementById('installToast');
-    
-    // 간단한 3단계 안내
-    installToast.innerHTML = `
-        <strong>📱 홈 화면에 추가하기</strong><br>
-        1. Safari 공유 버튼(📤) 탭<br>
-        2. '홈 화면에 추가' 선택<br>
-        3. '추가' 버튼 탭
-    `;
-    installToast.classList.add('show');
-    
-    // 5초 후 자동 숨기기
-    setTimeout(() => {
-        installToast.classList.remove('show');
-        installToast.classList.add('hide');
-        setTimeout(() => {
-            installToast.classList.remove('hide');
-        }, 300);
-    }, 5000);
 }
 
 // 안드로이드 수동 설치 옵션 - 개선된 버전
